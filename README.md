@@ -9,6 +9,7 @@
     <a href="README.zh-CN.md">简体中文</a> ·
     <a href="docs/workcraft-user-manual.html">User Manual</a> ·
     <a href="docs/workcraft-office-user-guide.html">Office Guide</a> ·
+    <a href="https://work-craft.com/download/">Commercial Download</a> ·
     <a href="LICENSE">Apache-2.0</a>
   </p>
 
@@ -19,6 +20,18 @@
     <img alt="Backend" src="https://img.shields.io/badge/backend-FastAPI-009688" />
     <img alt="Models" src="https://img.shields.io/badge/models-BYOK%20%7C%20Ollama%20%7C%20OpenAI--compatible-6B5B95" />
   </p>
+
+  <p>
+    <video src="docs/assets/readme/workcraft-product-intro-2026-v2.mp4" width="920" controls poster="docs/assets/readme/artifact-panel.png"></video>
+  </p>
+
+  <p>
+    <a href="docs/assets/readme/workcraft-product-intro-2026-v2.mp4">
+      <img src="docs/assets/readme/artifact-panel.png" width="920" alt="WorkCraft artifact workflow preview" />
+    </a>
+  </p>
+
+  <p><sub>Watch the product video, then explore how expert teams turn real files into reusable artifacts.</sub></p>
 </div>
 
 WorkCraft is an open-source desktop AI workbench for people who need AI to work with real files, long-running context, and structured deliverables. It combines a Tauri desktop shell, a Next.js interface, and a FastAPI agent backend so local documents, workspaces, model providers, tools, expert teams, and generated artifacts can live in one application.
@@ -33,17 +46,18 @@ Its core idea is simple: a complex request should not be handled by one generic 
 - **BYOK model routing**: connect your own provider keys, OpenAI-compatible endpoints, custom endpoints, or local Ollama models.
 - **MCP, tools, skills, and plugins**: extend agents with controlled capabilities for files, code, search, connectors, and domain workflows.
 - **Local persistence by default**: conversations, files, settings, memory, workflow metadata, and artifacts are stored locally unless you choose an external provider or connector.
-- **Commercial edition available**: same product capabilities as the open-source edition, with WorkCraft-managed sign-in and access to more stable managed models such as GPT-5.5.
+- **Commercial and enterprise options**: same core product capabilities, with WorkCraft-managed sign-in, more stable managed models such as GPT-5.5, cost-effective GPT access options, and enterprise SSO, audit, model, and private deployment support.
 
 <details>
 <summary><kbd>Table of Contents</kbd></summary>
 
 - [What WorkCraft Does](#what-workcraft-does)
+- [Product Tour](#product-tour)
 - [Expert Teams](#expert-teams)
 - [Key Features](#key-features)
 - [Use Cases](#use-cases)
 - [Model Support](#model-support)
-- [Open Source and Commercial Edition](#open-source-and-commercial-edition)
+- [Editions](#editions)
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
 - [Development Commands](#development-commands)
@@ -67,6 +81,18 @@ WorkCraft is built for document-heavy and workflow-heavy AI tasks:
 - Keep model choice under user control instead of requiring a hosted service login.
 
 The open-source edition is designed as a standalone local application. Users provide their own model access and decide which cloud providers, local models, or external connectors are allowed.
+
+## Product Tour
+
+WorkCraft is built around visible work: agents read files, coordinate through expert-team workflows, and turn intermediate reasoning into concrete artifacts that can be reviewed, downloaded, and reused.
+
+| File-grounded artifact delivery | Workbook analysis |
+| --- | --- |
+| <img src="docs/assets/readme/artifact-panel.png" alt="WorkCraft artifact panel" width="420" /> | <img src="docs/assets/readme/budget-analysis.png" alt="WorkCraft budget analysis" width="420" /> |
+
+| Document briefing | Skills and connectors |
+| --- | --- |
+| <img src="docs/assets/readme/docx-brief.png" alt="WorkCraft document brief" width="420" /> | <img src="docs/assets/readme/skill-store.png" alt="WorkCraft skill store" width="420" /> |
 
 ## Expert Teams
 
@@ -132,13 +158,17 @@ WorkCraft open source uses a bring-your-own-model setup:
 
 Model calls require a configured provider route or local model. The open-source flow runs without a WorkCraft-hosted login.
 
-## Open Source and Commercial Edition
+## Editions
 
-The open-source and commercial editions share the same core product capabilities: expert-team multi-agent workflows, local file workspaces, artifact delivery, provider routing, MCP/tool integration, plugins, automation, and the desktop app architecture.
+The open-source, commercial, and enterprise editions share the same core product capabilities: expert-team multi-agent workflows, local file workspaces, artifact delivery, provider routing, MCP/tool integration, plugins, automation, and the desktop app architecture.
 
-Choose the open-source edition if you want to run WorkCraft with your own model providers, OpenAI-compatible endpoints, custom endpoints, or local Ollama models.
+| Edition | Best for | What it includes |
+| --- | --- | --- |
+| Open source | Developers and teams that want full local control | BYOK provider setup, OpenAI-compatible endpoints, custom endpoints, local Ollama models, local persistence, and the Apache-2.0 open-source codebase. |
+| Commercial | Users who want the same WorkCraft experience with simpler onboarding | Same product capabilities as open source, WorkCraft-managed sign-in, more stable managed model routes such as GPT-5.5, and more cost-effective GPT access options. Download from the official site: [work-craft.com/download](https://work-craft.com/download/). |
+| Enterprise | Organizations that need governance, integration, and deployment control | SSO login, audit support, enterprise-grade model options, private deployment, and custom solution services. Contact dedicated support through the official site for enterprise planning. |
 
-Choose the commercial edition if you want the same WorkCraft experience with WorkCraft-managed sign-in, simpler onboarding, and access to more stable managed model routes such as GPT-5.5. Download the commercial edition from the official site: [work-craft.com/download](https://work-craft.com/download/).
+Choose the open-source edition if you want to run WorkCraft entirely with your own model providers and local configuration. Choose the commercial or enterprise edition when you need managed onboarding, stable model access, lower GPT usage cost options, or organization-level support.
 
 ## Architecture
 

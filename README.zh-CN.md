@@ -9,6 +9,7 @@
     <a href="README.md">English</a> ·
     <a href="docs/workcraft-user-manual.html">用户手册</a> ·
     <a href="docs/workcraft-office-user-guide.html">办公指南</a> ·
+    <a href="https://work-craft.com/download/">商业版下载</a> ·
     <a href="LICENSE">Apache-2.0</a>
   </p>
 
@@ -19,6 +20,18 @@
     <img alt="Backend" src="https://img.shields.io/badge/backend-FastAPI-009688" />
     <img alt="Models" src="https://img.shields.io/badge/models-BYOK%20%7C%20Ollama%20%7C%20OpenAI--compatible-6B5B95" />
   </p>
+
+  <p>
+    <video src="docs/assets/readme/workcraft-product-intro-2026-v2.mp4" width="920" controls poster="docs/assets/readme/artifact-panel.png"></video>
+  </p>
+
+  <p>
+    <a href="docs/assets/readme/workcraft-product-intro-2026-v2.mp4">
+      <img src="docs/assets/readme/artifact-panel.png" width="920" alt="WorkCraft artifact 工作流预览" />
+    </a>
+  </p>
+
+  <p><sub>先看产品视频，再了解专家团如何把真实文件转成可复用交付物。</sub></p>
 </div>
 
 WorkCraft 是一个开源桌面 AI 工作台，面向真实文件、长上下文任务和结构化交付物。它把 Tauri 桌面外壳、Next.js 交互界面和 FastAPI Agent 后端组合在一起，让本地文档、工作区、模型提供商、工具、专家团和生成产物都在一个应用里协同工作。
@@ -33,17 +46,18 @@ WorkCraft 的核心判断是：复杂任务不应该只交给一个通用助手�
 - **BYOK 模型路由**：接入自己的模型厂商 API Key、OpenAI-compatible endpoint、自定义端点或本地 Ollama 模型。
 - **MCP、工具、技能与插件**：为 Agent 增加受控的文件、代码、搜索、连接器和领域流程能力。
 - **默认本地持久化**：对话、文件、设置、记忆、工作流元数据和生成产物默认保存在本机；只有用户选择外部模型或连接器时才发送必要上下文。
-- **提供商业版**：商业版和开源版代码功能一致，额外保留 WorkCraft 独立登录能力，并提供 GPT-5.5 等更稳定的托管模型路线。
+- **提供商业版和企业版**：核心产品能力与开源版一致；商业版保留 WorkCraft 独立登录能力，提供 GPT-5.5 等更稳定的托管模型和更优惠的 GPT 调用方案；企业版支持 SSO、审计、企业级模型和私有化方案定制。
 
 <details>
 <summary><kbd>目录</kbd></summary>
 
 - [WorkCraft 是做什么的](#workcraft-是做什么的)
+- [产品展示](#产品展示)
 - [专家团](#专家团)
 - [核心能力](#核心能力)
 - [典型场景](#典型场景)
 - [模型支持](#模型支持)
-- [开源版与商业版](#开源版与商业版)
+- [版本选择](#版本选择)
 - [技术架构](#技术架构)
 - [快速开始](#快速开始)
 - [开发命令](#开发命令)
@@ -67,6 +81,18 @@ WorkCraft 面向文档密集、流程密集的 AI 工作：
 - 让用户自己控制模型来源，而不是依赖托管登录体系。
 
 开源版定位是独立的本地应用。用户自行提供模型访问，并决定允许使用哪些云端模型、本地模型或外部连接器。
+
+## 产品展示
+
+WorkCraft 强调“看得见的工作过程”：Agent 可以读取真实文件，通过专家团协作完成中间步骤，并把结果沉淀为可预览、可下载、可复用的 artifact。
+
+| 文件驱动的产物交付 | 表格与预算分析 |
+| --- | --- |
+| <img src="docs/assets/readme/artifact-panel.png" alt="WorkCraft artifact 面板" width="420" /> | <img src="docs/assets/readme/budget-analysis.png" alt="WorkCraft 预算分析" width="420" /> |
+
+| 文档简报生成 | 技能与连接器 |
+| --- | --- |
+| <img src="docs/assets/readme/docx-brief.png" alt="WorkCraft 文档简报" width="420" /> | <img src="docs/assets/readme/skill-store.png" alt="WorkCraft 技能商店" width="420" /> |
 
 ## 专家团
 
@@ -132,13 +158,17 @@ WorkCraft 开源版采用用户自带模型的方式：
 
 模型调用需要配置可用的 provider 路径或本地模型。开源版流程不需要 WorkCraft 托管登录。
 
-## 开源版与商业版
+## 版本选择
 
-开源版和商业版的核心产品能力一致：专家团多 Agent 工作流、本地文件工作区、artifact 交付、provider 路由、MCP/工具集成、插件、自动化和桌面应用架构。
+开源版、商业版和企业版的核心产品能力一致：专家团多 Agent 工作流、本地文件工作区、artifact 交付、provider 路由、MCP/工具集成、插件、自动化和桌面应用架构。
 
-如果你希望完全使用自己的模型厂商、OpenAI 兼容端点、自定义端点或本地 Ollama，建议使用开源版。
+| 版本 | 适合对象 | 包含能力 |
+| --- | --- | --- |
+| 开源版 | 希望完全掌控本地配置和模型来源的开发者与团队 | BYOK 模型配置、OpenAI-compatible endpoint、自定义端点、本地 Ollama、本地持久化，以及 Apache-2.0 开源代码。 |
+| 商业版 | 希望开箱即用、减少模型配置成本的用户 | 与开源版相同的核心产品能力，保留 WorkCraft 独立登录能力，提供 GPT-5.5 等更稳定的托管模型路线，以及更优惠的 GPT 模型调用方案。商业版可在官网下载：[work-craft.com/download](https://work-craft.com/download/)。 |
+| 企业版 | 需要统一身份、治理审计、企业模型和部署控制的组织 | SSO 登录、审计支持、企业级模型、私有化部署和解决方案定制。企业用户可通过官网联系专属客服，获取部署与方案规划支持。 |
 
-如果你希望获得相同的 WorkCraft 体验，同时使用 WorkCraft 独立登录、更简单的首次配置，以及 GPT-5.5 等更稳定的托管模型路线，可以下载商业版：[work-craft.com/download](https://work-craft.com/download/)。
+如果你希望完全使用自己的模型厂商、OpenAI 兼容端点、自定义端点或本地 Ollama，建议使用开源版。如果你需要托管登录、稳定模型、更优惠的 GPT 调用成本或企业级支持，可以选择商业版或企业版。
 
 ## 技术架构
 
