@@ -137,4 +137,4 @@ This repository includes third-party dependencies, plugins, bundled skills, gene
 
 ## License
 
-A final open-source license has not been selected yet. See [LICENSE](LICENSE).
+WorkCraft is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).

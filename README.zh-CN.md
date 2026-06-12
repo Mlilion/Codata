@@ -137,4 +137,4 @@ npm run preflight:ui
 
 ## 许可证
 
-最终开源许可证尚未选择。请见 [LICENSE](LICENSE)。
+WorkCraft 使用 Apache License, Version 2.0 开源。请见 [LICENSE](LICENSE)。
