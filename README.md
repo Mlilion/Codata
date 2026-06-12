@@ -22,13 +22,11 @@
   </p>
 
   <p>
-    <video width="920" controls>
-      <source src="docs/assets/readme/workcraft-product-intro-2026-v2.mp4" type="video/mp4">
-    </video>
+    <img src="docs/assets/readme/workcraft-product-intro-2026-v2.gif" width="920" alt="WorkCraft product intro animation" />
   </p>
 
   <p>
-    <a href="docs/assets/readme/workcraft-product-intro-2026-v2.mp4">Watch the MP4 product video</a>
+    <a href="docs/assets/readme/workcraft-product-intro-2026-v2.mp4">Download the MP4 product video</a>
   </p>
 
   <p><sub>See how expert teams turn real files into reusable artifacts.</sub></p>
