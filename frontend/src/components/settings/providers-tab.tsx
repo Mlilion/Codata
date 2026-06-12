@@ -265,8 +265,8 @@ function ProviderListView({
     if (!parsed) {
       setDefaultModel(null, null);
       const automaticModel =
-        chooseAutomaticModel(activeProviderModels, activeProvider) ??
-        chooseAutomaticModel(selectableModels, activeProvider);
+        chooseAutomaticModel(activeProviderModels) ??
+        chooseAutomaticModel(selectableModels);
       if (automaticModel) {
         setSelectedModel(automaticModel.id, automaticModel.provider_id);
         setActiveProvider(activeProviderForProviderId(automaticModel.provider_id));
