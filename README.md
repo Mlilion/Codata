@@ -33,6 +33,7 @@ Its core idea is simple: a complex request should not be handled by one generic 
 - **BYOK model routing**: connect your own provider keys, OpenAI-compatible endpoints, custom endpoints, or local Ollama models.
 - **MCP, tools, skills, and plugins**: extend agents with controlled capabilities for files, code, search, connectors, and domain workflows.
 - **Local persistence by default**: conversations, files, settings, memory, workflow metadata, and artifacts are stored locally unless you choose an external provider or connector.
+- **Commercial edition available**: same product capabilities as the open-source edition, with WorkCraft-managed sign-in and access to more stable managed models such as GPT-5.5.
 
 <details>
 <summary><kbd>Table of Contents</kbd></summary>
@@ -42,6 +43,7 @@ Its core idea is simple: a complex request should not be handled by one generic 
 - [Key Features](#key-features)
 - [Use Cases](#use-cases)
 - [Model Support](#model-support)
+- [Open Source and Commercial Edition](#open-source-and-commercial-edition)
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
 - [Development Commands](#development-commands)
@@ -129,6 +131,14 @@ WorkCraft open source uses a bring-your-own-model setup:
 - Per-expert provider/model overrides for teams that need different cost, latency, or reasoning profiles.
 
 Model calls require a configured provider route or local model. The open-source flow runs without a WorkCraft-hosted login.
+
+## Open Source and Commercial Edition
+
+The open-source and commercial editions share the same core product capabilities: expert-team multi-agent workflows, local file workspaces, artifact delivery, provider routing, MCP/tool integration, plugins, automation, and the desktop app architecture.
+
+Choose the open-source edition if you want to run WorkCraft with your own model providers, OpenAI-compatible endpoints, custom endpoints, or local Ollama models.
+
+Choose the commercial edition if you want the same WorkCraft experience with WorkCraft-managed sign-in, simpler onboarding, and access to more stable managed model routes such as GPT-5.5. Download the commercial edition from the official site: [work-craft.com/download](https://work-craft.com/download/).
 
 ## Architecture
 
