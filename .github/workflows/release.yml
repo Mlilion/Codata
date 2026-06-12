@@ -337,11 +337,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      WORKCRAFT_WEB_HOST: ${{ secrets.WORKCRAFT_WEB_HOST }}
-      WORKCRAFT_WEB_USER: ${{ secrets.WORKCRAFT_WEB_USER }}
-      WORKCRAFT_WEB_SSH_KEY: ${{ secrets.WORKCRAFT_WEB_SSH_KEY }}
-      WORKCRAFT_WEB_PORT: ${{ secrets.WORKCRAFT_WEB_PORT || 22 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -352,76 +347,16 @@ jobs:
       - name: List artifacts
         run: find artifacts -type f | sort
 
-      - name: Generate website download and updater manifests
-        env:
-          WORKCRAFT_SITE_BASE_URL: https://work-craft.com
+      - name: Generate GitHub Release download and updater manifests
         run: node scripts/generate-release-manifests.mjs artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
           generate_release_notes: true
           files: |
             artifacts/windows-bundle/**/*
             artifacts/macos-aarch64-bundle/**/*
             artifacts/macos-x64-bundle/**/*
-            release-site/update/latest.json
-            release-site/downloads/latest.json
-
-      - name: Require website deploy secrets
-        run: |
-          missing=0
-          for name in WORKCRAFT_WEB_HOST WORKCRAFT_WEB_USER WORKCRAFT_WEB_SSH_KEY; do
-            if [ -z "${!name}" ]; then
-              echo "::error::$name is not configured. Website downloads and updater manifests would not be deployed."
-              missing=1
-            fi
-          done
-          exit "$missing"
-
-      - name: Deploy release assets to website
-        uses: easingthemes/ssh-deploy@v5.1.0
-        with:
-          SSH_PRIVATE_KEY: ${{ env.WORKCRAFT_WEB_SSH_KEY }}
-          REMOTE_HOST: ${{ env.WORKCRAFT_WEB_HOST }}
-          REMOTE_USER: ${{ env.WORKCRAFT_WEB_USER }}
-          REMOTE_PORT: ${{ env.WORKCRAFT_WEB_PORT }}
-          SOURCE: release-site/downloads/releases/
-          TARGET: /opt/workcraft/downloads/releases/
-          ARGS: -rlDzvc -i --no-perms
-          SCRIPT_BEFORE: |
-            mkdir -p /opt/workcraft/downloads/releases /opt/workcraft/update
-          SCRIPT_AFTER_REQUIRED: "true"
-          SCRIPT_AFTER: |
-            test -d /opt/workcraft/downloads/releases/${{ github.ref_name }}
-            find /opt/workcraft/downloads/releases/${{ github.ref_name }} -maxdepth 1 -type f | sort
-
-      - name: Deploy download manifest to website
-        uses: easingthemes/ssh-deploy@v5.1.0
-        with:
-          SSH_PRIVATE_KEY: ${{ env.WORKCRAFT_WEB_SSH_KEY }}
-          REMOTE_HOST: ${{ env.WORKCRAFT_WEB_HOST }}
-          REMOTE_USER: ${{ env.WORKCRAFT_WEB_USER }}
-          REMOTE_PORT: ${{ env.WORKCRAFT_WEB_PORT }}
-          SOURCE: release-site/downloads/latest.json
-          TARGET: /opt/workcraft/downloads/
-          ARGS: -rlDzvc -i --no-perms
-
-      - name: Deploy updater manifest to website
-        uses: easingthemes/ssh-deploy@v5.1.0
-        with:
-          SSH_PRIVATE_KEY: ${{ env.WORKCRAFT_WEB_SSH_KEY }}
-          REMOTE_HOST: ${{ env.WORKCRAFT_WEB_HOST }}
-          REMOTE_USER: ${{ env.WORKCRAFT_WEB_USER }}
-          REMOTE_PORT: ${{ env.WORKCRAFT_WEB_PORT }}
-          SOURCE: release-site/update/latest.json
-          TARGET: /opt/workcraft/update/
-          ARGS: -rlDzvc -i --no-perms
-
-      - name: Verify website download and updater endpoints
-        env:
-          WORKCRAFT_SITE_BASE_URL: https://work-craft.com
-          RELEASE_SITE_VERIFY_ATTEMPTS: "12"
-          RELEASE_SITE_VERIFY_DELAY_MS: "30000"
-        run: node scripts/verify-release-site.mjs release-site
+            release-site/latest.json
+            release-site/downloads-latest.json

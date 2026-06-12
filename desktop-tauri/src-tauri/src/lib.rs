@@ -300,7 +300,7 @@ fn extract_route_from_urls<'a>(mut urls: impl Iterator<Item = &'a str>) -> Optio
 
 fn extract_route_from_url(raw: &str) -> Option<String> {
     let url = Url::parse(raw).ok()?;
-    if url.scheme() != "workcraft" {
+    if url.scheme() != "workcraft-oss" {
         return None;
     }
 

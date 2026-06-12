@@ -14,7 +14,7 @@
     "sync:desktop-meta": "node scripts/sync-desktop-meta.mjs",
     "build:desktop": "npm run sync:desktop-meta && cd desktop-tauri && cargo tauri build",
     "verify:frontend-assets": "node --test scripts/verify-frontend-assets.test.mjs",
-    "verify:open-source-boundary": "node --test scripts/open-source-account-boundary.test.mjs scripts/open-source-frontend-boundary.test.mjs",
+    "verify:open-source-boundary": "node --test scripts/open-source-account-boundary.test.mjs scripts/open-source-frontend-boundary.test.mjs scripts/open-source-desktop-release-boundary.test.mjs",
     "preflight": "npm run verify:open-source-boundary && npm run preflight:ui",
     "preflight:ui": "cd frontend && npm run preflight:ui",
     "audit:open-source-boundary": "node scripts/check-open-source-boundary.mjs",

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { test } from "node:test";
 
 const workflow = fs.readFileSync(".github/workflows/release.yml", "utf8");
+const tauriConfig = JSON.parse(fs.readFileSync("desktop-tauri/src-tauri/tauri.conf.json", "utf8"));
 const pyinstallerSpec = fs.readFileSync("backend/workcraft.spec", "utf8");
 const verifyBundleScript = fs.readFileSync("scripts/verify-bundle.mjs", "utf8");
 const expectedPresetFiles = [
@@ -124,4 +125,21 @@ test("macOS Node.js runtime signing keeps hardened runtime JIT entitlements", ()
 
   const signingScript = fs.readFileSync("scripts/sign-macos-bundle.sh", "utf8");
   assert.match(signingScript, /--entitlements "\$entitlements"/);
+});
+
+test("open-source release workflow publishes updater files only to GitHub Releases", () => {
+  assert.match(workflow, /release-site\/latest\.json/);
+  assert.match(workflow, /release-site\/downloads-latest\.json/);
+  assert.doesNotMatch(workflow, /draft:\s+true/);
+  assert.doesNotMatch(workflow, /Require website deploy secrets/);
+  assert.doesNotMatch(workflow, /easingthemes\/ssh-deploy/);
+  assert.doesNotMatch(workflow, /WORKCRAFT_WEB_/);
+  assert.doesNotMatch(workflow, /\/opt\/workcraft/);
+  assert.doesNotMatch(workflow, /Verify website download and updater endpoints/);
+});
+
+test("open-source desktop updater checks the GitHub latest.json release asset", () => {
+  assert.deepEqual(tauriConfig.plugins.updater.endpoints, [
+    "https://github.com/Mlilion/workcraft/releases/latest/download/latest.json",
+  ]);
 });

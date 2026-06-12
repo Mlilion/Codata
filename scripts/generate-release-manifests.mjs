@@ -5,9 +5,8 @@ import path from "node:path";
 const rootDir = process.cwd();
 const artifactRoot = path.resolve(rootDir, process.argv[2] || "artifacts");
 const outRoot = path.resolve(rootDir, process.env.RELEASE_SITE_DIR || "release-site");
-const repository = process.env.GITHUB_REPOSITORY || "Mlilion/WorkCraft";
+const repository = process.env.GITHUB_REPOSITORY || "Mlilion/workcraft";
 const tag = process.env.GITHUB_REF_NAME || process.env.RELEASE_TAG;
-const siteBaseUrl = (process.env.WORKCRAFT_SITE_BASE_URL || "https://work-craft.com").replace(/\/$/, "");
 const releaseCacheKey = process.env.GITHUB_RUN_ID
   ? `${process.env.GITHUB_RUN_ID}.${process.env.GITHUB_RUN_ATTEMPT || "1"}`
   : tag;
@@ -22,6 +21,17 @@ if (!fs.existsSync(artifactRoot)) {
 
 const version = tag.replace(/^v/, "");
 const releasePath = `downloads/releases/${tag}`;
+const releaseAssetBaseUrl = (() => {
+  if (process.env.WORKCRAFT_RELEASE_ASSET_BASE_URL) {
+    return process.env.WORKCRAFT_RELEASE_ASSET_BASE_URL.replace(/\/$/, "");
+  }
+
+  if (process.env.WORKCRAFT_SITE_BASE_URL) {
+    return `${process.env.WORKCRAFT_SITE_BASE_URL.replace(/\/$/, "")}/${releasePath}`;
+  }
+
+  return `https://github.com/${repository}/releases/download/${tag}`;
+})();
 const releaseOutDir = path.join(outRoot, releasePath);
 const updateOutDir = path.join(outRoot, "update");
 const downloadsOutDir = path.join(outRoot, "downloads");
@@ -43,7 +53,7 @@ function sha256(filePath) {
 }
 
 function publicUrl(filePath) {
-  return `${siteBaseUrl}/${releasePath}/${encodeURIComponent(path.basename(filePath))}?r=${encodeURIComponent(releaseCacheKey)}`;
+  return `${releaseAssetBaseUrl}/${encodeURIComponent(path.basename(filePath))}?r=${encodeURIComponent(releaseCacheKey)}`;
 }
 
 function fileSize(filePath) {
@@ -156,6 +166,8 @@ const downloadManifest = {
 
 fs.writeFileSync(path.join(updateOutDir, "latest.json"), `${JSON.stringify(updateManifest, null, 2)}\n`);
 fs.writeFileSync(path.join(downloadsOutDir, "latest.json"), `${JSON.stringify(downloadManifest, null, 2)}\n`);
+fs.writeFileSync(path.join(outRoot, "latest.json"), `${JSON.stringify(updateManifest, null, 2)}\n`);
+fs.writeFileSync(path.join(outRoot, "downloads-latest.json"), `${JSON.stringify(downloadManifest, null, 2)}\n`);
 
 console.log(`Generated release manifests for WorkCraft ${version}`);
-console.log(`Website payload: ${outRoot}`);
+console.log(`Release payload: ${outRoot}`);
