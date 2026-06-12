@@ -37,8 +37,8 @@ function formatCost(cost: number): string {
  *
  * Cost is surfaced only when the backend has reported a positive total — the
  * authoritative `total_cost` arrives via SSE step_finish and is null/0 for
- * providers without pricing (local Ollama, custom endpoints, OpenAI
- * subscription mode). In that case we degrade to tokens-only.
+ * providers without pricing (local Ollama and custom endpoints). In that case
+ * we degrade to tokens-only.
  *
  * Renders nothing until at least one usage signal has been observed.
  */

@@ -157,7 +157,7 @@ export function HeaderModelDropdown() {
       }
     } else {
       const defaultCandidate = visibleModels.find((m) => modelMatches(m, defaultModel, defaultProviderId));
-      const chosen = defaultCandidate ?? chooseAutomaticModel(visibleModels, activeProvider);
+      const chosen = defaultCandidate ?? chooseAutomaticModel(visibleModels);
       if (chosen) setSelectedModel(chosen.id, chosen.provider_id);
     }
   }, [
@@ -175,45 +175,40 @@ export function HeaderModelDropdown() {
 
     const free: ModelInfo[] = [];
     const paid: ModelInfo[] = [];
-    const isSubscription = activeProvider === "chatgpt";
-
     for (const m of visibleModels) {
       if (isFreeModel(m)) free.push(m);
       else paid.push(m);
     }
 
-    // Subscription models: keep backend order (newest first). Others: sort normally.
-    if (!isSubscription) {
-      const makeSortFn = () => (a: ModelInfo, b: ModelInfo) => {
-        if (sortBy === "price") return a.pricing.prompt - b.pricing.prompt;
-        if (sortBy === "quality") {
-          const sa = arenaMap.get(a.id)?.arenaScore ?? 0;
-          const sb = arenaMap.get(b.id)?.arenaScore ?? 0;
-          if (sa === 0 && sb === 0) return a.name.localeCompare(b.name);
-          if (sa === 0) return 1;
-          if (sb === 0) return -1;
-          if (sa !== sb) return sb - sa;
-          return a.name.localeCompare(b.name);
-        }
-        if (sortBy === "popular") {
-          const va = arenaMap.get(a.id)?.popularityRank ?? 0;
-          const vb = arenaMap.get(b.id)?.popularityRank ?? 0;
-          if (va === 0 && vb === 0) return a.name.localeCompare(b.name);
-          if (va === 0) return 1;
-          if (vb === 0) return -1;
-          if (va !== vb) return va - vb; // ascending: rank 1 first
-          return a.name.localeCompare(b.name);
-        }
-        // Name sort: reverse natural order — higher version numbers first (newer)
-        return b.name.localeCompare(a.name, undefined, { numeric: true });
-      };
+    const makeSortFn = () => (a: ModelInfo, b: ModelInfo) => {
+      if (sortBy === "price") return a.pricing.prompt - b.pricing.prompt;
+      if (sortBy === "quality") {
+        const sa = arenaMap.get(a.id)?.arenaScore ?? 0;
+        const sb = arenaMap.get(b.id)?.arenaScore ?? 0;
+        if (sa === 0 && sb === 0) return a.name.localeCompare(b.name);
+        if (sa === 0) return 1;
+        if (sb === 0) return -1;
+        if (sa !== sb) return sb - sa;
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === "popular") {
+        const va = arenaMap.get(a.id)?.popularityRank ?? 0;
+        const vb = arenaMap.get(b.id)?.popularityRank ?? 0;
+        if (va === 0 && vb === 0) return a.name.localeCompare(b.name);
+        if (va === 0) return 1;
+        if (vb === 0) return -1;
+        if (va !== vb) return va - vb; // ascending: rank 1 first
+        return a.name.localeCompare(b.name);
+      }
+      // Name sort: reverse natural order — higher version numbers first (newer)
+      return b.name.localeCompare(a.name, undefined, { numeric: true });
+    };
 
-      free.sort(makeSortFn());
-      paid.sort(makeSortFn());
-    }
+    free.sort(makeSortFn());
+    paid.sort(makeSortFn());
 
     return { freeModels: free, paidModels: paid };
-  }, [visibleModels, sortBy, arenaMap, activeProvider]);
+  }, [visibleModels, sortBy, arenaMap]);
 
   const selectedInfo = visibleModels.find((m) => m.id === selectedModel && m.provider_id === selectedProviderId)
     ?? visibleModels.find((m) => m.id === selectedModel);
@@ -408,7 +403,6 @@ function ModelRow({
   t: (key: string) => string;
 }) {
   const free = isFreeModel(model);
-  const isSubscription = model.provider_id === "openai-subscription";
   const inputCredits = usdToCreditsPerM(model.pricing.prompt);
   const outputCredits = usdToCreditsPerM(model.pricing.completion);
 
@@ -417,7 +411,7 @@ function ModelRow({
     (sortBy === "popular" && arena && arena.popularityRank > 0);
 
   const providerLabel = PROVIDER_LABELS[model.provider_id] ?? model.provider_id;
-  const showProviderBadge = model.provider_id !== "openrouter" && model.provider_id !== "openai-subscription" && model.provider_id !== "ollama";
+  const showProviderBadge = model.provider_id !== "openrouter" && model.provider_id !== "ollama";
 
   return (
     <CommandItem
@@ -452,11 +446,7 @@ function ModelRow({
         </span>
       )}
       {/* Right-side badge: contextual based on sort mode */}
-      {isSubscription ? (
-        <span className="ml-2 shrink-0 text-[10px] font-medium text-[var(--brand-primary)] bg-[var(--brand-primary)]/10 px-1.5 py-0.5 rounded">
-          INCLUDED
-        </span>
-      ) : model.provider_id === "ollama" ? (
+      {model.provider_id === "ollama" ? (
         <span className="ml-2 shrink-0 text-[10px] font-medium text-[var(--text-tertiary)] bg-[var(--surface-tertiary)] px-1.5 py-0.5 rounded">
           LOCAL
         </span>

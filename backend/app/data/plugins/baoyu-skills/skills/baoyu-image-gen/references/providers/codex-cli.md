@@ -1,6 +1,6 @@
 # Codex CLI (`--provider codex-cli`)
 
-Read when the user picks `--provider codex-cli`, sets `default_provider: codex-cli`, or asks for "Codex image generation without an OpenAI API key". This provider is a thin baoyu-image-gen wrapper around the bundled `scripts/codex-imagegen/main.ts` (synced from `packages/baoyu-codex-imagegen`), which spawns `codex exec --json --sandbox danger-full-access` and routes the request to Codex CLI's built-in `image_gen` tool. The Codex CLI uses the **user's Codex / ChatGPT subscription** — no `OPENAI_API_KEY` is read or sent.
+Read when the user picks `--provider codex-cli`, sets `default_provider: codex-cli`, or asks for "Codex image generation without an OpenAI API key". This provider is a thin baoyu-image-gen wrapper around the bundled `scripts/codex-imagegen/main.ts` (synced from `packages/baoyu-codex-imagegen`), which spawns `codex exec --json --sandbox danger-full-access` and routes the request to Codex CLI's built-in `image_gen` tool. The Codex CLI uses the user's configured Codex CLI credentials — no `OPENAI_API_KEY` is read or sent.
 
 ## Prerequisites
 

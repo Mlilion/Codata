@@ -11,7 +11,7 @@ export interface RemoteConfig {
   token: string;
 }
 
-export type RemoteProvider = "chatgpt" | "openrouter";
+export type RemoteProvider = "openrouter";
 
 export function getRemoteConfig(): RemoteConfig | null {
   return null;

@@ -2,9 +2,7 @@
 
 [English](README.md)
 
-WorkCraft 是一款围绕本地文件和真实工作流构建的专有桌面 AI 工作台。它把 Tauri 桌面外壳、Next.js 用户界面和 FastAPI 后端组合在一起，让用户可以在一个本地应用中处理文件、长对话、模型提供商、工具调用和生成的 artifact。
-
-本仓库不是开源项目。开发访问、贡献权利、再分发权利和生产使用权均受 WorkCraft Inc. 的书面协议约束。
+WorkCraft 是一款围绕本地文件和真实工作流构建的桌面 AI 工作台。它把 Tauri 桌面外壳、Next.js 用户界面和 FastAPI 后端组合在一起，让用户可以在一个本地应用中处理文件、长对话、模型提供商、工具调用和生成的 artifact。
 
 ## 范围
 
@@ -13,7 +11,7 @@ WorkCraft 是一款围绕本地文件和真实工作流构建的专有桌面 AI 
 - 通过 Tauri v2 实现桌面打包和原生系统集成。
 - 通过 Next.js 实现聊天、设置、artifact、模型提供商、插件、自动化和工作区界面。
 - 通过 FastAPI 实现 agent 编排、流式输出、文件处理、存储、工具执行、模型路由、记忆、MCP connector、插件和自动化能力。
-- 包含用于交付桌面安装包的构建、验证、发布、签名和 updater 工具。
+- 包含桌面应用所需的构建和验证工具。
 
 WorkCraft 的定位是本地工作台，而不是简单的托管聊天壳。文件、对话、设置、记忆和生成的 artifact 默认存储在本地。云端模型请求只会发送到用户选择的模型路径。
 
@@ -46,7 +44,7 @@ WorkCraft 在完成配置后支持以下产品能力：
 
 - 理解 DOCX、XLSX、PPTX、PDF、CSV、本地项目文件和生成的 artifact。
 - 支持带工具调用、权限门控、规划、上下文压缩和可恢复流式输出的多步 agent 工作流。
-- 支持托管模型、BYOK provider、OpenAI-compatible endpoint、可用场景下的 ChatGPT 订阅流程，以及本地 Ollama 模型。
+- 支持 BYOK provider、OpenAI-compatible endpoint 和本地 Ollama 模型。
 - 使用本地 SQLite 持久化 session、message、memory、setting、usage data 和 workflow metadata。
 - 渲染 Markdown、代码、图表、表格、办公文档、预览等结构化 artifact。
 - 在启用时支持 MCP connector、内置 skill、plugin、消息渠道、远程访问和定时自动化任务。
@@ -131,18 +129,12 @@ npm run preflight:ui
 
 ## 贡献政策
 
-WorkCraft 仅接受已与 WorkCraft Inc. 签署书面协议的授权贡献者提交贡献。内部工作流、分支规范、评审要求和贡献条款请见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-
-未授权用户不应提交代码、patch、pull request、包含机密材料的 issue 或衍生作品。
+开源仓库的贡献规则仍需整理。发布公开仓库前，需要先更新 `CONTRIBUTING.md` 和公开贡献政策。
 
 ## 第三方组件
 
-本仓库包含第三方依赖、插件、内置 skill、生成资产和 provider SDK，它们可能受各自许可证条款约束。这些条款仅适用于对应组件，不授予 WorkCraft 专有软件的任何权利。
+本仓库包含第三方依赖、插件、内置 skill、生成资产和 provider SDK，它们可能受各自许可证条款约束。公开发布前需要审查并补充对应说明。
 
 ## 许可证
 
-WorkCraft 是专有软件，保留所有权利。
-
-未经 WorkCraft Inc. 另行书面授权，不得使用、复制、修改、合并、发布、分发、再授权、销售、托管、作为服务提供、反向工程或创建本软件的衍生作品。
-
-完整条款请见 [LICENSE](LICENSE)。
+最终开源许可证尚未选择。请见 [LICENSE](LICENSE)。

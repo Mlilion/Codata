@@ -20,7 +20,6 @@ export function modelMatches(model: ModelInfo, modelId: string | null, providerI
 
 export function activeProviderForProviderId(providerId: string): ActiveProvider {
   if (isHiddenPublicProvider(providerId)) return null;
-  if (providerId === "openai-subscription") return "chatgpt";
   if (providerId === "ollama") return "ollama";
   if (providerId === "local") return "local";
   if (providerId.startsWith("custom_")) return "custom";
@@ -32,17 +31,8 @@ export function modelBelongsToActiveProvider(model: ModelInfo, activeProvider: A
   return activeProviderForProviderId(model.provider_id) === activeProvider;
 }
 
-export function chooseAutomaticModel(models: ModelInfo[], activeProvider: ActiveProvider): ModelInfo | null {
+export function chooseAutomaticModel(models: ModelInfo[]): ModelInfo | null {
   if (models.length === 0) return null;
-
-  if (activeProvider === "chatgpt") {
-    return (
-      models.find((model) => model.id === "openai-subscription/gpt-5.5") ??
-      models.find((model) => model.id === "openai-subscription/gpt-5.4") ??
-      models[0]
-    );
-  }
-
   return models[0];
 }
 

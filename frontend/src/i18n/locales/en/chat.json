@@ -202,7 +202,7 @@
 
   "loadingModel": "Loading model into memory...",
   "setupProvider": "Set up an AI model to start chatting",
-  "setupProviderDesc": "Add an API key, connect ChatGPT, or set up a local model.",
+  "setupProviderDesc": "Add an API key, configure a custom endpoint, or set up a local model.",
   "configureSettings": "Configure",
   "rightSidebarWorkspace": "Workspace",
   "rightSidebarWorkspaceDesc": "Progress, notes, and context",

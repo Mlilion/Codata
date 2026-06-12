@@ -1139,18 +1139,6 @@ def _chat_model_override(provider_id: str, model_id: str, settings: Any) -> dict
     if not provider_id:
         return {}
 
-    if provider_id == "workcraft-proxy":
-        proxy_url = str(getattr(settings, "proxy_url", "") or "").strip()
-        proxy_token = str(getattr(settings, "proxy_token", "") or "").strip()
-        if not proxy_url or not proxy_token:
-            return {}
-        return {
-            "model": model_id,
-            "model_provider": "openai",
-            "api_key": proxy_token,
-            "base_url": proxy_url.rstrip("/") + "/v1",
-        }
-
     if provider_id.startswith("custom_"):
         for endpoint in get_custom_endpoints(settings):
             if endpoint.get("id") != provider_id:

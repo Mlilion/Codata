@@ -165,8 +165,8 @@ async function setupCleanLightApp(page: Page, options?: Parameters<typeof mockWo
       JSON.stringify({
         state: {
           hasCompletedOnboarding: true,
-          selectedModel: "openai-subscription/gpt-5.5",
-          selectedProviderId: "openai-subscription",
+          selectedModel: "openrouter/anthropic/claude-sonnet-4.5",
+          selectedProviderId: "openrouter",
           selectedAgent: "build",
           safeMode: false,
           workMode: "auto",
@@ -176,7 +176,7 @@ async function setupCleanLightApp(page: Page, options?: Parameters<typeof mockWo
           workspaceDirectory: null,
           hasSeenHints: true,
           language: "en",
-          activeProvider: "chatgpt",
+          activeProvider: "byok",
         },
         version: 0,
       }),

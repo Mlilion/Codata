@@ -59,7 +59,7 @@ def _team_payload() -> dict:
 
 
 def _workcraft_settings() -> SimpleNamespace:
-    return SimpleNamespace(proxy_url="https://proxy.example.test", proxy_token="test-token")
+    return SimpleNamespace()
 
 
 class _FakeProvider:
@@ -76,22 +76,6 @@ class _FakeProviderRegistry:
         if provider_id not in {None, "custom_example"}:
             return None
         return _FakeProvider(), SimpleNamespace(id="gpt-5.5")
-
-
-class _FakePrivateProvider:
-    id = "workcraft-proxy"
-
-
-class _FakePrivateProviderRegistry:
-    def get_provider(self, provider_id: str):
-        if provider_id == "workcraft-proxy":
-            return _FakePrivateProvider()
-        return None
-
-    def resolve_model(self, _model: str, provider_id: str | None = None):
-        if provider_id not in {None, "workcraft-proxy"}:
-            return None
-        return _FakePrivateProvider(), SimpleNamespace(id="workcraft/gpt-5.5")
 
 
 def test_normalize_generated_team_rewrites_member_and_task_refs() -> None:
@@ -234,32 +218,6 @@ def test_expert_team_creation_access_allows_selected_provider() -> None:
     assert access.allowed is True
     assert access.provider_id == "custom_example"
     assert access.detail["provider_id"] == "custom_example"
-
-
-def test_expert_team_creation_access_rejects_private_proxy_provider() -> None:
-    access = check_expert_team_creation_access(
-        settings=_workcraft_settings(),
-        provider_registry=_FakePrivateProviderRegistry(),
-        provider_id="workcraft-proxy",
-        model="workcraft/gpt-5.5",
-    )
-
-    assert access.allowed is False
-    assert access.provider_id == ""
-    assert access.detail["provider_id"] is None
-
-
-def test_expert_team_creation_access_rejects_model_resolved_to_private_proxy_provider() -> None:
-    access = check_expert_team_creation_access(
-        settings=_workcraft_settings(),
-        provider_registry=_FakePrivateProviderRegistry(),
-        provider_id=None,
-        model="workcraft/gpt-5.5",
-    )
-
-    assert access.allowed is False
-    assert access.provider_id == ""
-    assert access.detail["provider_id"] is None
 
 
 def test_expert_team_creation_access_rejects_provider_without_registry() -> None:

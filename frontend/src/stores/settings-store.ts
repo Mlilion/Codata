@@ -16,7 +16,7 @@ export interface SavedPermissionRule {
   timestamp: number;
 }
 
-export type ActiveProvider = "byok" | "chatgpt" | "ollama" | "local" | "custom" | null;
+export type ActiveProvider = "byok" | "ollama" | "local" | "custom" | null;
 
 type PersistedActiveProvider = ActiveProvider | "workcraft" | undefined | null;
 

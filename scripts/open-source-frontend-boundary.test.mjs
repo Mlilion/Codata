@@ -37,33 +37,18 @@ const forbiddenConstantFragments = [
   "PROXY_SUBSCRIPTIONS_",
 ];
 
-const forbiddenPrivateFrontendFragments = [
-  "aihub2.top",
-  "baoyu_image_generate",
-  "BaoYu",
-  "BAOYU",
-  "baoyu",
-  "宝玉生图",
-  "/feedback-wechat.jpg",
-  "feedback-wechat.jpg",
+const forbiddenAccountFrontendFragments = [
   "WorkCraft account",
   "WorkCraft 账号",
-  "VIMAX_MEDIA_CONFIG_VISIBLE",
-  "ViMaxMediaConfig",
-  "vimaxMediaConfig",
-  "VIMAX_MEDIA",
-  "vimaxMedia",
-  "ViMax",
-  "vimax_",
-  "vimax_generate_video",
-  "/api/vimax",
-  "Yunwu",
-  "云雾",
+  "WorkCraft Account",
+  "workcraft-auth",
+  "/api/config/workcraft-account",
+  "/api/config/openai-subscription",
+  "openai-subscription",
+  "ChatGPT Subscription",
+  "ChatGPT 订阅",
+  "chatgptSubscription",
 ];
-
-const allowedWorkcraftProxyFiles = new Set([
-  "frontend/src/lib/public-provider-boundary.ts",
-]);
 
 const moduleExtensions = ["", ".ts", ".tsx", ".js", ".jsx", ".json"];
 
@@ -168,11 +153,11 @@ test("open source frontend removes commercial proxy constants", () => {
   assert.deepEqual(offenders, []);
 });
 
-test("workcraft-proxy is only retained as a hidden provider denylist", () => {
+test("open source frontend removes WorkCraft cloud proxy provider references", () => {
   const offenders = [];
   for (const file of frontendSourceFiles(trackedFiles())) {
     const source = read(file);
-    if (source.includes("workcraft-proxy") && !allowedWorkcraftProxyFiles.has(file)) {
+    if (source.includes("workcraft-proxy")) {
       offenders.push(file);
     }
   }
@@ -180,11 +165,11 @@ test("workcraft-proxy is only retained as a hidden provider denylist", () => {
   assert.deepEqual(offenders, []);
 });
 
-test("open source frontend removes private feedback and media service UI", () => {
+test("open source frontend removes account login and subscription UI text", () => {
   const offenders = [];
   for (const file of frontendBoundaryFiles(trackedFiles())) {
     const source = read(file);
-    for (const fragment of forbiddenPrivateFrontendFragments) {
+    for (const fragment of forbiddenAccountFrontendFragments) {
       if (source.includes(fragment)) {
         offenders.push(`${file}: ${fragment}`);
       }

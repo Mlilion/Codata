@@ -12,9 +12,6 @@ EXPERT_TEAM_ACCOUNT_REDIRECT = "/settings?tab=providers"
 EXPERT_TEAM_CREATION_ACCESS_MESSAGE = (
     "Create an expert team after selecting a model provider in Settings."
 )
-PRIVATE_EXPERT_TEAM_PROVIDER_IDS = frozenset({"workcraft-proxy"})
-
-
 @dataclass(frozen=True)
 class ExpertTeamCreationAccess:
     allowed: bool
@@ -40,8 +37,6 @@ def check_expert_team_creation_access(
         provider_id=provider_id,
         model=model,
     )
-    if _is_private_provider_id(resolved_provider_id):
-        resolved_provider_id = ""
     allowed = bool(resolved_provider_id)
     return ExpertTeamCreationAccess(
         allowed=allowed,
@@ -163,7 +158,3 @@ def _resolve_model_provider_id(
     if provider_id and resolved_provider_id != provider_id:
         return ""
     return resolved_provider_id
-
-
-def _is_private_provider_id(provider_id: str) -> bool:
-    return provider_id in PRIVATE_EXPERT_TEAM_PROVIDER_IDS

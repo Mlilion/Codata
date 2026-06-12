@@ -6,7 +6,6 @@ import logging
 
 from fastapi import APIRouter
 
-from app.config import Settings
 from app.dependencies import ProviderRegistryDep, SettingsDep
 from app.provider.registry import ProviderRegistry
 from app.schemas.provider import ModelInfo
@@ -18,40 +17,14 @@ router = APIRouter()
 
 async def _refresh_with_token_retry(
     registry: ProviderRegistry,
-    settings: Settings,
+    _settings: object,
 ) -> dict[str, list]:
-    """Refresh models, auto-refreshing the proxy JWT on 401.
-
-    If the refresh fails with an auth error (expired JWT) and we have a
-    stored refresh token, we transparently refresh the access token and
-    retry once — the same pattern used at startup in main.py.
-    """
+    """Refresh models from locally configured providers."""
     try:
         return await registry.refresh_models()
     except Exception as e:
-        # Check if this is a 401 auth error from the proxy
-        if "401" not in str(e):
-            logger.warning("Model refresh failed (non-auth): %s", e)
-            return {}
-
-        # Try refreshing the proxy JWT
-        if not (settings.proxy_url and getattr(settings, "proxy_refresh_token", "")):
-            logger.warning("Model refresh failed (401) but no refresh token available: %s", e)
-            return {}
-
-        logger.info("Model refresh got 401 — attempting proxy token refresh")
-        from app.provider.proxy_auth import refresh_proxy_token
-
-        if not await refresh_proxy_token(settings, registry):
-            logger.warning("Proxy token refresh failed — cannot reload models")
-            return {}
-
-        # Retry with the new token
-        try:
-            return await registry.refresh_models()
-        except Exception as e2:
-            logger.warning("Model refresh still failed after token refresh: %s", e2)
-            return {}
+        logger.warning("Model refresh failed: %s", e)
+        return {}
 
 
 @router.get("/models", response_model=list[ModelInfo])

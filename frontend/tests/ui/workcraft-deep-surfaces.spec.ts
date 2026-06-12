@@ -219,7 +219,7 @@ test.describe("WorkCraft deep claimed-feature GUI surfaces", () => {
     await expectNoAppCrash(page);
   });
 
-  test("standalone and first-run workflows: routes render outside settings and onboarding auth errors recover", async ({ page }) => {
+  test("standalone and first-run workflows: routes render outside settings and onboarding routes to providers", async ({ page }) => {
     await setupMockedApp(page);
 
     await page.goto("/automations");
@@ -236,21 +236,12 @@ test.describe("WorkCraft deep claimed-feature GUI surfaces", () => {
     await expectNoAppCrash(page);
 
     const onboarding = await page.context().newPage();
-    const onboardingState = await setupMockedApp(onboarding, undefined, {
-      authConnected: false,
+    await setupMockedApp(onboarding, undefined, {
       hasCompletedOnboarding: false,
     });
     await onboarding.goto("/c/new");
     await expect(onboarding.getByRole("heading", { name: "Welcome to WorkCraft" })).toBeVisible();
 
-    await onboarding.getByRole("button", { name: "Sign In" }).click();
-    await onboarding.getByPlaceholder("Email").fill("bad@example.com");
-    await onboarding.getByPlaceholder("Password").fill("bad-password");
-    await onboarding.getByRole("button", { name: "Sign In" }).click();
-    await expect(onboarding.getByText("Mocked auth failure")).toBeVisible();
-    expect(onboardingState.authRequests).toHaveLength(1);
-
-    await onboarding.getByRole("button", { name: "Back" }).click();
     await onboarding.getByText("Skip, I'll use my own API key").click();
     await expect(onboarding).toHaveURL(/\/settings\?tab=providers$/);
     await expect(onboarding.getByRole("heading", { name: "Providers" })).toBeVisible();

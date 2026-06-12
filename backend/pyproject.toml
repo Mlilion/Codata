@@ -1,8 +1,8 @@
 [project]
 name = "workcraft-backend"
 version = "1.1.12"
-description = "Your local AI assistant — private, powerful, personal"
-license = "LicenseRef-Proprietary"
+description = "Your local AI assistant"
+license = "LicenseRef-Pending"
 requires-python = ">=3.12"
 dependencies = [
     # Web framework

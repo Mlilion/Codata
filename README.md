@@ -2,9 +2,7 @@
 
 [简体中文](README.zh-CN.md)
 
-WorkCraft is a proprietary desktop AI workspace for file-grounded work. It combines a Tauri desktop shell, a Next.js user interface, and a FastAPI backend so users can bring local files, long conversations, model providers, tools, and generated artifacts into one local application.
-
-This repository is not open source. Development access, contribution rights, redistribution rights, and production use are controlled by written agreements with WorkCraft Inc.
+WorkCraft is a desktop AI workspace for file-grounded work. It combines a Tauri desktop shell, a Next.js user interface, and a FastAPI backend so users can bring local files, long conversations, model providers, tools, and generated artifacts into one local application.
 
 ## Scope
 
@@ -13,7 +11,7 @@ The repository contains the application code and release tooling for the WorkCra
 - Desktop packaging and native integration through Tauri v2.
 - Chat, settings, artifact, provider, plugin, automation, and workspace UI through Next.js.
 - Agent orchestration, streaming, file processing, storage, tool execution, provider routing, memory, MCP connectors, plugins, and automation support through FastAPI.
-- Build, verification, release, signing, and updater utilities used to ship desktop installers.
+- Build and verification utilities used for the desktop app.
 
 WorkCraft is intended to be a local workbench, not a thin hosted chat wrapper. Files, conversations, settings, memory, and generated artifacts are stored locally by default. Cloud model calls are sent only to the selected provider path.
 
@@ -46,7 +44,7 @@ WorkCraft supports these product surfaces when configured:
 
 - File understanding for DOCX, XLSX, PPTX, PDF, CSV, local project files, and generated artifacts.
 - Multi-step agent workflows with tool calls, permission gates, planning, context compression, and resumable streaming.
-- Provider routing for hosted models, BYOK providers, OpenAI-compatible endpoints, ChatGPT subscription flows where supported, and local Ollama models.
+- Provider routing for BYOK providers, OpenAI-compatible endpoints, and local Ollama models.
 - Local SQLite-backed persistence for sessions, messages, memory, settings, usage data, and workflow metadata.
 - Artifact rendering for structured outputs such as Markdown, code, diagrams, tables, office documents, and previews.
 - MCP connectors, bundled skills, plugins, messaging channels, remote access, and scheduled automations where enabled.
@@ -131,18 +129,12 @@ Before publishing a desktop build:
 
 ## Contribution Policy
 
-WorkCraft accepts contributions only from authorized contributors covered by a written agreement with WorkCraft Inc. See [CONTRIBUTING.md](CONTRIBUTING.md) for the internal workflow, branch conventions, review expectations, and contribution terms.
-
-Unauthorized users should not submit code, patches, pull requests, issues containing confidential material, or derivative work.
+Contribution rules are still being prepared for the open-source repository. Do not publish this repository until `CONTRIBUTING.md` and the public contribution policy are updated.
 
 ## Third-Party Components
 
-This repository includes third-party dependencies, plugins, bundled skills, generated assets, and provider SDKs that may be governed by their own license terms. Those terms apply only to their respective components and do not grant rights to the WorkCraft proprietary software.
+This repository includes third-party dependencies, plugins, bundled skills, generated assets, and provider SDKs that may be governed by their own license terms. Review and document those terms before publishing a public release.
 
 ## License
 
-WorkCraft is proprietary software. All rights are reserved.
-
-No permission is granted to use, copy, modify, merge, publish, distribute, sublicense, sell, host, provide as a service, reverse engineer, or create derivative works from this software except under a separate written agreement with WorkCraft Inc.
-
-See [LICENSE](LICENSE) for the full terms.
+A final open-source license has not been selected yet. See [LICENSE](LICENSE).

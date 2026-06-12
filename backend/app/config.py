@@ -50,11 +50,6 @@ class Settings(BaseSettings):
     # Disabled providers are not registered even if their API key is set.
     disabled_providers: str = ""  # WORKCRAFT_DISABLED_PROVIDERS
 
-    # --- WorkCraft Cloud Proxy (billing mode) ---
-    proxy_url: str = ""  # e.g. "https://api.workcraft.app" — when set, LLM calls go through proxy
-    proxy_token: str = ""  # JWT from WorkCraft account login
-    proxy_refresh_token: str = ""  # Refresh token for auto-renewal
-
     # --- Database ---
     database_url: str = "sqlite+aiosqlite:///./data/workcraft.db"
 
@@ -73,7 +68,7 @@ class Settings(BaseSettings):
 
     # --- Web Search ---
     daily_search_limit: int = 20  # Max free web_search calls per day (Free/BYOK)
-    web_search_context_size: str = "low"  # "low" | "medium" | "high" — native search breadth (OpenAI subscription)
+    web_search_context_size: str = "low"  # "low" | "medium" | "high"
     max_native_searches_per_step: int = 5  # cap on native web searches per agent step
 
     # --- Compaction ---
@@ -85,13 +80,6 @@ class Settings(BaseSettings):
 
     # --- MCP (loaded from YAML) ---
     mcp: dict[str, Any] | None = None
-
-    # --- OpenAI OAuth (ChatGPT Subscription) ---
-    openai_oauth_access_token: str = ""
-    openai_oauth_refresh_token: str = ""
-    openai_oauth_account_id: str = ""
-    openai_oauth_expires_at: int = 0  # milliseconds since epoch
-    openai_oauth_email: str = ""
 
     # --- Google Workspace MCP Proxy ---
     google_client_id: str = ""

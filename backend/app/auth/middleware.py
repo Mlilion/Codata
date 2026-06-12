@@ -38,18 +38,6 @@ Currently allowed unauthenticated:
   Tauri watchdog; contain no secrets, do not mutate state.
 * ``/favicon.svg``, ``/manifest.json`` — PWA asset serves.
 * ``/_next/*`` — Next.js static bundle (JS/CSS/fonts).
-* ``/api/proxy-auth/*`` — Sub2API auth proxy endpoints. These endpoints
-  handle login/register/refresh for the external Sub2API service and
-  use Sub2API's JWT tokens (passed via X-Auth-Token header or query
-  param), not WorkCraft's session token. The endpoints themselves validate
-  Sub2API tokens before proceeding.
-* ``/api/proxy-keys/*`` — Sub2API API key proxy endpoints. Same as above,
-  these use Sub2API JWT tokens for authentication.
-* ``/api/config/workcraft-account`` — Sub2API account sync endpoint. Called
-  during onboarding to sync Sub2API credentials to the local backend.
-  The POST endpoint validates Sub2API tokens internally via list_models()
-  before persisting. GET returns status info, DELETE clears stored tokens.
-
 Everything else (``/api/*``, ``/v1/*`` OpenAI-compat, ``/shutdown``,
 root ``/``, anything a future router mounts) requires a valid token.
 
@@ -88,15 +76,12 @@ _PUBLIC_PATHS = frozenset({
     "/health",         # Provider status dump, no secrets
     "/favicon.svg",    # PWA asset
     "/manifest.json",  # PWA asset
-    "/api/config/workcraft-account",  # Sub2API account sync (GET/POST/DELETE - called during onboarding)
 })
 
 # Prefix allowlist — anything under these prefixes is public. The Next.js
 # static bundle falls here.
 _PUBLIC_PREFIXES: tuple[str, ...] = (
     "/_next/",  # Next.js static bundle (JS/CSS/fonts)
-    "/api/proxy-auth/",  # Sub2API auth proxy (login/register/refresh/me)
-    "/api/proxy-keys/",  # Sub2API API key proxy (list/create)
 )
 
 _RATE_WINDOW = 60  # seconds — not user-tunable

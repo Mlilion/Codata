@@ -42,7 +42,6 @@ from app.session.manager import (
 )
 from app.session.retry import (
     MAX_RETRIES,
-    is_auth_error,
     is_context_overflow,
     is_retryable,
     max_retries_for_error,
@@ -123,7 +122,6 @@ class SearchQuotaTracker:
     def __init__(self) -> None:
         self._date: str = ""
         self._count: int = 0
-        self._credits_mode: bool = False  # Sticky: True once proxy confirms Credits billing
         self._lock = asyncio.Lock()
 
     def _reset_if_new_day(self) -> None:
@@ -132,18 +130,16 @@ class SearchQuotaTracker:
             self._date = today
             self._count = 0
 
-    async def get_quota(self) -> tuple[int, bool]:
-        """Return (count_today, is_credits_mode), resetting if UTC day changed."""
+    async def get_count(self) -> int:
+        """Return today's count, resetting if UTC day changed."""
         async with self._lock:
             self._reset_if_new_day()
-            return self._count, self._credits_mode
+            return self._count
 
-    async def increment(self, *, charged: bool = False) -> None:
+    async def increment(self) -> None:
         async with self._lock:
             self._reset_if_new_day()
             self._count += 1
-            if charged:
-                self._credits_mode = True
 
 
 _search_quota = SearchQuotaTracker()
@@ -453,9 +449,6 @@ class SessionProcessor:
         accumulated_text = ""
         accumulated_reasoning = ""
         tool_calls_in_step: list[dict[str, Any]] = []
-        native_search_ids: set[str] = set()
-        native_search_count: int = 0  # counts native web searches in this step
-        _ws_part_ids: dict[str, str] = {}  # web_search call_id → part_id
         stream_error: Exception | None = None
 
         # Streaming tool executor: starts concurrent-safe tools during streaming
@@ -494,14 +487,9 @@ class SessionProcessor:
                 )
 
                 _exclude_tools: set[str] | None = None
-                _sq_count, _sq_credits = await _search_quota.get_quota()
-                if not _sq_credits and _sq_count >= get_settings().daily_search_limit:
+                _sq_count = await _search_quota.get_count()
+                if _sq_count >= get_settings().daily_search_limit:
                     _exclude_tools = {"web_search"}
-
-                # Use native web search for OpenAI subscription provider
-                if sp.provider.id == "openai-subscription":
-                    _exclude_tools = _exclude_tools or set()
-                    _exclude_tools.add("web_search")
 
                 # Notify frontend that the model may need loading (Ollama cold start)
                 if sp.provider.id == "ollama":
@@ -689,113 +677,6 @@ class SessionProcessor:
                                 }
                                 _exec_index += 1
 
-                        case "web-search-start":
-                            # Native web search started (OpenAI subscription)
-                            ws_call_id = chunk.data.get("id", "")
-                            ws_query = chunk.data.get("query", "")
-                            native_search_ids.add(ws_call_id)
-                            native_search_count += 1
-
-                            # Drop excess searches beyond the per-step cap
-                            if native_search_count > get_settings().max_native_searches_per_step:
-                                continue
-
-                            # Persist "running" tool part
-                            _ws_part_ids[ws_call_id] = generate_ulid()
-                            async with session_factory() as db:
-                                async with db.begin():
-                                    await create_part(
-                                        db,
-                                        message_id=self._assistant_msg_id,
-                                        session_id=job.session_id,
-                                        part_id=_ws_part_ids[ws_call_id],
-                                        data={
-                                            "type": "tool",
-                                            "tool": "web_search",
-                                            "call_id": ws_call_id,
-                                            "state": {"status": "running", "input": {"query": ws_query}},
-                                        },
-                                    )
-
-                            # Emit TOOL_START so frontend shows searching state
-                            job.publish(SSEEvent(
-                                TOOL_START,
-                                {
-                                    "tool": "web_search",
-                                    "call_id": ws_call_id,
-                                    "arguments": {"query": ws_query},
-                                    "session_id": job.session_id,
-                                },
-                            ))
-
-                        case "web-search-result":
-                            # Native web search completed (OpenAI subscription)
-                            ws_call_id = chunk.data.get("id", "")
-                            ws_query = chunk.data.get("query", "")
-                            ws_results = chunk.data.get("results", [])
-
-                            # Skip results for searches that exceeded the per-step cap
-                            if ws_call_id not in _ws_part_ids:
-                                continue
-
-                            # Format results like the custom web_search tool
-                            output_lines: list[str] = []
-                            results_data: list[dict[str, str]] = []
-                            for i, r in enumerate(ws_results, 1):
-                                title = r.get("title", "")
-                                url = r.get("url", "")
-                                snippet = r.get("snippet", "")
-                                output_lines.append(f"{i}. {title}")
-                                output_lines.append(f"   {url}")
-                                if snippet:
-                                    output_lines.append(f"   {snippet}")
-                                output_lines.append("")
-                                results_data.append({"url": url, "title": title, "snippet": snippet})
-
-                            count = len(results_data)
-                            output_text = "\n".join(output_lines) if output_lines else "No results found."
-                            ws_title = f"Search: {ws_query[:50]} ({count} results)"
-                            ws_metadata = {
-                                "query": ws_query,
-                                "count": count,
-                                "results": results_data,
-                                "_native": True,
-                            }
-
-                            # Update tool part to completed
-                            ws_part_id = _ws_part_ids.pop(ws_call_id, None)
-                            if ws_part_id:
-                                async with session_factory() as db:
-                                    async with db.begin():
-                                        await update_part_data(
-                                            db,
-                                            part_id=ws_part_id,
-                                            data={
-                                                "type": "tool",
-                                                "tool": "web_search",
-                                                "call_id": ws_call_id,
-                                                "state": {
-                                                    "status": "completed",
-                                                    "input": {"query": ws_query},
-                                                    "output": output_text,
-                                                    "title": ws_title,
-                                                    "metadata": ws_metadata,
-                                                },
-                                            },
-                                        )
-
-                            # Emit TOOL_RESULT so frontend updates to completed
-                            job.publish(SSEEvent(
-                                TOOL_RESULT,
-                                {
-                                    "call_id": ws_call_id,
-                                    "tool": "web_search",
-                                    "output": output_text[:500],
-                                    "title": ws_title,
-                                    "metadata": ws_metadata,
-                                },
-                            ))
-
                         case "usage":
                             self.usage_data = chunk.data
 
@@ -855,20 +736,6 @@ class SessionProcessor:
                 break
 
             except Exception as e:
-                if is_auth_error(e) and attempt == 0:
-                    _settings = get_settings()
-                    if _settings.proxy_refresh_token:
-                        from app.provider.proxy_auth import refresh_proxy_token
-
-                        refreshed = await refresh_proxy_token(_settings, sp.provider_registry)
-                        if refreshed:
-                            logger.info("Proxy token refreshed after 401, retrying stream")
-                            accumulated_text = ""
-                            accumulated_reasoning = ""
-                            tool_calls_in_step = []
-                            has_tool_calls = False
-                            continue
-
                 stream_error = e
                 retry_reason = is_retryable(e)
 
@@ -1017,15 +884,6 @@ class SessionProcessor:
                     )
 
         # --- Process tool calls ---
-        # Filter out native web search calls (already persisted during streaming)
-        if native_search_ids:
-            tool_calls_in_step = [
-                tc for tc in tool_calls_in_step
-                if tc.get("id") not in native_search_ids
-            ]
-            if not tool_calls_in_step:
-                has_tool_calls = False
-
         if has_tool_calls and streaming_executor.has_submissions:
             if _exec_blocked:
                 return "stop"
@@ -1094,8 +952,7 @@ class SessionProcessor:
 
                     # Web search quota tracking
                     if tool.id == "web_search" and result.success:
-                        charged = bool(result.metadata and result.metadata.get("charged"))
-                        await _search_quota.increment(charged=charged)
+                        await _search_quota.increment()
 
                     # Track session files from write/edit tools
                     if (
@@ -1239,8 +1096,6 @@ class SessionProcessor:
                 self.step_cost = _calculate_step_cost(
                     self.usage_data, sp.model_info
                 )
-            elif sp.model_info.provider_id == "openai-subscription":
-                self.step_cost = 0.0
             else:
                 logger.warning(
                     "Pricing unavailable for model %s, cost will be $0.00 "

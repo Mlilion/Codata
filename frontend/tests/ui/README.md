@@ -1,6 +1,6 @@
 # WorkCraft UI Preflight
 
-This preflight is the shared UI safety net for WorkCraft. It runs the real Next.js app in a visible Chromium browser by default and mocks backend/proxy responses at the network layer, so the checks do not depend on local API keys or a running FastAPI server.
+This preflight is the shared UI safety net for WorkCraft. It runs the real Next.js app in a visible Chromium browser by default and mocks backend responses at the network layer, so the checks do not depend on local API keys or a running FastAPI server.
 
 Run it from the repository root:
 
@@ -25,12 +25,12 @@ cd frontend && npx playwright install chromium
 - Desktop shell: root redirect, sidebar/history, settings sidebar, mobile nav, panel gutters, route progress, onboarding gate.
 - Chat: new chat landing, provider/model selector, agent mode switch, workspace selector, file attachment entry, prompt submission, session route, persisted conversation render, long conversation pagination, multi-conversation switching, export, workspace side panel, streaming state, manual and automatic context compression.
 - Message and session controls: historical message edit/resend, stop generation, assistant activity/feedback, sidebar pin/rename/export/delete/undo.
-- Settings: general appearance/language/about, providers across WorkCraft/BYOK/ChatGPT/Ollama/local/custom, automations, plugins/connectors/skills, messaging channels, billing, usage, workspace memory.
+- Settings: general appearance/language/about, providers across BYOK/Ollama/local/custom, automations, plugins/connectors/skills, messaging channels, usage, workspace memory.
 - Automations: active/all/template tabs, create/edit dialog, schedule/loop modes, run/delete/result links.
 - Plugins: connector status and auth actions, custom connector creation, plugin enable/detail, skill enable/install/search.
 - Channels: supported messaging platform cards, credential forms, connect/disconnect, and disconnect-before-edit behavior.
-- Billing and usage: connected account state, balance/packs/transactions, usage overview, model/session/daily breakdown.
-- Edge states: checkout return, disconnected billing account, backend auth expiry, channel validation/disconnect, connector auth failure.
+- Usage: usage overview, model/session/daily breakdown.
+- Edge states: backend auth expiry, channel validation/disconnect, connector auth failure.
 - Workspace memory: list, expand, edit, export, delete confirmation.
 
 ## Current Preflight List
@@ -41,7 +41,7 @@ cd frontend && npx playwright install chromium
 - Artifact workflow: persisted artifact cards open the right panel for Markdown, HTML, CSV, SVG/Mermaid coverage cards, and submit-plan cards open the plan review panel.
 - Interactive workflow: permission request, agent question, and plan review prompts are emitted through mocked SSE and answered only by GUI controls.
 - Settings walkthrough: every settings tab is reachable through the real settings navigation and exposes its primary controls/data.
-- Provider settings workflow: WorkCraft/BYOK/ChatGPT/local/custom provider modes render and accept their GUI configuration controls.
+- Provider settings workflow: BYOK/local/custom provider modes render and accept their GUI configuration controls.
 - Workspace memory workflow: memory list expands, edit saves, export runs, delete confirmation opens and closes through the dialog.
 - Automations flow: create dialog accepts the core fields, closes after create, templates tab loads and can instantiate a template.
 - Automations management workflow: run-now, history expansion, edit dialog, and delete confirmation are exercised.
@@ -64,7 +64,7 @@ cd frontend && npx playwright install chromium
 - Office artifact workflow: opens DOCX, XLSX, PDF, and PPTX file-preview artifacts from real binary fixture bytes through `/api/files/content-binary`.
 - Artifact error workflow: missing binary preview shows the backend `File not found` detail in the artifact panel instead of a runtime overlay.
 - Upload error workflow: failed file upload surfaces a toast and leaves the chat composer usable.
-- Billing error workflow: 429 quota and 402 balance errors open the correct upgrade dialog and can be dismissed.
+- Chat error workflow: provider errors surface as recoverable UI feedback without crashing the composer.
 - Messaging channel validation workflow: missing required credentials surface inline validation without crashing the settings UI.
 
 ## Conversation Scale And Compression Suite
@@ -89,10 +89,8 @@ cd frontend && npx playwright install chromium
 
 ## Edge-State Regression Suite
 
-`workcraft-edge-regressions.spec.ts` covers recoverability and account/channel edge states.
+`workcraft-edge-regressions.spec.ts` covers recoverability and channel edge states.
 
-- Billing return workflow: `/settings?tab=billing&checkout=success` refreshes billing data and cleans the return URL.
-- Billing disconnected workflow: signed-out accounts show the billing empty state and route back to Providers.
 - Auth expiry workflow: a backend 401 during prompt submission shows a recoverable error and leaves the composer usable.
 - Messaging channel disconnect workflow: disconnected channels remain visible and editable.
 - Connector auth failure workflow: OAuth/connect failure is surfaced as a toast instead of an unhandled UI error.
@@ -107,11 +105,11 @@ cd frontend && npx playwright install chromium
 - Sidebar workflow: opens the real session menu, unpins, renames, exports Markdown/PDF, confirms delete, and uses undo.
 - Workspace workflow: expands progress and files, edits scratchpad text, opens `plan.md`, and verifies the file-preview artifact panel.
 - Messaging channel workflow: verifies the supported platform list, configures Telegram, disconnects it, and confirms it becomes editable.
-- Standalone/onboarding workflow: verifies `/automations`, `/plugins`, and `/remote` outside settings, then runs first-run onboarding auth error and skip-to-provider recovery.
+- Standalone/onboarding workflow: verifies `/automations`, `/plugins`, and `/remote` outside settings, then runs first-run skip-to-provider recovery.
 
 ## Remaining Regression Candidates
 
 - Real backend + real database integration, outside the network-mocked UI preflight.
-- Opt-in live GPT-5.5 subscription audits with MP4 recording for latency and provider behavior validation.
+- Opt-in live provider audits with MP4 recording for latency and provider behavior validation.
 - Visual regression snapshots for dense desktop/mobile layouts.
 - Performance budgets for very large histories and heavyweight Office previews.

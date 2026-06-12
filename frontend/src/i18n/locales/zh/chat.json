@@ -202,7 +202,7 @@
 
   "loadingModel": "正在加载模型到内存...",
   "setupProvider": "请先配置 AI 模型以开始对话",
-  "setupProviderDesc": "添加 API 密钥、连接 ChatGPT，或配置本地模型。",
+  "setupProviderDesc": "添加 API 密钥、配置自定义端点或本地模型。",
   "configureSettings": "前往配置",
   "rightSidebarWorkspace": "工作区",
   "rightSidebarWorkspaceDesc": "任务进度、笔记和上下文",

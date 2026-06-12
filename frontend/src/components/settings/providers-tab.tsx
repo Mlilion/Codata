@@ -92,7 +92,6 @@ const PROVIDER_LABELS: Record<string, string> = {
   zhipu: "ZhipuAI",
   siliconflow: "SiliconFlow",
   xiaomi: "MiMo",
-  "openai-subscription": "ChatGPT",
   ollama: "Ollama",
   local: "Local",
 };

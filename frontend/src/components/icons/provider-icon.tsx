@@ -24,7 +24,6 @@ const PROVIDER_ICON_BY_ID: Record<string, string> = {
   mistral: "mistral",
   nvidia: "nvidia",
   openai: "openai",
-  "openai-subscription": "openai",
   perplexity: "perplexity",
   qwen: "qwen",
   spark: "spark",

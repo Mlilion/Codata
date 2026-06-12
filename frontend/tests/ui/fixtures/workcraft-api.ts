@@ -62,7 +62,6 @@ export interface WorkCraftMockState {
   sessionExports: string[];
   channelAdds: unknown[];
   channelRemoves: unknown[];
-  authRequests: unknown[];
   modelRefreshes: unknown[];
 }
 
@@ -91,17 +90,13 @@ export interface WorkCraftMockOptions {
   promptErrors?: PromptErrorMock[];
   binaryFailures?: string[];
   ollamaStatusCode?: number;
-  openaiLoginStatus?: number;
-  openaiSubscriptionConnected?: boolean;
   connectorErrors?: ConnectorErrorMock[];
   activeJobs?: ActiveJobMock[];
 }
 
 export interface WorkCraftSeedOptions {
-  authConnected?: boolean;
   hasCompletedOnboarding?: boolean;
   savedPermissions?: Array<{ tool: string; allow: boolean; timestamp: number }>;
-  user?: Record<string, unknown>;
   force?: boolean;
 }
 
@@ -199,21 +194,6 @@ const createdSession = {
 
 const models = [
   {
-    id: "workcraft/best-free",
-    name: "Best Free",
-    provider_id: "workcraft-proxy",
-    capabilities: {
-      function_calling: true,
-      vision: true,
-      reasoning: true,
-      json_output: true,
-      max_context: 128000,
-      max_output: 8192,
-    },
-    pricing: { prompt: 0, completion: 0 },
-    metadata: {},
-  },
-  {
     id: "openrouter/anthropic/claude-sonnet-4.5",
     name: "Claude Sonnet 4.5",
     provider_id: "openrouter",
@@ -226,21 +206,6 @@ const models = [
       max_output: 8192,
     },
     pricing: { prompt: 0.000003, completion: 0.000015 },
-    metadata: {},
-  },
-  {
-    id: "openai-subscription/gpt-5.5",
-    name: "GPT-5.5",
-    provider_id: "openai-subscription",
-    capabilities: {
-      function_calling: true,
-      vision: true,
-      reasoning: true,
-      json_output: true,
-      max_context: 256000,
-      max_output: 16384,
-    },
-    pricing: { prompt: 0, completion: 0 },
     metadata: {},
   },
   {
@@ -306,8 +271,8 @@ const messagePage = (sessionId: string): MockMessagePage => {
         data: {
           role: "assistant",
           agent: "build",
-          model_id: "workcraft/best-free",
-          provider_id: "workcraft-proxy",
+          model_id: "openrouter/anthropic/claude-sonnet-4.5",
+          provider_id: "openrouter",
           cost: 0,
           finish: "stop",
         },
@@ -400,8 +365,8 @@ const createdMessagePage: MockMessagePage = {
       data: {
         role: "assistant",
         agent: "build",
-        model_id: "workcraft/best-free",
-        provider_id: "workcraft-proxy",
+        model_id: "openrouter/anthropic/claude-sonnet-4.5",
+        provider_id: "openrouter",
         cost: 0,
         finish: "stop",
       },
@@ -628,8 +593,8 @@ function textMessage(
       ? {
           role,
           agent: "build",
-          model_id: "workcraft/best-free",
-          provider_id: "workcraft-proxy",
+          model_id: "openrouter/anthropic/claude-sonnet-4.5",
+          provider_id: "openrouter",
           cost: 0,
           finish: "stop",
         }
@@ -814,8 +779,8 @@ const artifactMessagePage = {
       data: {
         role: "assistant",
         agent: "build",
-        model_id: "workcraft/best-free",
-        provider_id: "workcraft-proxy",
+        model_id: "openrouter/anthropic/claude-sonnet-4.5",
+        provider_id: "openrouter",
         cost: 0,
         finish: "stop",
       },
@@ -917,8 +882,8 @@ function seededSettings(options: WorkCraftSeedOptions = {}) {
   return {
     state: {
       hasCompletedOnboarding: options.hasCompletedOnboarding ?? true,
-      selectedModel: "workcraft/best-free",
-      selectedProviderId: "workcraft-proxy",
+      selectedModel: "openrouter/anthropic/claude-sonnet-4.5",
+      selectedProviderId: "openrouter",
       selectedAgent: "build",
       safeMode: false,
       workMode: "auto",
@@ -928,37 +893,7 @@ function seededSettings(options: WorkCraftSeedOptions = {}) {
       workspaceDirectory: null,
       hasSeenHints: true,
       language: "en",
-      activeProvider: "workcraft",
-    },
-    version: 0,
-  };
-}
-
-function seededAuth(options: WorkCraftSeedOptions = {}) {
-  const authConnected = options.authConnected ?? true;
-  return {
-    state: {
-      proxyUrl: "https://proxy.test",
-      accessToken: authConnected ? "access-token" : null,
-      refreshToken: authConnected ? "refresh-token" : null,
-      isConnected: authConnected,
-      user: authConnected
-        ? {
-            id: "user-1",
-            email: "tester@workcraft.test",
-            username: "tester",
-            role: "user",
-            status: "active",
-            concurrency: 1,
-            balance: 12.5,
-            total_recharged: 12.5,
-            billing_mode: "credits",
-            credit_balance: 1250,
-            daily_free_tokens_used: 120000,
-            daily_free_token_limit: 1000000,
-            ...options.user,
-          }
-        : null,
+      activeProvider: "byok",
     },
     version: 0,
   };
@@ -967,10 +902,9 @@ function seededAuth(options: WorkCraftSeedOptions = {}) {
 export async function seedWorkCraftStorage(page: Page, options: WorkCraftSeedOptions = {}) {
   const overwrite =
     options.force === true ||
-    options.authConnected !== undefined ||
     options.hasCompletedOnboarding !== undefined ||
     options.savedPermissions !== undefined;
-  await page.addInitScript(({ settings, auth, overwrite: shouldOverwrite }) => {
+  await page.addInitScript(({ settings, overwrite: shouldOverwrite }) => {
     const setValue = (key: string, value: string) => {
       if (shouldOverwrite || !window.localStorage.getItem(key)) {
         window.localStorage.setItem(key, value);
@@ -978,9 +912,8 @@ export async function seedWorkCraftStorage(page: Page, options: WorkCraftSeedOpt
     };
 
     setValue("workcraft-settings", JSON.stringify(settings));
-    setValue("workcraft-auth", JSON.stringify(auth));
     setValue("workcraft-language", "en");
-  }, { settings: seededSettings(options), auth: seededAuth(options), overwrite });
+  }, { settings: seededSettings(options), overwrite });
 }
 
 function fulfillJson(route: Route, body: unknown = {}) {
@@ -1427,7 +1360,6 @@ export async function mockWorkCraftApi(page: Page, options: WorkCraftMockOptions
     sessionExports: [],
     channelAdds: [],
     channelRemoves: [],
-    authRequests: [],
     modelRefreshes: [],
   };
   const configuredChannels = new Map<string, { status: string; type: string }>();
@@ -1471,68 +1403,6 @@ export async function mockWorkCraftApi(page: Page, options: WorkCraftMockOptions
     const path = url.pathname;
     const method = request.method();
 
-    if (
-      path === "/api/auth/register" ||
-      path === "/api/auth/login" ||
-      path === "/proxy-auth/register" ||
-      path === "/proxy-auth/login"
-    ) {
-      state.authRequests.push(requestJson(request));
-      return route.fulfill({
-        status: 400,
-        contentType: "application/json",
-        body: JSON.stringify({ detail: "Mocked auth failure", message: "Mocked auth failure" }),
-      });
-    }
-    if (path === "/api/auth/resend" || path === "/proxy-auth/resend") {
-      state.authRequests.push(requestJson(request));
-      return fulfillJson(route, { message: "sent" });
-    }
-    if (path === "/api/auth/verify" || path === "/proxy-auth/verify") {
-      state.authRequests.push(requestJson(request));
-      return route.fulfill({
-        status: 400,
-        contentType: "application/json",
-        body: JSON.stringify({ detail: "Invalid verification code", message: "Invalid verification code" }),
-      });
-    }
-
-    if (url.hostname === "proxy.test" || url.hostname === "api.work-craft.com") {
-      if (path === "/api/billing/balance") {
-        return fulfillJson(route, {
-          balance_usd: 12.5,
-          credits: 1250,
-          usd_equivalent: 12.5,
-          daily_free_tokens_used: 120000,
-          daily_free_token_limit: 1000000,
-        });
-      }
-      if (path === "/api/billing/packs") {
-        return fulfillJson(route, [
-          { id: "starter", amount_usd: 1000, credits: 1000, price_usd: 10, label: "$10" },
-        ]);
-      }
-      if (path === "/api/billing/transactions") {
-        return fulfillJson(route, {
-          total: 1,
-          items: [
-            {
-              id: "tx-1",
-              amount: -12,
-              balance_after: 1250,
-              type: "usage",
-              description: "Chat: Best Free",
-              metadata: null,
-              time_created: now,
-            },
-          ],
-        });
-      }
-      if (path === "/api/auth/refresh") {
-        return fulfillJson(route, { access_token: "access-token", refresh_token: "refresh-token" });
-      }
-    }
-
     if (path.includes("/api/chat/stream/")) {
       const streamId = decodeURIComponent(path.split("/").pop() ?? "stream-ui-1");
       return route.fulfill({
@@ -1548,7 +1418,7 @@ export async function mockWorkCraftApi(page: Page, options: WorkCraftMockOptions
     if (path === "/health") return fulfillJson(route, { status: "ok" });
     if (path === "/api/models/refresh" && method === "POST") {
       state.modelRefreshes.push(requestJson(request));
-      return fulfillJson(route, { refreshed: { "workcraft-proxy": 1, openrouter: 1 } });
+      return fulfillJson(route, { refreshed: { openrouter: 1 } });
     }
     if (path === "/api/models") return fulfillJson(route, models);
     if (path === "/api/agents") return fulfillJson(route, [{ name: "build" }, { name: "plan" }]);
@@ -1556,27 +1426,6 @@ export async function mockWorkCraftApi(page: Page, options: WorkCraftMockOptions
     if (path === "/api/chat/active") return fulfillJson(route, options.activeJobs ?? []);
     if (path === "/api/config/api-key") {
       return fulfillJson(route, { is_configured: true, masked_key: "sk-or-...mock", is_valid: true });
-    }
-    if (path === "/api/config/workcraft-account") {
-      return method === "DELETE"
-        ? fulfillJson(route, { success: true })
-        : fulfillJson(route, { is_connected: true, proxy_url: "https://proxy.test", has_refresh_token: true });
-    }
-    if (path === "/api/config/openai-subscription/login") {
-      if (options.openaiLoginStatus && options.openaiLoginStatus !== 200) {
-        return route.fulfill({
-          status: options.openaiLoginStatus,
-          contentType: "application/json",
-          body: JSON.stringify({ detail: "Authentication launch unavailable" }),
-        });
-      }
-      return fulfillJson(route, { auth_url: "https://chatgpt.test/auth" });
-    }
-    if (path === "/api/config/openai-subscription") {
-      return fulfillJson(route, {
-        is_connected: options.openaiSubscriptionConnected ?? true,
-        email: options.openaiSubscriptionConnected === false ? "" : "chatgpt@workcraft.test",
-      });
     }
     if (path === "/api/config/local") {
       if (method !== "GET") {
@@ -1658,8 +1507,8 @@ export async function mockWorkCraftApi(page: Page, options: WorkCraftMockOptions
         response_time: { avg: 4.2, median: 3.8, p95: 7.1, min: 1.1, max: 8.0, count: 4 },
         by_model: [
           {
-            model_id: "workcraft/best-free",
-            provider_id: "workcraft-proxy",
+            model_id: "openrouter/anthropic/claude-sonnet-4.5",
+            provider_id: "openrouter",
             total_cost: 0.12,
             total_tokens: { input: 12000, output: 4200, reasoning: 900, cache_read: 0, cache_write: 0 },
             message_count: 8,
@@ -2249,11 +2098,7 @@ export async function mockWorkCraftApi(page: Page, options: WorkCraftMockOptions
 
   await page.route("**/api/**", handler);
   await page.route("**/health", handler);
-  await page.route("https://proxy.test/**", handler);
-  await page.route("https://api.work-craft.com/**", handler);
   await page.route("http://localhost:8000/api/**", handler);
-  await page.route("**/proxy-auth/**", handler);
-  await page.route("**/proxy-keys/**", handler);
 
   return state;
 }

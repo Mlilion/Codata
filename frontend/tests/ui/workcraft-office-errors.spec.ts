@@ -90,34 +90,22 @@ test.describe("WorkCraft Office artifact and error-state GUI workflows", () => {
     await expectNoAppCrash(page);
   });
 
-  test("billing error workflow: quota and paid-model errors open the upgrade dialog", async ({ page }) => {
+  test("chat error workflow: prompt errors show a recoverable toast", async ({ page }) => {
     await setupMockedApp(page, {
       promptErrors: [
-        { match: "quota gate", status: 429, detail: "Weekly quota exceeded" },
-        { match: "paid model gate", status: 402, detail: "Balance required" },
+        { match: "provider auth gate", status: 401, detail: "Provider API key rejected" },
       ],
     });
 
     await page.goto("/c/new");
-    await page.getByPlaceholder(/Describe the result you want/i).fill("quota gate");
-    const quotaResponse = page.waitForResponse((res) =>
-      res.url().includes("/api/chat/prompt") && res.status() === 429,
+    await page.getByPlaceholder(/Describe the result you want/i).fill("provider auth gate");
+    const errorResponse = page.waitForResponse((res) =>
+      res.url().includes("/api/chat/prompt") && res.status() === 401,
     );
     await page.getByRole("button", { name: /Send message/i }).click();
-    await quotaResponse;
-    await expect(page.getByText("Weekly Free Quota Reached")).toBeVisible();
-    await page.getByRole("button", { name: "Try Again After Reset" }).click();
-    await expect(page.getByText("Weekly Free Quota Reached")).toBeHidden();
-
-    await page.getByPlaceholder(/Describe the result you want/i).fill("paid model gate");
-    const paidResponse = page.waitForResponse((res) =>
-      res.url().includes("/api/chat/prompt") && res.status() === 402,
-    );
-    await page.getByRole("button", { name: /Send message/i }).click();
-    await paidResponse;
-    await expect(page.getByText("Balance Required")).toBeVisible();
-    await page.getByRole("button", { name: "Use a Free Model" }).click();
-    await expect(page.getByText("Balance Required")).toBeHidden();
+    await errorResponse;
+    await expect(page.getByText("Provider API key rejected")).toBeVisible();
+    await expect(page.getByPlaceholder(/Describe the result you want/i)).toBeEnabled();
     await expectNoAppCrash(page);
   });
 

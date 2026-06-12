@@ -360,7 +360,6 @@ test.describe("WorkCraft UI preflight", () => {
 
     await page.getByRole("button", { name: "Providers" }).click();
     await expect(page.getByRole("heading", { name: "Providers" })).toBeVisible();
-    await expect(page.getByText("WorkCraft Account")).toBeVisible();
     await page.getByRole("button", { name: /Own API Key/i }).click();
     await expect(page.getByText("OpenRouter")).toBeVisible();
 
@@ -381,10 +380,6 @@ test.describe("WorkCraft UI preflight", () => {
     await expect(page.getByRole("heading", { name: "Channels", exact: true })).toBeVisible();
     await expect(page.getByText("Messaging Channels")).toBeVisible();
     await expect(page.getByText("DingTalk")).toBeVisible();
-
-    await page.getByRole("button", { name: "Billing" }).click();
-    await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible();
-    await expect(page.getByText("$12.50", { exact: true }).first()).toBeVisible();
 
     await page.getByRole("button", { name: "Usage" }).click();
     await expect(page.getByRole("heading", { name: "Usage", exact: true })).toBeVisible();
@@ -437,10 +432,6 @@ test.describe("WorkCraft UI preflight", () => {
     await page.getByPlaceholder("sk-or-...").fill("sk-or-preflight");
     await page.getByRole("button", { name: "Save" }).first().click();
     await expect(page.getByText("sk-or-...mock")).toBeVisible();
-
-    await page.getByRole("button", { name: /ChatGPT Subscription/i }).click();
-    await expect(page.getByText("chatgpt@workcraft.test")).toBeVisible();
-    await expect(page.getByRole("button", { name: /Disconnect/i })).toBeVisible();
 
     await page.getByRole("button", { name: /Local API/i }).click();
     await expect(page.getByText("http://localhost:11434/v1", { exact: true })).toBeVisible();

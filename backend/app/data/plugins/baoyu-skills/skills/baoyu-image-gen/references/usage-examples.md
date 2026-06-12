@@ -78,7 +78,7 @@ ${BUN_X} {baseDir}/scripts/main.ts --prompt "A cinematic portrait" --image out.p
 # Replicate Wan 2.7 Image Pro
 ${BUN_X} {baseDir}/scripts/main.ts --prompt "A concept frame" --image out.png --provider replicate --model wan-video/wan-2.7-image-pro --size 2048x1152
 
-# Codex CLI (uses Codex / ChatGPT subscription — no OPENAI_API_KEY; requires `codex` on PATH and `codex login`)
+# Codex CLI (uses configured Codex CLI credentials — no OPENAI_API_KEY; requires `codex` on PATH and `codex login`)
 ${BUN_X} {baseDir}/scripts/main.ts --prompt "A cinematic portrait" --image out.png --provider codex-cli --ar 16:9
 
 # Codex CLI with reference images (style/composition guidance)

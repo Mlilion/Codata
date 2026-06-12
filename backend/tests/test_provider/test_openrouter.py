@@ -90,44 +90,6 @@ class TestOpenRouterConnection:
         assert "file_path" in tool_call.data["arguments"]
 
 
-class TestWorkCraftProxyModels:
-    @pytest.mark.asyncio
-    async def test_does_not_duplicate_platform_free_model_when_proxy_returns_it(self):
-        provider = OpenRouterProvider("test-token", provider_id="workcraft-proxy")
-        response = MagicMock()
-        response.raise_for_status.return_value = None
-        response.json.return_value = {
-            "data": [
-                {
-                    "id": "openrouter/free",
-                    "name": "OpenRouter Free",
-                    "pricing": {"prompt": "0", "completion": "0"},
-                    "context_length": 128000,
-                    "top_provider": {},
-                    "architecture": {"modality": "text->text"},
-                    "supported_parameters": ["tools"],
-                },
-                {
-                    "id": "workcraft/best-free",
-                    "name": "Craft Free",
-                    "pricing": {"prompt": "0", "completion": "0"},
-                    "context_length": 128000,
-                    "top_provider": {},
-                    "architecture": {"modality": "text->text"},
-                    "supported_parameters": ["tools"],
-                },
-            ],
-        }
-
-        client = MagicMock()
-        client.get = AsyncMock(return_value=response)
-
-        with patch("app.provider.openrouter.httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__ = AsyncMock(return_value=client)
-            mock_client.return_value.__aexit__ = AsyncMock(return_value=False)
-            models = await provider.list_models()
-
-        assert [m.id for m in models].count("workcraft/best-free") == 1
 
 
 class TestProviderRegistry:

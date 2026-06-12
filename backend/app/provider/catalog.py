@@ -23,8 +23,7 @@ class ProviderDef:
 
 
 # All providers that can be configured via direct API key (BYOK).
-# Ollama and OpenAI Subscription are NOT here — they have their own
-# dedicated registration flows in main.py and api/config.py.
+# Ollama uses its own local-runtime registration flow.
 PROVIDER_CATALOG: dict[str, ProviderDef] = {
     "openrouter": ProviderDef(
         id="openrouter",
