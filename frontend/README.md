@@ -76,13 +76,14 @@ src/
 │   │   ├── sidebar-footer.tsx    #   User info + settings gear
 │   │   └── mobile-nav.tsx        #   Mobile drawer navigation (Sheet)
 │   │
-│   ├── settings/                 # Settings components (7 tabs)
+│   ├── settings/                 # Settings components
 │   │   ├── settings-layout.tsx   #   Tab layout
 │   │   ├── general-tab.tsx       #   General settings (appearance, language)
 │   │   ├── providers-tab.tsx     #   BYOK provider key management
 │   │   ├── memory-tab.tsx        #   Memory settings & fact management
 │   │   ├── ollama-panel.tsx      #   Ollama management (setup, models, library, pull/delete)
-│   │   ├── billing-tab.tsx       #   Billing & subscription
+│   │   ├── permissions-tab.tsx   #   Saved permission rules
+│   │   ├── about-tab.tsx         #   Version, update, and project info
 │   │   └── usage-tab.tsx         #   Token usage statistics
 │   │
 │   ├── activity/                 # Activity tracking
@@ -96,7 +97,6 @@ src/
 │   │   └── renderers/            #   13 specialized renderers (code, html, markdown, mermaid,
 │   │                             #   svg, react, csv, xlsx, pdf, docx, pptx, file-preview)
 │   │
-│   ├── billing/                  # Billing & upgrade prompts
 │   ├── desktop/                  # Desktop-specific (native title bar)
 │   ├── icons/                    # Platform icons (IM channel icons)
 │   ├── mobile/                   # Mobile-specific components
@@ -175,28 +175,29 @@ src/
 │   ├── use-session-export.ts     #   Session export (PDF/Markdown)
 │   └── use-remote-generation-sync.ts # Cross-client generation sync
 │
-├── stores/                       # Zustand state management (10 stores)
+├── stores/                       # Zustand state management
 │   ├── chat-store.ts             #   Streaming generation state (real-time parts assembly)
 │   ├── sidebar-store.ts          #   Sidebar visibility + search
 │   ├── settings-store.ts         #   User preferences (model, agent, persisted to localStorage)
 │   ├── activity-store.ts         #   Activity panel state
 │   ├── artifact-store.ts         #   Artifact panel state
-│   ├── auth-store.ts             #   Authentication state
-│   ├── billing-store.ts          #   Billing/subscription state
+│   ├── appearance-store.ts       #   Appearance customization state
+│   ├── expert-session-store.ts   #   Selected expert-team session state
 │   ├── connection-store.ts       #   IM connection state
 │   ├── plan-review-store.ts      #   Plan review state
 │   └── workspace-store.ts        #   Workspace panel state
 │
-├── lib/                          # Utilities (12 modules)
+├── lib/                          # Utilities
 │   ├── api.ts                    #   Typed fetch wrapper (type-safe, error handling)
 │   ├── sse.ts                    #   SSE client (reconnection, heartbeat timeout)
 │   ├── utils.ts                  #   cn(), formatRelativeTime(), truncate()
 │   ├── constants.ts              #   API route constants, query key factory
 │   ├── routes.ts                 #   Route definitions
 │   ├── artifacts.ts              #   Artifact utilities
-│   ├── pricing.ts                #   Model pricing calculations
-│   ├── proxy-api.ts              #   Cloud proxy API client
-│   ├── remote-connection.ts      #   Removed remote-access compatibility stubs
+│   ├── pricing.ts                #   Local model cost estimation helpers
+│   ├── model-selection.ts        #   Provider/model selection helpers
+│   ├── public-provider-boundary.ts # Open-source provider boundary helpers
+│   ├── remote-connection.ts      #   Remote-access compatibility helpers
 │   ├── sources.ts                #   Data source utilities
 │   ├── tauri-api.ts              #   Tauri desktop API bridge
 │   └── upload.ts                 #   File upload utilities
@@ -275,7 +276,7 @@ src/
 │  activityStore: activity panel state     │
 │  artifactStore: artifact panel state     │
 │  authStore: authentication state         │
-│  billingStore: billing/subscription      │
+│  expertSessionStore: expert team state   │
 │  connectionStore: IM connection state    │
 │  planReviewStore: plan review state      │
 │  workspaceStore: workspace panel state   │

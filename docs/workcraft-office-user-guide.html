@@ -1195,9 +1195,6 @@
               <a class="button" href="#prompt-library">复制常用提示词</a>
               <a class="button" href="#feature-index">查看功能模块</a>
             </div>
-            <div class="hero-shot">
-              <img src="readme/workcraft-workflow-artifacts.gif" alt="WorkCraft 文件处理和产物预览示意" />
-            </div>
           </header>
 
           <section class="reading-map" aria-labelledby="reading-map-title">
@@ -1276,7 +1273,7 @@
           <div class="steps">
             <div class="step">
               <strong>欢迎页或问答首页</strong>
-              <p>如果是第一次启动，可能会出现登录/注册或跳过配置入口。完成后进入问答首页。</p>
+              <p>如果是第一次启动，可能会出现模型配置或跳过配置入口。完成后进入问答首页。</p>
             </div>
             <div class="step">
               <strong>本地后端自动启动</strong>
@@ -1301,22 +1298,16 @@
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>WorkCraft 账户</strong></td>
-                  <td>不想研究 API Key 的新手</td>
-                  <td>登录后直接使用平台模型和积分体系</td>
-                  <td>需要账户和余额/免费额度</td>
-                </tr>
-                <tr>
                   <td><strong>自有 API Key</strong></td>
                   <td>已有 OpenAI、Anthropic、Google、DeepSeek 等账号的用户</td>
                   <td>请求直接走自己的服务商账号</td>
                   <td>需要自己管理密钥、余额和服务商可用性</td>
                 </tr>
                 <tr>
-                  <td><strong>ChatGPT 订阅</strong></td>
-                  <td>已有 ChatGPT Plus/Pro/Team/Enterprise 的用户</td>
-                  <td>可复用已有订阅能力</td>
-                  <td>需要按提示完成登录授权</td>
+                  <td><strong>OpenAI 兼容端点</strong></td>
+                  <td>使用公司内网、代理网关或私有模型服务的用户</td>
+                  <td>可连接兼容 OpenAI API 的模型服务</td>
+                  <td>需要确认 base URL、模型名和接口兼容性</td>
                 </tr>
                 <tr>
                   <td><strong>Ollama 本地模型</strong></td>
@@ -1336,7 +1327,7 @@
 
           <div class="callout warn">
             <strong>新手推荐</strong>
-            如果你只想快速开始，优先配置 WorkCraft 账户或 ChatGPT 订阅。如果你需要处理敏感内部文件，优先了解 Ollama 本地模型。
+            如果你只想快速开始，优先配置已有模型服务商的 API Key 或 OpenAI 兼容端点。如果你需要处理敏感内部文件，优先了解 Ollama 本地模型。
           </div>
 
           <div class="callout tip">
@@ -1396,16 +1387,7 @@
           <h2 id="interface-tour">4. 界面导览</h2>
           <p>WorkCraft 的主要界面可以分成五块：左侧会话栏、中间对话区、底部输入框、右侧工作栏/产物栏、设置中心。</p>
 
-          <div class="figure-grid">
-            <figure class="figure-card">
-              <img src="readme/workcraft-artifact-panel.png" alt="WorkCraft 产物面板预览示意" />
-              <figcaption>产物面板：当 AI 生成报告、网页、表格或文件预览时，可以在右侧直接查看，不必离开对话。</figcaption>
-            </figure>
-            <figure class="figure-card">
-              <img src="readme/workcraft-budget-analysis.png" alt="WorkCraft 表格分析示意" />
-              <figcaption>表格分析：上传 Excel 或 CSV 后，可以让 AI 提炼趋势、异常、结论和汇报话术。</figcaption>
-            </figure>
-          </div>
+          <p>产物面板会把 AI 生成的报告、网页、表格或文件预览独立出来，方便在右侧直接查看。上传 Excel 或 CSV 后，也可以让 AI 提炼趋势、异常、结论和汇报话术。</p>
 
           <div class="module-grid">
             <div class="feature-card">
@@ -1430,7 +1412,7 @@
             </div>
             <div class="feature-card">
               <h3>设置中心</h3>
-              <p>配置外观、模型服务商、权限、自动化、插件、远程访问、计费、用量和记忆。</p>
+              <p>配置外观、模型服务商、权限、自动化、插件、远程访问、用量和记忆。</p>
             </div>
           </div>
 
@@ -1520,9 +1502,9 @@
                   <td>离开电脑也能让桌面端处理任务</td>
                 </tr>
                 <tr>
-                  <td><strong>计费 / 用量</strong></td>
-                  <td>设置 → 计费 / 用量</td>
-                  <td>查看余额、购买积分、查看 tokens、成本、模型占比、会话排行</td>
+                  <td><strong>用量</strong></td>
+                  <td>设置 → 用量</td>
+                  <td>查看 tokens、估算成本、模型占比、会话排行</td>
                   <td>控制预算，发现高消耗任务</td>
                 </tr>
               </tbody>
@@ -1761,7 +1743,7 @@
                 </tr>
                 <tr>
                   <td><strong>服务商</strong></td>
-                  <td>连接 WorkCraft 账户、自有 API Key、ChatGPT 订阅、Ollama、本地 API、自定义端点</td>
+                  <td>连接自有 API Key、Ollama、本地 API、OpenAI 兼容端点或自定义端点</td>
                   <td>先保证至少一个模型可用</td>
                 </tr>
                 <tr>
@@ -1783,11 +1765,6 @@
                   <td><strong>远程</strong></td>
                   <td>手机远程访问、消息渠道、权限模式、二维码和令牌</td>
                   <td>只在需要时开启，令牌泄露后立即刷新</td>
-                </tr>
-                <tr>
-                  <td><strong>计费</strong></td>
-                  <td>查看余额、打开购买页面</td>
-                  <td>关注余额变化，避免长任务意外消耗</td>
                 </tr>
                 <tr>
                   <td><strong>用量</strong></td>
@@ -2122,7 +2099,7 @@
                 <tr>
                   <td><strong>输入框提示暂无可用模型</strong></td>
                   <td>未配置服务商，或服务商连接失败</td>
-                  <td>进入设置 → 服务商，登录账户、配置 API Key、连接 ChatGPT 订阅或启动 Ollama</td>
+                  <td>进入设置 → 服务商，配置 API Key、连接 OpenAI 兼容端点或启动 Ollama</td>
                 </tr>
                 <tr>
                   <td><strong>上传文件失败</strong></td>
@@ -2171,7 +2148,7 @@
             </div>
             <div class="feature-card">
               <h3>服务商</h3>
-              <p>提供模型访问的来源，例如 WorkCraft 账户、自有 API Key、ChatGPT 订阅、本地 Ollama。</p>
+              <p>提供模型访问的来源，例如自有 API Key、OpenAI 兼容端点、自定义端点、本地 Ollama。</p>
             </div>
             <div class="feature-card">
               <h3>工作区</h3>

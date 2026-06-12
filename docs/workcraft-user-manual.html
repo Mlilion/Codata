@@ -917,7 +917,7 @@
           <a href="#extensions">插件、连接器与技能</a>
           <a href="#settings-security">配置与安全</a>
           <a href="#models">模型配置</a>
-          <a href="#usage-account">用量与账户</a>
+          <a href="#usage-models">用量与模型</a>
           <a href="#faq">常见问题</a>
           <a href="#glossary">术语表</a>
         </div>
@@ -943,9 +943,6 @@
               <a class="button" href="#expert-teams">查看专家团指南</a>
               <a class="button" href="#expert-examples">复制专家团示例</a>
             </div>
-            <figure class="hero-image">
-              <img src="readme/workcraft-workflow-artifacts.gif" alt="WorkCraft 对话、文件处理与产物预览示意" />
-            </figure>
           </header>
 
           <section>
@@ -961,7 +958,7 @@
               <div class="card"><span class="small-title">可见的执行过程</span><p>对话中会展示推理、工具调用、读取/写入文件、命令执行、上下文压缩、计划审查和错误恢复，便于检查过程而不是只看最后答案。</p></div>
               <div class="card"><span class="small-title">可验收产物</span><p>结果可以进入右侧产物面板，形成 Markdown 报告、HTML 页面、表格、代码、文件预览或最终导出文件。</p></div>
               <div class="card"><span class="small-title">专家团协作</span><p>可把复杂任务拆给数据、研究、写作、审校、风险、工程等专家角色执行，再由协调者或 Manager 汇总最终结果。</p></div>
-              <div class="card"><span class="small-title">多模型与扩展</span><p>支持官方模型、自有 API Key、ChatGPT 订阅、本地模型和 OpenAI 兼容端点，也能接入 MCP 连接器、插件、技能和消息渠道。</p></div>
+              <div class="card"><span class="small-title">多模型与扩展</span><p>支持自有 API Key、本地模型、OpenAI 兼容端点和自定义端点，也能接入 MCP 连接器、插件、技能和消息渠道。</p></div>
             </div>
 
             <h3>适用场景</h3>
@@ -988,7 +985,7 @@
 
           <section>
             <h2 id="download-install">下载与安装</h2>
-            <p>WorkCraft 通过公开下载页提供桌面端安装包。访问 <a href="https://work-craft.com/download/" target="_blank" rel="noreferrer">work-craft.com/download</a> 下载适合当前系统的版本；发布后的安装包也会写入公开下载清单 <code>https://work-craft.com/downloads/latest.json</code>。</p>
+            <p>WorkCraft 开源版可从 GitHub Releases 获取发布产物，也可以按 README 的开发步骤从源码运行。不同平台的桌面构建依赖 Tauri、Rust、Node.js 和 Python 环境。</p>
             <div class="table-wrap">
               <table>
                 <thead>
@@ -1022,10 +1019,10 @@
               </table>
             </div>
             <div class="steps">
-              <div class="step"><span class="step-number">1</span><div><strong>打开下载页</strong><p>进入 <a href="https://work-craft.com/download/" target="_blank" rel="noreferrer">work-craft.com/download</a>，选择与系统和架构匹配的安装包。</p></div></div>
+              <div class="step"><span class="step-number">1</span><div><strong>获取应用</strong><p>优先查看 GitHub Releases 是否已有与你系统匹配的安装包；没有安装包时，可以从源码启动开发栈或自行构建桌面端。</p></div></div>
               <div class="step"><span class="step-number">2</span><div><strong>安装桌面端</strong><p>按系统提示完成安装。首次启动后，WorkCraft 会同时启动本机后端服务，用于文件处理、会话存储和工具执行。</p></div></div>
-              <div class="step"><span class="step-number">3</span><div><strong>完成首次配置</strong><p>进入设置页配置模型来源。可使用 WorkCraft 账户、自有 API Key、ChatGPT 订阅、本地 Ollama 或 OpenAI 兼容端点。</p></div></div>
-              <div class="step"><span class="step-number">4</span><div><strong>检查更新</strong><p>桌面端设置中的“关于 / 软件更新”可检查新版本。WorkCraft 的桌面更新会读取公开更新清单 <code>https://work-craft.com/update/latest.json</code>。</p></div></div>
+              <div class="step"><span class="step-number">3</span><div><strong>完成首次配置</strong><p>进入设置页配置模型来源。可使用自有 API Key、本地 Ollama、OpenAI 兼容端点或自定义端点。</p></div></div>
+              <div class="step"><span class="step-number">4</span><div><strong>检查更新</strong><p>关注 GitHub Releases 和仓库更新。自行构建的开发版本需要重新拉取代码、安装依赖并重新构建。</p></div></div>
             </div>
             <div class="callout info">
               <strong>下载失败时</strong>
@@ -1038,7 +1035,7 @@
             <p>WorkCraft 是桌面端 AI 工作台，基础链路需要应用本体、一个可用模型来源和一个明确的任务材料范围。第一次使用不建议直接开放整个电脑，先用一个测试文件夹验证流程。</p>
             <div class="grid-3">
               <div class="card"><span class="small-title">系统</span><p>安装对应系统的 WorkCraft 桌面端。应用启动后会在本机运行后端服务，用于会话、文件处理、流式任务和工具调用。</p></div>
-              <div class="card"><span class="small-title">模型来源</span><p>至少配置一个可用模型来源：WorkCraft 账户、自有 API Key、ChatGPT 订阅、Ollama、本地 API 或 OpenAI 兼容端点。</p></div>
+              <div class="card"><span class="small-title">模型来源</span><p>至少配置一个可用模型来源：自有 API Key、Ollama、本地 API、OpenAI 兼容端点或自定义端点。</p></div>
               <div class="card"><span class="small-title">工作区</span><p>处理项目资料时选择一个边界清晰的文件夹。仅分析单个材料时可以直接上传附件。</p></div>
               <div class="card"><span class="small-title">网络</span><p>使用云模型、网页搜索、远程 MCP、远程专家团 manifest 或消息渠道时需要网络。纯本地模型与本地文件任务可减少网络依赖。</p></div>
               <div class="card"><span class="small-title">可选扩展</span><p>如需本地模型，先安装并启动 Ollama；如需外部工具，配置 MCP 连接器；如需 IM 助手，配置飞书、钉钉、微信、企业微信、QQ 或 Telegram。</p></div>
@@ -1162,14 +1159,7 @@
 
             <h3 id="artifacts">结果查看与产物</h3>
             <p>Artifact 是 WorkCraft 中可复用、可预览、可导出的结果块。它可以是 Markdown、HTML、代码、表格、图表、PDF/DOCX/PPTX/XLSX 文件预览，也可以是专家团最终交付生成的文件。</p>
-            <figure class="figure">
-              <img src="readme/workcraft-artifact-panel.png" alt="WorkCraft 产物面板示意" />
-              <figcaption>产物面板会把结果从聊天文本中独立出来，便于预览、复制、导出或继续修改。</figcaption>
-            </figure>
-            <figure class="figure">
-              <img src="readme/workcraft-budget-analysis.png" alt="WorkCraft 表格分析结果示意" />
-              <figcaption>表格分析示例：预算、实际值、异常和汇报口径可以整理为结构化结果。</figcaption>
-            </figure>
+            <p>产物面板会把结果从聊天文本中独立出来，便于预览、复制、导出或继续修改。表格分析、预算对比、异常解释和汇报口径也可以整理为结构化结果。</p>
 
             <h3 id="permissions">模式与权限</h3>
             <div class="table-wrap">
@@ -1626,17 +1616,16 @@ Manager 负责判断需要委派哪些专家，不要求固定任务列表。
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>WorkCraft 账户</td><td>想快速使用官方模型和积分体系。</td><td>登录后同步模型、积分和高级功能。</td></tr>
-                  <tr><td>自有 API Key</td><td>已有服务商账号和预算管理体系。</td><td>可接入 OpenAI、Anthropic、Google Gemini、DeepSeek、Qwen、Kimi、Azure OpenAI 等兼容来源。</td></tr>
-                  <tr><td>ChatGPT 订阅</td><td>已有 ChatGPT Plus / Pro / Team / Enterprise。</td><td>通过授权接入已有订阅能力。</td></tr>
+                  <tr><td>自有 API Key</td><td>已有模型服务商账号和预算管理体系。</td><td>可接入 OpenAI、Anthropic、Google Gemini、DeepSeek、Qwen、Kimi、Azure OpenAI 等兼容来源。</td></tr>
+                  <tr><td>OpenAI 兼容端点</td><td>使用公司内网、代理网关或私有模型服务。</td><td>连接兼容 OpenAI <code>/v1/chat/completions</code> 的接口。</td></tr>
                   <tr><td>Ollama 本地模型</td><td>希望离线处理或减少云端调用。</td><td>可下载、启动、停止、删除本地模型，效果取决于硬件和模型。</td></tr>
-                  <tr><td>本地 API / 自定义端点</td><td>公司内网、私有模型或高级用户。</td><td>连接兼容 OpenAI <code>/v1/chat/completions</code> 的接口。</td></tr>
+                  <tr><td>自定义端点</td><td>需要接入其他模型网关或高级用户。</td><td>按服务商要求配置 base URL、模型名和 API Key。</td></tr>
                 </tbody>
               </table>
             </div>
 
-            <h3 id="usage-account">用量与账户</h3>
-            <p>用量页用于查看 token、成本、响应时间、模型占比和高消耗会话。账户页用于登录、查看积分、充值、订阅和支付记录。大文件、长会话、昂贵模型和高频自动化会显著增加消耗。</p>
+            <h3 id="usage-models">用量与模型</h3>
+            <p>用量页用于查看 token、估算成本、响应时间、模型占比和高消耗会话。开源版的实际费用由用户所选模型服务商或本地模型环境决定；大文件、长会话、昂贵模型和高频自动化会显著增加消耗。</p>
 
             <h3>数据与安全</h3>
             <div class="grid-2">
@@ -1676,7 +1665,7 @@ Manager 负责判断需要委派哪些专家，不要求固定任务列表。
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>没有可用模型</td><td>未登录账户、API Key 未配置、Ollama 未启动或服务商不可用。</td><td>进入设置 → 模型或账户，配置至少一个可用来源并测试连接。</td></tr>
+                  <tr><td>没有可用模型</td><td>API Key 未配置、Ollama 未启动、端点不可用或服务商不可用。</td><td>进入设置 → 模型或服务商，配置至少一个可用来源并测试连接。</td></tr>
                   <tr><td>文件读取失败</td><td>文件被占用、路径不可读、格式异常、工作区范围不包含该文件。</td><td>关闭占用程序，重新附加文件，或把文件放入当前工作区。</td></tr>
                   <tr><td>AI 找不到文件</td><td>没有选择工作区、文件未被索引、文件名不明确。</td><td>重新选择工作区，使用 <code>@</code> 精确引用文件。</td></tr>
                   <tr><td>结果太泛泛</td><td>提示词只描述“看看”“分析一下”，没有交付标准。</td><td>补充受众、输出格式、字段、字数、限制和验收标准。</td></tr>

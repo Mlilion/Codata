@@ -76,13 +76,14 @@ src/
 │   │   ├── sidebar-footer.tsx    #   用户信息 + 设置齿轮
 │   │   └── mobile-nav.tsx        #   移动端抽屉导航（Sheet）
 │   │
-│   ├── settings/                 # 设置组件（7 个标签）
+│   ├── settings/                 # 设置组件
 │   │   ├── settings-layout.tsx   #   标签布局
 │   │   ├── general-tab.tsx       #   通用设置（外观、语言）
 │   │   ├── providers-tab.tsx     #   BYOK 提供商密钥管理
 │   │   ├── memory-tab.tsx        #   记忆设置 & 事实管理
 │   │   ├── ollama-panel.tsx      #   Ollama 管理（安装、模型库、下载/删除）
-│   │   ├── billing-tab.tsx       #   账单 & 订阅
+│   │   ├── permissions-tab.tsx   #   已保存权限规则
+│   │   ├── about-tab.tsx         #   版本、更新和项目信息
 │   │   └── usage-tab.tsx         #   Token 用量统计
 │   │
 │   ├── activity/                 # 活动追踪
@@ -96,7 +97,6 @@ src/
 │   │   └── renderers/            #   13 个专用渲染器（code, html, markdown, mermaid,
 │   │                             #   svg, react, csv, xlsx, pdf, docx, pptx, file-preview）
 │   │
-│   ├── billing/                  # 账单 & 升级提示
 │   ├── desktop/                  # 桌面端专用（原生标题栏）
 │   ├── icons/                    # 平台图标（IM 频道图标）
 │   ├── mobile/                   # 移动端专用组件
@@ -175,28 +175,29 @@ src/
 │   ├── use-session-export.ts     #   会话导出（PDF/Markdown）
 │   └── use-remote-generation-sync.ts # 跨客户端生成同步
 │
-├── stores/                       # Zustand 状态管理（10 个 Store）
+├── stores/                       # Zustand 状态管理
 │   ├── chat-store.ts             #   流式生成状态（streaming parts 实时组装）
 │   ├── sidebar-store.ts          #   侧边栏可见性 + 搜索
 │   ├── settings-store.ts         #   用户偏好（model、agent，localStorage 持久化）
 │   ├── activity-store.ts         #   活动面板状态
 │   ├── artifact-store.ts         #   Artifact 面板状态
-│   ├── auth-store.ts             #   认证状态
-│   ├── billing-store.ts          #   账单/订阅状态
+│   ├── appearance-store.ts       #   外观自定义状态
+│   ├── expert-session-store.ts   #   专家团会话选择状态
 │   ├── connection-store.ts       #   IM 连接状态
 │   ├── plan-review-store.ts      #   计划审查状态
 │   └── workspace-store.ts        #   工作区面板状态
 │
-├── lib/                          # 工具库（12 个模块）
+├── lib/                          # 工具库
 │   ├── api.ts                    #   Fetch 封装（类型安全、错误处理）
 │   ├── sse.ts                    #   SSE 客户端（断线重连、心跳超时检测）
 │   ├── utils.ts                  #   cn()、formatRelativeTime()、truncate()
 │   ├── constants.ts              #   API 路由常量、Query Key 工厂
 │   ├── routes.ts                 #   路由定义
 │   ├── artifacts.ts              #   Artifact 工具函数
-│   ├── pricing.ts                #   模型定价计算
-│   ├── proxy-api.ts              #   Cloud 代理 API 客户端
-│   ├── remote-connection.ts      #   已移除远程访问的兼容 stub
+│   ├── pricing.ts                #   本地模型成本估算工具
+│   ├── model-selection.ts        #   Provider/model 选择工具
+│   ├── public-provider-boundary.ts # 开源 provider 边界工具
+│   ├── remote-connection.ts      #   远程访问兼容工具
 │   ├── sources.ts                #   数据源工具函数
 │   ├── tauri-api.ts              #   Tauri 桌面端 API 桥接
 │   └── upload.ts                 #   文件上传工具函数
@@ -275,7 +276,7 @@ src/
 │  activityStore: 活动面板状态              │
 │  artifactStore: Artifact 面板状态        │
 │  authStore: 认证状态                     │
-│  billingStore: 账单/订阅状态              │
+│  expertSessionStore: 专家团会话状态       │
 │  connectionStore: IM 连接状态            │
 │  planReviewStore: 计划审查状态            │
 │  workspaceStore: 工作区面板状态           │

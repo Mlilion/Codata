@@ -1,160 +1,165 @@
 # Contributing to WorkCraft
 
-WorkCraft is proprietary software. Contributions are accepted only from authorized WorkCraft Inc. employees, contractors, vendors, or other contributors covered by a written agreement with WorkCraft Inc.
+Thanks for your interest in improving WorkCraft. This repository is the Apache-2.0 open-source edition of WorkCraft, and focused contributions are welcome.
 
-If you are not an authorized contributor, do not submit code, patches, pull requests, issues containing confidential material, or derivative work.
+Please keep contributions aligned with the open-source product boundary:
 
-## Authorized Development Setup
+- Local-first desktop runtime.
+- Bring-your-own-model provider setup.
+- OpenAI-compatible endpoints, custom endpoints, direct provider adapters, and local Ollama models.
+- No hosted account, billing, subscription-only, or cloud proxy assumptions in the open-source flow.
+
+## Development Setup
 
 ```bash
-# Clone and install
-git clone https://github.com/workcraft/desktop.git
-cd desktop
-npm install
-cd backend && pip install -e ".[dev]" && cd ..
+git clone https://github.com/Mlilion/workcraft.git
+cd workcraft
 
-# Run full stack
+npm install
+cd frontend && npm install --legacy-peer-deps
+cd ..
+
+cd backend
+python3.12 -m venv venv
+./venv/bin/pip install -e ".[dev]"
+cd ..
+```
+
+Run the full development stack:
+
+```bash
 npm run dev:all
 ```
 
-See [README.md](README.md) for detailed setup instructions.
+See [README.md](README.md) for the full setup and architecture overview.
 
 ## Development Workflow
 
-### 1. Pick an Assigned Issue
+### 1. Pick an Issue
 
-- Use the internal tracker or repository issue assigned to you.
-- Confirm the expected scope before starting broad changes.
-- Keep confidential customer, provider, and release material out of public text.
+- Check existing issues before opening a new one.
+- Keep one pull request focused on one bug, feature, or documentation improvement.
+- For broad changes, open an issue first so the design can be discussed.
 
 ### 2. Create a Branch
 
 ```bash
-git checkout -b fix/short-description    # for bug fixes
-git checkout -b feat/short-description   # for features
-git checkout -b refactor/short-description
+git checkout -b fix/short-description
+git checkout -b feat/short-description
+git checkout -b docs/short-description
 ```
 
 ### 3. Make Changes
 
-- Keep changes focused — one issue per PR
-- Follow existing code patterns and conventions
-- Add tests for bug fixes when possible
+- Follow the existing frontend, backend, and desktop patterns.
+- Keep changes scoped to the area you are improving.
+- Add or update tests when behavior changes.
+- Update documentation when user-facing behavior changes.
+- Do not commit generated local data, virtual environments, secrets, or machine-specific files.
 
 ### 4. Commit Messages
 
-We use [Conventional Commits](https://www.conventionalcommits.org/):
+Use [Conventional Commits](https://www.conventionalcommits.org/):
 
-```
+```text
 <type>(<scope>): <description>
-
-[optional body]
-
-[optional footer]
 ```
 
-**Types:**
+Common types:
 
 | Type | When to use |
-|------|-------------|
+| --- | --- |
 | `fix` | Bug fix |
 | `feat` | New feature |
-| `refactor` | Code change that doesn't fix a bug or add a feature |
+| `refactor` | Code change that does not fix a bug or add a feature |
 | `docs` | Documentation only |
 | `test` | Adding or updating tests |
-| `chore` | Build, CI, tooling changes |
+| `chore` | Build, CI, tooling, repository maintenance |
 | `perf` | Performance improvement |
 
-**Scopes:** `frontend`, `backend`, `desktop`, `ollama`, `mcp`
+Common scopes: `frontend`, `backend`, `desktop`, `experts`, `providers`, `ollama`, `mcp`, `docs`.
 
-**Examples:**
+Examples:
 
-```
-fix(frontend): prevent duplicate sends on rapid double-click
-feat(backend): add per-connector error isolation in MCP startup
-refactor(frontend): extract draft persistence into module-level cache
-docs: add contributing guide and issue templates
-```
-
-**Footer — link issues:**
-
-```
-fix(frontend): abort generation when switching sessions
-
-Previously, navigating to a different session during active generation
-left the backend agent loop running. Now ChatView calls stopGeneration()
-in its cleanup effect.
-
-Fixes #42
+```bash
+git commit -m "fix(frontend): keep selected expert team after refresh"
+git commit -m "feat(backend): add expert-team validation for loops"
+git commit -m "docs: clarify BYOK provider setup"
 ```
 
-### 5. Submit a Pull Request
+## Pull Requests
 
-- Fill out the [PR template](.github/pull_request_template.md)
-- Link the assigned issue with `Fixes #N` where applicable
-- Ensure checks pass:
-  - `npx tsc --noEmit` (TypeScript)
-  - `pytest` (Backend tests)
+Before opening a pull request:
 
-### 6. Code Review
+- Rebase or merge the latest `main`.
+- Self-review the diff.
+- Remove unrelated edits.
+- Run the relevant checks for the files you changed.
+- Fill out the pull request template.
 
-- Respond to review comments
-- Keep the PR up to date with `main` via rebase
-- Once approved, a maintainer will merge
+Recommended checks:
+
+```bash
+npm run verify:open-source-boundary
+cd frontend && npm run lint
+cd backend && ./venv/bin/pytest
+```
+
+For UI changes, run or update the Playwright tests that cover the changed workflow.
 
 ## Code Conventions
 
-### Frontend (TypeScript / React)
+### Frontend
 
-- Functional components with hooks
-- Zustand for client state, TanStack Query for server state
-- Tailwind CSS for styling (no CSS modules)
-- `useRef` for synchronous guards (not `useState`)
-- Module-level state for cross-mount persistence (not localStorage for ephemeral data)
+- Use TypeScript and functional React components.
+- Use Zustand for client state and TanStack Query for server state.
+- Follow the existing component and hook structure.
+- Keep UI text in the i18n locale files when the surrounding feature is localized.
+- Keep open-source provider flows BYOK-oriented.
 
-### Backend (Python / FastAPI)
+### Backend
 
-- Async everywhere (aiosqlite, async sessions)
-- Pydantic for schemas and settings
-- Follow existing error handling patterns (try/catch per operation, log + continue)
-- ULID primary keys
-- SQLAlchemy async ORM
+- Use async FastAPI patterns.
+- Use Pydantic schemas for API contracts and settings.
+- Keep persistence compatible with the existing SQLite-backed local runtime.
+- Validate expert-team config changes with focused tests.
+- Keep provider routing explicit and user-configured.
 
-### General
+### Desktop
 
-- No over-engineering — solve the problem at hand
-- Prefer editing existing files over creating new ones
-- Keep PRs small and focused
-- Comments only where the logic isn't self-evident
+- Keep Tauri changes platform-aware.
+- Verify desktop metadata synchronization before release builds.
+- Do not introduce release signing requirements into normal local development.
 
 ## Reporting Bugs
 
-Authorized contributors should use the Bug Report template. A good bug report includes:
+Use the bug report template and include:
 
-1. Clear description of what happened
-2. Steps to reproduce
-3. Expected vs actual behavior
-4. Environment info (OS, version, provider)
+1. What happened.
+2. Steps to reproduce.
+3. Expected behavior.
+4. Actual behavior.
+5. OS, WorkCraft version, provider route, and whether you are using desktop or browser development mode.
+6. Relevant logs or screenshots.
+
+Do not include secrets, API keys, private documents, or sensitive customer data in public issues.
 
 ## Requesting Features
 
-Authorized contributors should use the Feature Request template. Explain the problem before the solution — understanding *why* helps us design the right approach.
+Use the feature request template. Explain the problem first, then the proposed solution. For expert-team workflows, include an example task, expected members, expected deliverable, and any provider/tool constraints.
 
 ## Project Structure
 
-```
-desktop/
-├── backend/        Python FastAPI — agent engine
-├── frontend/       Next.js 15 — chat UI
-├── desktop-tauri/  Tauri v2 (Rust) — desktop shell
-├── .github/        Issue templates, PR template, labels
-├── ISSUES.md       Internal issue tracker (being migrated to GitHub Issues)
-├── CLAUDE.md       AI assistant context
-└── CONTRIBUTING.md This file
+```text
+workcraft/
+├── backend/        FastAPI backend, agent runtime, expert teams, providers, tools
+├── frontend/       Next.js 15 desktop UI
+├── desktop-tauri/  Tauri v2 desktop shell
+├── docs/           User manuals
+├── scripts/        Build, release, and verification utilities
+└── .github/        Issue templates, PR template, labels, workflows
 ```
 
 ## License
 
-By contributing, you agree that your contribution is submitted under your written agreement with WorkCraft Inc. and may be used, modified, sublicensed, commercialized, and redistributed by WorkCraft Inc. without restriction.
-
-No contribution grants you rights to WorkCraft proprietary software except as separately agreed in writing. See [LICENSE](LICENSE) for the project terms.
+By contributing, you agree that your contribution is submitted under the Apache License, Version 2.0. See [LICENSE](LICENSE).
