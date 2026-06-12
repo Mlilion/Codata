@@ -34,7 +34,7 @@ desktop-tauri/    Tauri v2 desktop shell, Rust integration, updater config
 frontend/         Next.js UI for chat, settings, artifacts, and desktop screens
 backend/          FastAPI backend, agent runtime, storage, model/provider layer
 scripts/          Build, release, verification, signing, and version utilities
-docs/             Internal product, release, and implementation documentation
+docs/             User manuals
 design-system/    Product design references and internal design assets
 ```
 

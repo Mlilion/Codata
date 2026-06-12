@@ -34,7 +34,7 @@ desktop-tauri/    Tauri v2 桌面外壳、Rust 集成、updater 配置
 frontend/         Next.js UI，包含聊天、设置、artifact 和桌面界面
 backend/          FastAPI 后端、agent runtime、存储和模型/provider 层
 scripts/          构建、发布、验证、签名和版本工具
-docs/             内部产品、发布和实现文档
+docs/             用户手册
 design-system/    产品设计参考和内部设计资产
 ```
 

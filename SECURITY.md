@@ -4,7 +4,7 @@
 
 If you discover a security vulnerability in WorkCraft, please report it responsibly.
 
-**Email:** [support@waxis.org](mailto:support@waxis.org)
+**Email:** [workcraft@126.com](mailto:workcraft@126.com)
 
 Please include:
 - Description of the vulnerability
