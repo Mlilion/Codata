@@ -1,0 +1,144 @@
+team:
+  id: weekly-monthly-report
+  name: 周报/月报生成专家团
+  description: 从工作记录、项目资料、会议纪要或工作区文件中汇总进展、风险、计划和管理层摘要。
+  icon: calendar
+  category: 办公文档
+  tags: [周报, 月报, 项目汇报, 进展总结]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 7
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是周报/月报专家团协调者。最终报告必须重点突出、事实可追溯、风险和下周计划清晰。
+    不要把未确认事项写成已完成事项。
+  finalization:
+    mode: deliverable
+    member: writer
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: markdown
+      title: 周报/月报
+      filename_template: work-report.md
+      source: final_work_report
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: report_type
+      description: 报告类型。
+      required: false
+      default: 周报
+      options:
+        - label: 周报
+          value: 周报
+        - label: 月报
+          value: 月报
+    - name: report_period
+      description: 报告周期，例如 2026-06-01 至 2026-06-07。
+      required: false
+      default: ""
+    - name: audience
+      description: 目标读者，例如直属领导、项目组、客户。
+      required: false
+      default: 直属领导
+  skills: [document-summary, report, project-planning]
+  members:
+    - id: collector
+      name: 资料汇总
+      role: 工作记录与资料汇总专家
+      goal: 从用户输入、附件和工作区中提取本周期工作事实。
+      role_ref: specialized/data-consolidation-agent
+      tools: [read, glob, grep, search, skill]
+      skills: [document-summary]
+      icon: folder
+    - id: project_reviewer
+      name: 进展评估
+      role: 项目进展与风险评估专家
+      goal: 识别完成事项、延期事项、阻塞风险和依赖。
+      role_ref: project-management/project-manager-senior
+      tools: [read, skill]
+      skills: [project-planning]
+      icon: workflow
+    - id: writer
+      name: 报告撰写
+      role: 工作报告撰写专家
+      goal: 生成适合目标读者的周报或月报。
+      role_ref: support/support-executive-summary-generator
+      tools: [read, write, present_file, artifact, skill]
+      skills: [report]
+      icon: file-text
+  tasks:
+    - id: collect_facts
+      name: 汇总工作事实
+      member: collector
+      task: |
+        请从用户输入、附件和工作区资料中汇总本周期工作事实。
+
+        用户需求：
+        {{user_input}}
+
+        报告类型：
+        {{report_type}}
+
+        报告周期：
+        {{report_period}}
+
+        目标读者：
+        {{audience}}
+
+        输出必须包含：已完成工作、进行中事项、数据或证据、会议/沟通摘要、无法确认的信息。
+      expected_output: 本周期工作事实清单。
+      output: work_facts
+      context_policy: explicit
+      context_max_chars: 22000
+      timeout_seconds: 300
+      retry_count: 1
+    - id: assess_progress
+      name: 评估进展与风险
+      member: project_reviewer
+      depends_on: [collect_facts]
+      context: [collect_facts]
+      task: |
+        基于工作事实评估项目进展和风险。
+
+        工作事实：
+        {{work_facts}}
+
+        输出必须包含：关键进展、延期或阻塞、风险等级、需要协调的资源、下周期建议重点。
+      expected_output: 进展和风险评估。
+      output: progress_risks
+      context_policy: explicit
+      context_max_chars: 20000
+      timeout_seconds: 240
+      retry_count: 1
+    - id: write_report
+      name: 撰写周报/月报
+      member: writer
+      depends_on: [collect_facts, assess_progress]
+      context: [collect_facts, assess_progress]
+      task: |
+        生成最终{{report_type}}。
+
+        工作事实：
+        {{work_facts}}
+
+        进展风险：
+        {{progress_risks}}
+
+        报告必须包含：一句话摘要、本周期完成、关键数据、问题与风险、下周期计划、需领导/团队支持事项。
+      expected_output: 最终周报或月报。
+      output: final_work_report
+      context_policy: explicit
+      context_max_chars: 26000
+      timeout_seconds: 300
+      retry_count: 1

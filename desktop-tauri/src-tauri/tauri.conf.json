@@ -1,0 +1,101 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-config-schema/schema.json",
+  "productName": "WorkCraft",
+  "identifier": "com.workcraft.desktop",
+  "version": "1.1.12",
+  "build": {
+    "frontendDist": "../../frontend/out",
+    "devUrl": "http://localhost:3000",
+    "beforeBuildCommand": "npm --prefix .. run build:frontend && npm --prefix .. run build:backend",
+    "beforeDevCommand": "npm --prefix .. run build:backend"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "WorkCraft",
+        "width": 1360,
+        "height": 840,
+        "minWidth": 1024,
+        "minHeight": 640,
+        "decorations": true,
+        "titleBarStyle": "Overlay",
+        "trafficLightPosition": {
+          "x": 19,
+          "y": 32
+        },
+        "hiddenTitle": true,
+        "visible": false,
+        "center": true,
+        "transparent": true
+      }
+    ],
+    "macOSPrivateApi": true,
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://localhost:* http://127.0.0.1:* http://[::1]:* https://*; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; script-src 'self' 'unsafe-inline'; worker-src 'self' blob:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "createUpdaterArtifacts": false,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
+    "resources": {
+      "../../backend/dist/workcraft-backend": "backend",
+      "../../backend/resources/nodejs": "nodejs"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "installerHooks": "installer-hooks.nsh"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "dmg": {
+        "appPosition": {
+          "x": 180,
+          "y": 170
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 170
+        },
+        "windowSize": {
+          "width": 660,
+          "height": 400
+        }
+      }
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "workcraft"
+        ]
+      }
+    },
+    "updater": {
+      "endpoints": [
+        "https://work-craft.com/update/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERGRTg2RTZBMkNDQkI0NkUKUldSdXRNc3NhbTdvM3c3US9IeVhPWjJHaUFJaVc0c1ZCWFMzcmdwajBLQlorSU50Y09WK0cxNWMK"
+    },
+    "shell": {
+      "open": true
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "build": {
+    "beforeBuildCommand": ""
+  },
+  "bundle": {
+    "targets": ["deb", "rpm"],
+    "resources": {
+      "../../backend/dist/workcraft-backend": "backend",
+      "../../backend/resources/nodejs": "nodejs"
+    }
+  }
+}

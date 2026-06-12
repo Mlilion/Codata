@@ -1,0 +1,144 @@
+team:
+  id: video-production
+  name: 视频生成专家团
+  description: 从视频创意、脚本、分镜到 ViMax 渲染和结果交付的一站式视频生成专家团。
+  icon: film
+  category: 内容创作
+  tags: [视频生成, 分镜, 脚本, 渲染, ViMax]
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 16
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 32000
+  coordinator_prompt: |
+    你是视频生成专家团的总编导。你要整合创意、脚本、执行和渲染结果，交付可直接查看的视频文件和简短说明。
+    最终回答必须明确：
+    1. 已生成的视频文件路径。
+    2. 当前版本的状态，是否为最终稿。
+    3. 如果渲染失败、卡住或缺少配置，具体缺了什么。
+    4. 是否需要用户继续补充素材、改写脚本或重试。
+  finalization:
+    mode: deliverable
+    member: producer
+    tools: [vimax_generate_video, present_file, read]
+    deliverable:
+      required: true
+      type: video
+      title: 最终视频
+      source: video_result
+      presentation: file_preview
+      tools: [vimax_generate_video, present_file, read]
+  inputs:
+    - name: video_goal
+      description: 视频目标、受众和要传达的核心信息。
+      required: true
+    - name: output_dir
+      description: 输出目录。
+      required: false
+      default: video-output
+    - name: media_preset
+      description: 生图和视频模型方案。
+      required: false
+      required_when_setting_missing: vimax_media_preset
+      default: ""
+      options:
+        - label: 豆包 Seedream / Seedance
+          value: doubao
+          description: 使用云雾 API Key 调用豆包 Seedream 生图和 Seedance 生视频。
+    - name: runtime_url
+      description: 可选 ViMax runtime 地址；不填则使用 WORKCRAFT_VIMAX_RUNTIME_URL。
+      required: false
+      default: ""
+  skills: []
+  members:
+    - id: strategist
+      name: 视频策划
+      role: 视频策略与创意专家
+      goal: 把用户需求转成可执行的视频创意、节奏、时长和交付标准。
+      role_ref: marketing/marketing-knowledge-commerce-strategist
+      tools: [read, web_search, web_fetch, skill]
+      icon: compass
+    - id: writer
+      name: 脚本编导
+      role: 视频脚本与分镜专家
+      goal: 输出适合 ViMax 的脚本、场景描述和风格约束。
+      role_ref: marketing/marketing-content-creator
+      tools: [read, write, edit, skill]
+      icon: pen-tool
+    - id: producer
+      name: 渲染执行
+      role: ViMax 渲染执行专家
+      goal: 调用 ViMax 生成、查询和整理最终视频文件。
+      role_ref: engineering/engineering-senior-developer
+      tools: [read, vimax_generate_video, skill, bash]
+      icon: video
+  tasks:
+    - id: brief
+      name: 视频简报
+      member: strategist
+      task: |
+        根据用户需求制定视频简报。
+
+        用户需求：
+        {{user_input}}
+
+        视频目标：
+        {{video_goal}}
+
+        用户本次覆盖的生图/生视频模型方案（为空则使用 WorkCraft 模型配置页默认值）：
+        {{media_preset}}
+
+        输出要包含：目标受众、核心信息、视频时长建议、风格方向、素材缺口、风险点和交付标准。
+      expected_output: 视频生产简报。
+      output: video_brief
+    - id: script
+      name: 视频脚本
+      member: writer
+      depends_on: [brief]
+      context: [brief]
+      task: |
+        根据视频简报编写适合 ViMax 的视频脚本。
+
+        视频简报：
+        {{video_brief}}
+
+        用户需求：
+        {{user_input}}
+
+        用户本次覆盖的生图/生视频模型方案（为空则使用 WorkCraft 模型配置页默认值）：
+        {{media_preset}}
+
+        输出应尽量直接转成视频生成参数，包含：场景顺序、视觉风格、用户要求和镜头节奏。
+      expected_output: 视频脚本与生成约束。
+      output: video_script
+    - id: render
+      name: 视频渲染
+      member: producer
+      depends_on: [brief, script]
+      context: [brief, script]
+      max_tool_rounds: 16
+      task: |
+        基于视频简报和脚本调用 ViMax 生成最终视频。
+
+        视频简报：
+        {{video_brief}}
+
+        视频脚本：
+        {{video_script}}
+
+        请使用 vimax_generate_video：
+        - mode 由脚本内容决定，通常是 script2video。
+        - runtime_url 可直接使用 {{runtime_url}}，若为空则使用环境默认。
+        - media_preset 是可选参数；如果 {{media_preset}} 为空，不要传 media_preset，让 WorkCraft 模型配置页默认值生效。
+        - 如果 {{media_preset}} 不为空，media_preset 只能传 {{media_preset}}，可选值仅限 doubao，不要改写成其他模型名。
+        - 调用时必须传 wait=true、max_wait_seconds=3600、poll_interval_seconds=5。
+        - 只有当工具返回 status=completed 且 final_video_path 对应的视频文件已作为结果附件返回时，才算渲染完成。
+        - 如果此前 ViMax 已生成 task_id 且任务失败/中断，优先使用 action=resume 和原 task_id 继续跑，不要重新 submit 新任务。
+        - 如果状态仍是 queued/running，或没有拿到最终视频文件，不要进入交付结论；继续查询或明确报告渲染尚未完成。
+        - 完成后把最终视频文件作为结果返回，不要只给 task_id。
+      expected_output: 最终视频文件和任务状态说明。
+      output: video_result

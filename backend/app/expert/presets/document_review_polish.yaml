@@ -1,0 +1,167 @@
+team:
+  id: document-review-polish
+  name: 文档总结与审校专家团
+  description: 对方案、制度、报告、合同草稿或长文档进行摘要、结构审查、风险检查和润色改写。
+  icon: file-check
+  category: 办公文档
+  tags: [文档总结, 审校, 润色, 风险检查]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 7
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是文档审校专家团协调者。最终结果要兼顾准确摘要、结构改进、风险提示和可直接使用的修改稿。
+    对法律、财务、合规等高风险结论必须标注为审阅建议，不替代专业意见。
+  finalization:
+    mode: deliverable
+    member: editor
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: markdown
+      title: 文档审校报告
+      filename_template: document-review-polish.md
+      source: final_review
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: document_goal
+      description: 文档目标或希望审校的重点。
+      required: true
+    - name: target_audience
+      description: 文档目标读者。
+      required: false
+      default: 内部团队
+    - name: tone
+      description: 期望语气，例如正式、简洁、商务、面向客户。
+      required: false
+      default: 正式简洁
+  skills: [document-summary, doc-coauthoring, report]
+  members:
+    - id: summarizer
+      name: 文档摘要
+      role: 长文档理解与摘要专家
+      goal: 提取文档主旨、结构、关键事实和缺失信息。
+      role_ref: specialized/specialized-document-generator
+      tools: [read, glob, grep, search, skill]
+      skills: [document-summary]
+      icon: file-text
+    - id: structure_reviewer
+      name: 结构审查
+      role: 文档结构与表达审查专家
+      goal: 检查逻辑结构、论证完整性、读者匹配度和表达问题。
+      role_ref: engineering/engineering-technical-writer
+      tools: [read, skill]
+      skills: [doc-coauthoring]
+      icon: list-checks
+    - id: risk_reviewer
+      name: 风险检查
+      role: 风险与合规审阅专家
+      goal: 识别模糊承诺、事实缺口、合规风险和需要人工确认的内容。
+      role_ref: legal/legal-policy-writer
+      tools: [read, skill]
+      skills: [document-summary]
+      icon: shield
+    - id: editor
+      name: 润色交付
+      role: 文档润色与最终交付专家
+      goal: 生成审校报告和可复用的修改建议或改写稿。
+      role_ref: specialized/specialized-document-generator
+      tools: [read, write, present_file, artifact, skill]
+      skills: [doc-coauthoring, report]
+      icon: pen-tool
+  tasks:
+    - id: summarize_document
+      name: 总结文档
+      member: summarizer
+      task: |
+        请阅读用户提供的文档、附件或工作区资料，提取摘要。
+
+        用户需求：
+        {{user_input}}
+
+        文档目标：
+        {{document_goal}}
+
+        目标读者：
+        {{target_audience}}
+
+        输出必须包含：文档主旨、结构提纲、关键事实、关键结论、明显缺失信息。
+      expected_output: 文档摘要和事实提取。
+      output: document_summary
+      context_policy: explicit
+      context_max_chars: 22000
+      timeout_seconds: 300
+      retry_count: 1
+    - id: review_structure
+      name: 审查结构与表达
+      member: structure_reviewer
+      depends_on: [summarize_document]
+      context: [summarize_document]
+      task: |
+        审查文档结构和表达质量。
+
+        文档摘要：
+        {{document_summary}}
+
+        期望语气：
+        {{tone}}
+
+        输出必须包含：结构问题、逻辑跳跃、冗余内容、表达不清、建议调整顺序。
+      expected_output: 结构与表达审查意见。
+      output: structure_review
+      context_policy: explicit
+      context_max_chars: 18000
+      timeout_seconds: 240
+      retry_count: 1
+    - id: review_risks
+      name: 检查风险与待确认项
+      member: risk_reviewer
+      depends_on: [summarize_document]
+      context: [summarize_document]
+      task: |
+        识别文档中的风险和待确认内容。
+
+        文档摘要：
+        {{document_summary}}
+
+        输出必须包含：事实风险、合规或法律风险、过度承诺、缺少依据的判断、需要人工确认的问题。
+      expected_output: 风险和待确认问题清单。
+      output: risk_review
+      context_policy: explicit
+      context_max_chars: 18000
+      timeout_seconds: 240
+      retry_count: 1
+    - id: final_review
+      name: 生成审校报告
+      member: editor
+      depends_on: [summarize_document, review_structure, review_risks]
+      context: [summarize_document, review_structure, review_risks]
+      task: |
+        生成最终文档审校报告。
+
+        文档摘要：
+        {{document_summary}}
+
+        结构审查：
+        {{structure_review}}
+
+        风险检查：
+        {{risk_review}}
+
+        报告必须包含：摘要、主要问题、逐条修改建议、风险提示、建议改写片段和待确认问题。
+      expected_output: 文档审校报告。
+      output: final_review
+      context_policy: explicit
+      context_max_chars: 30000
+      timeout_seconds: 300
+      retry_count: 1

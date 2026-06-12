@@ -1,0 +1,186 @@
+team:
+  id: project-plan-risk
+  name: 项目计划与风险评审专家团
+  description: 将目标或需求拆解为项目计划、里程碑、任务分工、风险清单和推进建议。
+  icon: workflow
+  category: 研究咨询
+  tags: [项目计划, 风险评审, 里程碑, 任务拆解]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 7
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2600
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是项目计划与风险评审专家团协调者。最终计划必须可执行、边界清楚、风险明确。
+    对缺少资源、时间、负责人或验收标准的信息要列为待确认。
+  finalization:
+    mode: deliverable
+    member: planner
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: markdown
+      title: 项目计划与风险评审
+      filename_template: project-plan-risk.md
+      source: final_project_plan
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: project_goal
+      description: 项目目标。
+      required: true
+    - name: deadline
+      description: 截止时间或重要里程碑；未知可留空。
+      required: false
+      default: ""
+    - name: constraints
+      description: 资源、预算、人员、范围或技术限制。
+      required: false
+      default: ""
+  skills: [project-planning, report]
+  members:
+    - id: planner
+      name: 项目规划
+      role: 项目计划与里程碑专家
+      goal: 将目标拆解为阶段、任务、里程碑、依赖和交付物。
+      role_ref: project-management/project-manager-senior
+      tools: [read, glob, grep, search, write, present_file, artifact, skill]
+      skills: [project-planning, report]
+      icon: workflow
+    - id: risk_reviewer
+      name: 风险评审
+      role: 项目风险与依赖评审专家
+      goal: 识别计划风险、资源缺口、依赖阻塞和验收风险。
+      role_ref: specialized/specialized-risk-assessor
+      tools: [read, skill]
+      skills: [project-planning]
+      icon: shield
+    - id: execution_advisor
+      name: 推进建议
+      role: 项目推进与协作机制专家
+      goal: 给出沟通节奏、责任分工、会议机制和下一步行动。
+      role_ref: project-management/project-management-project-shepherd
+      tools: [read, skill]
+      skills: [project-planning]
+      icon: users
+  tasks:
+    - id: define_scope
+      name: 明确范围与目标
+      member: planner
+      task: |
+        请根据用户输入明确项目范围。
+
+        用户需求：
+        {{user_input}}
+
+        项目目标：
+        {{project_goal}}
+
+        截止时间：
+        {{deadline}}
+
+        约束条件：
+        {{constraints}}
+
+        输出必须包含：项目目标、范围内/范围外事项、关键交付物、验收标准、待确认信息。
+      expected_output: 项目范围和目标定义。
+      output: project_scope
+      context_policy: explicit
+      context_max_chars: 18000
+      timeout_seconds: 300
+      retry_count: 1
+    - id: build_plan
+      name: 制定项目计划
+      member: planner
+      depends_on: [define_scope]
+      context: [define_scope]
+      task: |
+        制定项目计划。
+
+        项目范围：
+        {{project_scope}}
+
+        输出必须包含：阶段划分、里程碑、任务清单、依赖关系、建议负责人角色、时间安排。
+      expected_output: 项目计划草案。
+      output: project_plan
+      context_policy: explicit
+      context_max_chars: 22000
+      timeout_seconds: 300
+      retry_count: 1
+    - id: review_risks
+      name: 评审风险
+      member: risk_reviewer
+      depends_on: [define_scope, build_plan]
+      context: [define_scope, build_plan]
+      task: |
+        评审项目计划风险。
+
+        项目范围：
+        {{project_scope}}
+
+        项目计划：
+        {{project_plan}}
+
+        输出必须包含：风险清单、概率/影响、预警信号、缓解措施、需要升级的问题。
+      expected_output: 项目风险评审。
+      output: risk_register
+      context_policy: explicit
+      context_max_chars: 24000
+      timeout_seconds: 240
+      retry_count: 1
+    - id: execution_setup
+      name: 制定推进机制
+      member: execution_advisor
+      depends_on: [build_plan, review_risks]
+      context: [build_plan, review_risks]
+      task: |
+        制定项目推进机制和下一步行动。
+
+        项目计划：
+        {{project_plan}}
+
+        风险评审：
+        {{risk_register}}
+
+        输出必须包含：例会机制、同步节奏、看板建议、首周行动、决策点、沟通模板。
+      expected_output: 推进机制和下一步行动建议。
+      output: execution_setup
+      context_policy: explicit
+      context_max_chars: 22000
+      timeout_seconds: 240
+      retry_count: 1
+    - id: final_plan
+      name: 生成最终计划
+      member: planner
+      depends_on: [define_scope, build_plan, review_risks, execution_setup]
+      context: [define_scope, build_plan, review_risks, execution_setup]
+      task: |
+        生成最终项目计划与风险评审文档。
+
+        项目范围：
+        {{project_scope}}
+
+        项目计划：
+        {{project_plan}}
+
+        风险评审：
+        {{risk_register}}
+
+        推进机制：
+        {{execution_setup}}
+
+        文档必须包含：目标范围、里程碑、任务分解、风险清单、推进机制、首周行动、待确认事项。
+      expected_output: 项目计划与风险评审最终文档。
+      output: final_project_plan
+      context_policy: explicit
+      context_max_chars: 34000
+      timeout_seconds: 300
+      retry_count: 1

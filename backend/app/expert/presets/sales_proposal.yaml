@@ -1,0 +1,169 @@
+team:
+  id: sales-proposal
+  name: 客户提案与销售方案专家团
+  description: 根据客户背景、需求、产品资料和约束生成客户提案、价值主张、实施路径和跟进话术。
+  icon: briefcase
+  category: 研究咨询
+  tags: [销售提案, 客户方案, 售前, 跟进话术]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 7
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2600
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是客户提案专家团协调者。最终方案必须从客户痛点出发，避免空泛卖点。
+    对未确认的客户信息和商业假设要列为待确认。
+  finalization:
+    mode: deliverable
+    member: proposal_writer
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: markdown
+      title: 客户提案与销售方案
+      filename_template: sales-proposal.md
+      source: final_proposal
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: customer_name
+      description: 客户或目标账号名称。
+      required: false
+      default: ""
+    - name: proposal_goal
+      description: 提案目标，例如初次沟通、正式投标、续约、增购。
+      required: true
+    - name: offering
+      description: 要推荐的产品、服务或方案。
+      required: true
+  skills: [research, report, email]
+  members:
+    - id: account_researcher
+      name: 客户研究
+      role: 客户背景与需求研究专家
+      goal: 汇总客户背景、业务场景、痛点、利益相关方和信息缺口。
+      role_ref: sales/sales-account-strategist
+      tools: [read, glob, grep, search, web_search, web_fetch, skill]
+      skills: [research]
+      icon: search
+    - id: solution_architect
+      name: 方案设计
+      role: 售前解决方案专家
+      goal: 将客户需求映射为产品能力、实施路径、里程碑和价值指标。
+      role_ref: sales/sales-engineer
+      tools: [read, skill]
+      skills: [report]
+      icon: workflow
+    - id: deal_strategist
+      name: 销售策略
+      role: 销售策略与风险专家
+      goal: 识别成交障碍、竞争风险、谈判策略和下一步行动。
+      role_ref: sales/sales-proposal-strategist
+      tools: [read, skill]
+      skills: [email]
+      icon: target
+    - id: proposal_writer
+      name: 提案交付
+      role: 客户提案撰写专家
+      goal: 生成客户可读、可沟通、可执行的提案和跟进话术。
+      role_ref: sales/sales-proposal-strategist
+      tools: [read, write, present_file, artifact, skill]
+      skills: [report, email]
+      icon: file-text
+  tasks:
+    - id: customer_context
+      name: 客户背景与痛点
+      member: account_researcher
+      task: |
+        请整理客户背景、需求和痛点。
+
+        用户需求：
+        {{user_input}}
+
+        客户名称：
+        {{customer_name}}
+
+        提案目标：
+        {{proposal_goal}}
+
+        推荐内容：
+        {{offering}}
+
+        输出必须包含：客户背景、关键痛点、业务目标、利益相关方、已知约束、待确认信息。
+      expected_output: 客户背景和需求画像。
+      output: customer_context
+      context_policy: explicit
+      context_max_chars: 22000
+      timeout_seconds: 360
+      retry_count: 1
+    - id: solution_plan
+      name: 设计解决方案
+      member: solution_architect
+      depends_on: [customer_context]
+      context: [customer_context]
+      task: |
+        基于客户背景设计解决方案。
+
+        客户背景：
+        {{customer_context}}
+
+        输出必须包含：价值主张、方案模块、实施步骤、成功指标、所需资源、边界条件。
+      expected_output: 客户解决方案设计。
+      output: solution_plan
+      context_policy: explicit
+      context_max_chars: 24000
+      timeout_seconds: 300
+      retry_count: 1
+    - id: sales_strategy
+      name: 制定销售策略
+      member: deal_strategist
+      depends_on: [customer_context, solution_plan]
+      context: [customer_context, solution_plan]
+      task: |
+        制定销售沟通和推进策略。
+
+        客户背景：
+        {{customer_context}}
+
+        解决方案：
+        {{solution_plan}}
+
+        输出必须包含：关键卖点、可能异议、应对话术、竞争风险、下一步跟进计划。
+      expected_output: 销售策略和跟进建议。
+      output: sales_strategy
+      context_policy: explicit
+      context_max_chars: 26000
+      timeout_seconds: 300
+      retry_count: 1
+    - id: final_proposal
+      name: 生成客户提案
+      member: proposal_writer
+      depends_on: [customer_context, solution_plan, sales_strategy]
+      context: [customer_context, solution_plan, sales_strategy]
+      task: |
+        生成最终客户提案与跟进话术。
+
+        客户背景：
+        {{customer_context}}
+
+        解决方案：
+        {{solution_plan}}
+
+        销售策略：
+        {{sales_strategy}}
+
+        文档必须包含：执行摘要、客户痛点、方案价值、实施路径、成功指标、风险假设、下一步行动、跟进邮件草稿。
+      expected_output: 客户提案与销售方案。
+      output: final_proposal
+      context_policy: explicit
+      context_max_chars: 32000
+      timeout_seconds: 300
+      retry_count: 1

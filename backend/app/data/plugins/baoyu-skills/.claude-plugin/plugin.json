@@ -1,0 +1,9 @@
+{
+  "name": "baoyu-skills",
+  "version": "2.3.0",
+  "description": "Content generation, AI image backends, publishing workflows, and utility skills from Jim Liu's baoyu-skills collection.",
+  "default_enabled": true,
+  "author": {
+    "name": "Jim Liu (Baoyu)"
+  }
+}

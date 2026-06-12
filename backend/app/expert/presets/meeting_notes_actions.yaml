@@ -1,0 +1,170 @@
+team:
+  id: meeting-notes-actions
+  name: 会议纪要与行动项专家团
+  description: 将会议记录、转写稿或聊天记录整理成纪要、决策、行动项和会后跟进邮件。
+  icon: file-text
+  category: 办公文档
+  tags: [会议纪要, 行动项, 决策记录, 跟进邮件]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 6
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 32000
+  coordinator_prompt: |
+    你是会议纪要专家团协调者。请保证最终纪要准确、可追责、便于会后执行。
+    不确定的发言人、时间点或责任人必须标记为待确认，不要编造。
+  finalization:
+    mode: deliverable
+    member: coordinator
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: markdown
+      title: 会议纪要与行动项
+      filename_template: meeting-notes-actions.md
+      source: final_minutes
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: meeting_topic
+      description: 会议主题。
+      required: true
+    - name: meeting_date
+      description: 会议日期；未知可留空。
+      required: false
+      default: ""
+    - name: audience
+      description: 纪要读者，例如项目组、管理层、客户。
+      required: false
+      default: 项目组
+  skills: [meeting-notes, email, report]
+  members:
+    - id: extractor
+      name: 信息提取
+      role: 会议内容提取专家
+      goal: 从会议材料中提取议题、关键讨论、决策和争议点。
+      role_ref: specialized/specialized-meeting-assistant
+      tools: [read, glob, grep, search, skill]
+      skills: [meeting-notes]
+      icon: search
+    - id: action_owner
+      name: 行动项整理
+      role: 任务拆解与责任追踪专家
+      goal: 将会议结论转成明确行动项、负责人、截止时间和依赖关系。
+      role_ref: project-management/project-manager-senior
+      tools: [read, skill]
+      skills: [project-planning]
+      icon: check-circle
+    - id: communicator
+      name: 跟进沟通
+      role: 会后沟通与邮件专家
+      goal: 生成清晰、得体、可发送的会后跟进内容。
+      role_ref: specialized/report-distribution-agent
+      tools: [read, skill]
+      skills: [email]
+      icon: mail
+    - id: coordinator
+      name: 纪要交付
+      role: 会议纪要编辑与交付专家
+      goal: 汇总形成最终会议纪要、行动项表和跟进邮件草稿。
+      role_ref: specialized/specialized-document-generator
+      tools: [read, write, present_file, artifact, skill]
+      skills: [meeting-notes, report]
+      icon: file-text
+  tasks:
+    - id: extract_minutes
+      name: 提取会议要点
+      member: extractor
+      task: |
+        请基于会议材料提取结构化信息。
+
+        用户需求：
+        {{user_input}}
+
+        会议主题：
+        {{meeting_topic}}
+
+        会议日期：
+        {{meeting_date}}
+
+        读者：
+        {{audience}}
+
+        输出必须包含：议题、重要讨论、已确认决策、分歧或待确认问题、原文证据摘要。
+      expected_output: 会议要点和决策记录。
+      output: meeting_extract
+      context_policy: explicit
+      context_max_chars: 18000
+      timeout_seconds: 300
+      retry_count: 1
+    - id: action_items
+      name: 整理行动项
+      member: action_owner
+      depends_on: [extract_minutes]
+      context: [extract_minutes]
+      task: |
+        将会议要点转成行动项。
+
+        会议提取结果：
+        {{meeting_extract}}
+
+        输出必须包含：行动项、负责人、截止时间、依赖关系、优先级、待确认责任人。
+      expected_output: 行动项清单。
+      output: action_list
+      context_policy: explicit
+      context_max_chars: 16000
+      timeout_seconds: 240
+      retry_count: 1
+    - id: follow_up
+      name: 生成跟进邮件
+      member: communicator
+      depends_on: [extract_minutes, action_items]
+      context: [extract_minutes, action_items]
+      task: |
+        生成会后跟进邮件草稿。
+
+        会议要点：
+        {{meeting_extract}}
+
+        行动项：
+        {{action_list}}
+
+        邮件要简洁、礼貌、可发送，突出决策、行动项和需要回复确认的问题。
+      expected_output: 会后跟进邮件草稿。
+      output: follow_up_email
+      context_policy: explicit
+      context_max_chars: 18000
+      timeout_seconds: 240
+      retry_count: 1
+    - id: final_minutes
+      name: 生成最终纪要
+      member: coordinator
+      depends_on: [extract_minutes, action_items, follow_up]
+      context: [extract_minutes, action_items, follow_up]
+      task: |
+        生成最终会议纪要与行动项文档。
+
+        会议要点：
+        {{meeting_extract}}
+
+        行动项：
+        {{action_list}}
+
+        跟进邮件：
+        {{follow_up_email}}
+
+        文档必须包含：会议信息、摘要、讨论要点、决策、行动项表格、待确认问题、跟进邮件草稿。
+      expected_output: 会议纪要与行动项最终文档。
+      output: final_minutes
+      context_policy: explicit
+      context_max_chars: 26000
+      timeout_seconds: 300
+      retry_count: 1

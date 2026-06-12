@@ -1,0 +1,16 @@
+{
+  "pageTitle": "专家团",
+  "searchPlaceholder": "搜索专家团...",
+  "teamsCount": "显示 {{count}} / {{total}} 个专家团",
+  "noMatchingTeams": "没有匹配的专家团",
+  "noTeams": "暂无专家团",
+  "domain_tax": "税务",
+  "domain_legal": "法律",
+  "domain_data": "数据",
+  "domain_finance": "财务",
+  "domain_general": "通用",
+  "teamActivated": "已激活 '{{name}}' 专家团",
+  "activateFailed": "激活失败",
+  "activeTeamLabel": "当前专家团: {{name}}",
+  "activeTeamHint": "已配置该领域的技能和 MCP"
+}

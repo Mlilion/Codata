@@ -1,0 +1,23 @@
+{
+  "skill_name": "html-page-generator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我生成一个能直接打开的 HTML 单页，主题是杭州精品咖啡店官网，要有首页、特色咖啡、空间介绍和预约按钮，风格高级一点。",
+      "expected_output": "Creates a self-contained responsive .html page with semantic sections, premium visual design, Chinese copy, and a clear reservation call to action.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "把下面的 SaaS 产品介绍做成一个单页落地页 HTML：产品叫 FlowDesk，帮助团队自动整理会议纪要、待办和项目状态。需要 hero、功能、价格、FAQ。",
+      "expected_output": "Creates a single-file product landing page with hero, features, pricing, FAQ, accessible responsive layout, and polished SaaS styling.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "做一个静态数据看板 HTML 页面，用示例数据展示本月销售额、订单数、转化率和地区排行，不需要后端。",
+      "expected_output": "Creates a self-contained static dashboard with sample-data labeling, metric cards, chart/table-like visuals, responsive layout, and no backend dependencies.",
+      "files": []
+    }
+  ]
+}

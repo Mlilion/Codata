@@ -1,0 +1,170 @@
+team:
+  id: data-analysis-report
+  name: 数据分析报告专家团
+  description: 读取 Excel/CSV 或业务数据材料，完成数据清洗、指标分析、异常识别和管理层报告交付。
+  icon: bar-chart-2
+  category: 办公文档
+  tags: [数据分析, Excel, CSV, 经营分析, 报告]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 8
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是数据分析报告专家团协调者。请把数据准备、指标洞察、业务建议和报告草稿整合成一份可交付报告。
+    最终内容必须区分事实、推断和建议；对缺失数据、样本偏差或口径不一致要明确说明。
+  finalization:
+    mode: deliverable
+    member: reporter
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: markdown
+      title: 数据分析报告
+      filename_template: data-analysis-report.md
+      source: final_report
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: analysis_goal
+      description: 本次分析要回答的核心业务问题。
+      required: true
+    - name: metric_focus
+      description: 重点关注的指标、维度或业务线；没有则留空。
+      required: false
+      default: ""
+    - name: reporting_period
+      description: 报告周期，例如本周、本月、Q2 或指定日期范围。
+      required: false
+      default: ""
+  skills: [data-analysis, xlsx, charting, report]
+  members:
+    - id: data_preparer
+      name: 数据准备
+      role: 数据整理与口径检查专家
+      goal: 读取附件和工作区数据，识别字段、口径、缺失值和可分析维度。
+      role_ref: specialized/data-consolidation-agent
+      tools: [read, glob, grep, search, code_execute, skill]
+      skills: [data-analysis, xlsx]
+      icon: database
+    - id: analyst
+      name: 指标分析
+      role: 经营指标分析专家
+      goal: 基于数据准备结果完成趋势、对比、异常和驱动因素分析。
+      role_ref: support/support-analytics-reporter
+      tools: [read, code_execute, skill]
+      skills: [data-analysis, charting]
+      icon: bar-chart-2
+    - id: advisor
+      name: 业务建议
+      role: 业务洞察与行动建议专家
+      goal: 将分析结果转成可执行建议、风险提醒和待确认问题。
+      role_ref: finance/finance-financial-forecaster
+      tools: [read, skill]
+      skills: [report]
+      icon: lightbulb
+    - id: reporter
+      name: 报告撰写
+      role: 数据报告撰写与交付专家
+      goal: 生成面向管理层或业务团队的结构化分析报告。
+      role_ref: specialized/report-distribution-agent
+      tools: [read, write, present_file, artifact, skill]
+      skills: [report]
+      icon: file-text
+  tasks:
+    - id: prepare_data
+      name: 数据准备与口径检查
+      member: data_preparer
+      task: |
+        请读取用户提供的附件和工作区材料，整理本次数据分析的可用信息。
+
+        用户需求：
+        {{user_input}}
+
+        分析目标：
+        {{analysis_goal}}
+
+        重点指标：
+        {{metric_focus}}
+
+        报告周期：
+        {{reporting_period}}
+
+        请输出：数据来源、字段说明、可用维度、缺失或异常数据、口径风险、建议采用的分析方法。
+      expected_output: 数据准备说明和口径检查结果。
+      output: data_profile
+      context_policy: explicit
+      context_max_chars: 16000
+      timeout_seconds: 300
+      retry_count: 1
+    - id: analyze_metrics
+      name: 指标趋势与异常分析
+      member: analyst
+      depends_on: [prepare_data]
+      context: [prepare_data]
+      task: |
+        基于数据准备结果完成指标分析。
+
+        数据准备结果：
+        {{data_profile}}
+
+        请输出：核心指标变化、趋势、分组对比、异常点、可能原因、建议图表和需要谨慎解释的地方。
+      expected_output: 指标分析结果。
+      output: metric_insights
+      context_policy: explicit
+      context_max_chars: 20000
+      timeout_seconds: 420
+      retry_count: 1
+    - id: recommend_actions
+      name: 业务行动建议
+      member: advisor
+      depends_on: [prepare_data, analyze_metrics]
+      context: [prepare_data, analyze_metrics]
+      task: |
+        将分析发现转化为业务建议。
+
+        数据准备：
+        {{data_profile}}
+
+        指标洞察：
+        {{metric_insights}}
+
+        请输出：建议优先级、行动项、责任角色建议、风险提醒、需要补充确认的问题。
+      expected_output: 业务建议和风险提醒。
+      output: business_recommendations
+      context_policy: explicit
+      context_max_chars: 22000
+      timeout_seconds: 300
+      retry_count: 1
+    - id: write_report
+      name: 生成分析报告
+      member: reporter
+      depends_on: [prepare_data, analyze_metrics, recommend_actions]
+      context: [prepare_data, analyze_metrics, recommend_actions]
+      task: |
+        生成最终数据分析报告。
+
+        数据准备：
+        {{data_profile}}
+
+        指标洞察：
+        {{metric_insights}}
+
+        业务建议：
+        {{business_recommendations}}
+
+        报告必须包含：摘要、数据口径、关键发现、异常与解释、建议行动、风险和待确认问题。
+      expected_output: 可交付的数据分析报告。
+      output: final_report
+      context_policy: explicit
+      context_max_chars: 32000
+      timeout_seconds: 300
+      retry_count: 1

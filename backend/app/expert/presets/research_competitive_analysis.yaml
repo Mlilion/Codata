@@ -1,0 +1,170 @@
+team:
+  id: research-competitive-analysis
+  name: 研究与竞品分析专家团
+  description: 围绕市场、竞品、政策、产品或行业问题进行资料研究、竞品对比和决策建议输出。
+  icon: search
+  category: 研究咨询
+  tags: [研究, 竞品分析, 市场分析, 决策建议]
+  version: "1.0"
+  process: workflow
+  concurrency: 3
+  default_max_tool_rounds: 8
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2600
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 42000
+  coordinator_prompt: |
+    你是研究与竞品分析专家团协调者。最终报告必须区分来源事实、分析判断和建议。
+    如果信息来自用户材料而非联网检索，也要说明来源边界。
+  finalization:
+    mode: deliverable
+    member: synthesizer
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: markdown
+      title: 研究与竞品分析报告
+      filename_template: research-competitive-analysis.md
+      source: final_research_report
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: research_question
+      description: 本次研究要回答的问题。
+      required: true
+    - name: target_market
+      description: 市场、区域、行业或目标用户。
+      required: false
+      default: ""
+    - name: competitors
+      description: 已知竞品或对比对象；没有则留空。
+      required: false
+      default: ""
+  skills: [research, report, charting]
+  members:
+    - id: researcher
+      name: 资料研究
+      role: 市场与资料研究专家
+      goal: 收集并整理与研究问题相关的事实、来源和背景。
+      role_ref: product/product-trend-researcher
+      tools: [read, glob, grep, search, web_search, web_fetch, skill]
+      skills: [research]
+      icon: search
+    - id: competitor_analyst
+      name: 竞品对比
+      role: 竞品与产品对比专家
+      goal: 对比竞品定位、功能、价格、优势、短板和差异化机会。
+      role_ref: product/product-feedback-synthesizer
+      tools: [read, web_search, web_fetch, skill]
+      skills: [research]
+      icon: columns
+    - id: strategy_advisor
+      name: 策略建议
+      role: 机会风险与策略建议专家
+      goal: 从研究和竞品结果中提炼机会、风险、进入策略和下一步验证。
+      role_ref: specialized/specialized-risk-assessor
+      tools: [read, skill]
+      skills: [report]
+      icon: lightbulb
+    - id: synthesizer
+      name: 报告交付
+      role: 研究报告撰写专家
+      goal: 生成结构化研究报告和对比表。
+      role_ref: support/support-executive-summary-generator
+      tools: [read, write, present_file, artifact, skill]
+      skills: [report, charting]
+      icon: file-text
+  tasks:
+    - id: gather_research
+      name: 收集研究资料
+      member: researcher
+      task: |
+        围绕研究问题收集并整理资料。
+
+        用户需求：
+        {{user_input}}
+
+        研究问题：
+        {{research_question}}
+
+        目标市场：
+        {{target_market}}
+
+        已知竞品：
+        {{competitors}}
+
+        输出必须包含：关键事实、来源摘要、行业/市场背景、证据强弱、信息缺口。
+      expected_output: 研究资料和来源摘要。
+      output: research_findings
+      context_policy: explicit
+      context_max_chars: 24000
+      timeout_seconds: 420
+      retry_count: 1
+    - id: compare_competitors
+      name: 竞品对比分析
+      member: competitor_analyst
+      depends_on: [gather_research]
+      context: [gather_research]
+      task: |
+        基于研究资料完成竞品对比。
+
+        研究资料：
+        {{research_findings}}
+
+        输出必须包含：竞品列表、定位、核心能力、价格/商业模式、优劣势、差异化机会、对比表。
+      expected_output: 竞品对比分析。
+      output: competitor_comparison
+      context_policy: explicit
+      context_max_chars: 26000
+      timeout_seconds: 360
+      retry_count: 1
+    - id: strategic_options
+      name: 提炼机会与风险
+      member: strategy_advisor
+      depends_on: [gather_research, compare_competitors]
+      context: [gather_research, compare_competitors]
+      task: |
+        提炼策略机会、风险和建议。
+
+        研究资料：
+        {{research_findings}}
+
+        竞品对比：
+        {{competitor_comparison}}
+
+        输出必须包含：机会、威胁、风险等级、建议策略、验证实验、待确认假设。
+      expected_output: 策略建议和风险判断。
+      output: strategy_options
+      context_policy: explicit
+      context_max_chars: 26000
+      timeout_seconds: 300
+      retry_count: 1
+    - id: final_report
+      name: 生成研究报告
+      member: synthesizer
+      depends_on: [gather_research, compare_competitors, strategic_options]
+      context: [gather_research, compare_competitors, strategic_options]
+      task: |
+        生成最终研究与竞品分析报告。
+
+        研究资料：
+        {{research_findings}}
+
+        竞品对比：
+        {{competitor_comparison}}
+
+        策略建议：
+        {{strategy_options}}
+
+        报告必须包含：执行摘要、背景、竞品对比表、机会风险、建议路线、信息来源边界、待验证问题。
+      expected_output: 研究与竞品分析报告。
+      output: final_research_report
+      context_policy: explicit
+      context_max_chars: 36000
+      timeout_seconds: 360
+      retry_count: 1

@@ -1,0 +1,28 @@
+{
+  "name": "baoyu-skills",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "node ./scripts/run-node-tests.mjs",
+    "test:coverage": "node ./scripts/run-node-tests.mjs --experimental-test-coverage",
+    "verify:skill-release-commits": "node ./scripts/verify-skill-release-commits.mjs"
+  },
+  "devDependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "linkedom": "^0.18.12",
+    "turndown": "^7.2.2",
+    "turndown-plugin-gfm": "^1.0.2",
+    "tsx": "^4.20.5"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "pptxgenjs": "^4.0.1",
+    "sharp": "^0.34.5"
+  },
+  "overrides": {
+    "@xmldom/xmldom": "0.8.13"
+  }
+}

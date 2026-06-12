@@ -1,0 +1,16 @@
+{
+  "pageTitle": "Expert Teams",
+  "searchPlaceholder": "Search teams...",
+  "teamsCount": "Showing {{count}} of {{total}} teams",
+  "noMatchingTeams": "No teams match your search",
+  "noTeams": "No expert teams available",
+  "domain_tax": "Tax",
+  "domain_legal": "Legal",
+  "domain_data": "Data",
+  "domain_finance": "Finance",
+  "domain_general": "General",
+  "teamActivated": "Team '{{name}}' activated",
+  "activateFailed": "Failed to activate team",
+  "activeTeamLabel": "Active team: {{name}}",
+  "activeTeamHint": "Skills and MCPs configured for this domain"
+}

@@ -1,0 +1,39 @@
+{
+  "name": "baoyu-codex-imagegen",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Generate images via Codex CLI's built-in image_gen tool from non-Codex runtimes (Claude Code, Hermes, …).",
+  "bin": {
+    "codex-imagegen": "./src/main.ts"
+  },
+  "files": [
+    "src/**/*.ts",
+    "!src/**/*.test.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/main.ts",
+      "default": "./src/main.ts"
+    },
+    "./src/*": "./src/*"
+  },
+  "scripts": {
+    "test": "bun test",
+    "smoke": "bun src/main.ts --help"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JimLiu/baoyu-skills.git",
+    "directory": "packages/baoyu-codex-imagegen"
+  },
+  "bugs": {
+    "url": "https://github.com/JimLiu/baoyu-skills/issues"
+  },
+  "homepage": "https://github.com/JimLiu/baoyu-skills/tree/main/packages/baoyu-codex-imagegen#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "bun": ">=1.2.0"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "name": "baoyu-chrome-cdp",
+  "version": "0.1.0",
+  "type": "module",
+  "files": [
+    "dist",
+    "src/**/*.ts",
+    "assets",
+    "!src/**/*.test.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./mermaid": {
+      "types": "./src/mermaid.ts",
+      "import": "./dist/mermaid.js",
+      "require": "./dist/mermaid.cjs",
+      "default": "./dist/mermaid.js"
+    },
+    "./src/*": "./src/*",
+    "./assets/*": "./assets/*"
+  },
+  "description": "Shared Chrome DevTools Protocol utilities for baoyu skills.",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JimLiu/baoyu-skills.git",
+    "directory": "packages/baoyu-chrome-cdp"
+  },
+  "bugs": {
+    "url": "https://github.com/JimLiu/baoyu-skills/issues"
+  },
+  "homepage": "https://github.com/JimLiu/baoyu-skills/tree/main/packages/baoyu-chrome-cdp#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "node ../../scripts/build-shared-package.mjs --entry-out src/index.ts:index --entry-out src/mermaid.ts:mermaid --asset assets:assets",
+    "prepack": "bun run build"
+  },
+  "engines": {
+    "bun": ">=1.2.0"
+  }
+}

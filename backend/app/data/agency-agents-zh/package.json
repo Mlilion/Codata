@@ -1,0 +1,47 @@
+{
+  "name": "agency-agents-zh",
+  "version": "1.0.0",
+  "description": "186 个即插即用的 AI 专家角色定义 — 从前端开发到区块链安全，从小红书运营到抖音策略",
+  "keywords": [
+    "ai-agents",
+    "prompts",
+    "system-prompts",
+    "chinese",
+    "multi-agent",
+    "agency-agents",
+    "llm",
+    "claude",
+    "deepseek",
+    "roles"
+  ],
+  "author": "jnMetaCode",
+  "license": "MIT",
+  "homepage": "https://github.com/jnMetaCode/agency-agents-zh#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jnMetaCode/agency-agents-zh"
+  },
+  "files": [
+    "academic/",
+    "design/",
+    "engineering/",
+    "finance/",
+    "game-development/",
+    "hr/",
+    "legal/",
+    "marketing/",
+    "paid-media/",
+    "product/",
+    "project-management/",
+    "sales/",
+    "spatial-computing/",
+    "specialized/",
+    "strategy/",
+    "supply-chain/",
+    "support/",
+    "testing/",
+    "README.md",
+    "AGENT-LIST.md",
+    "LICENSE"
+  ]
+}

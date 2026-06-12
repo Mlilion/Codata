@@ -1,0 +1,43 @@
+WorkCraft Proprietary License
+
+Copyright (c) 2026 WorkCraft Inc.
+All rights reserved.
+
+This software, including its source code, object code, documentation, user
+interface, assets, build scripts, release artifacts, and related materials
+("Software"), is proprietary and confidential to WorkCraft Inc. and its
+licensors.
+
+No rights or licenses are granted by implication, estoppel, or otherwise.
+Except under a separate written agreement signed by WorkCraft Inc., you may
+not, directly or indirectly:
+
+1. use, run, copy, reproduce, modify, adapt, translate, or create derivative
+   works of the Software;
+2. publish, distribute, sell, rent, lease, sublicense, lend, transfer, host,
+   expose, or make the Software available to any third party;
+3. provide the Software or any functionality of the Software as a service,
+   managed service, hosted service, or network-accessible product;
+4. reverse engineer, decompile, disassemble, inspect, bypass, or attempt to
+   derive the source code, structure, algorithms, protocols, models, keys, or
+   internal operation of the Software, except to the limited extent such
+   restriction is prohibited by applicable law;
+5. remove, alter, or obscure any copyright, trademark, proprietary, security,
+   attribution, or license notice; or
+6. use the Software to develop, train, benchmark, or commercialize a competing
+   product or service.
+
+Any access to this repository or possession of a copy of the Software does not
+grant any license or authorization. Unauthorized use is strictly prohibited.
+
+Third-party dependencies, plugins, bundled skills, generated assets, and other
+separately identified components may be subject to their own license terms.
+Those terms apply only to their respective components and do not grant rights
+to the WorkCraft proprietary Software.
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, WHETHER EXPRESS,
+IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. TO THE MAXIMUM
+EXTENT PERMITTED BY LAW, WORKCRAFT INC. AND ITS LICENSORS SHALL NOT BE LIABLE
+FOR ANY CLAIM, DAMAGE, LOSS, COST, OR LIABILITY ARISING OUT OF OR RELATED TO
+THE SOFTWARE OR ITS USE.
