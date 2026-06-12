@@ -22,16 +22,16 @@
   </p>
 
   <p>
-    <video src="docs/assets/readme/workcraft-product-intro-2026-v2.mp4" width="920" controls poster="docs/assets/readme/artifact-panel.png"></video>
+    <video width="920" controls>
+      <source src="docs/assets/readme/workcraft-product-intro-2026-v2.mp4" type="video/mp4">
+    </video>
   </p>
 
   <p>
-    <a href="docs/assets/readme/workcraft-product-intro-2026-v2.mp4">
-      <img src="docs/assets/readme/artifact-panel.png" width="920" alt="WorkCraft artifact 工作流预览" />
-    </a>
+    <a href="docs/assets/readme/workcraft-product-intro-2026-v2.mp4">查看 MP4 产品视频</a>
   </p>
 
-  <p><sub>先看产品视频，再了解专家团如何把真实文件转成可复用交付物。</sub></p>
+  <p><sub>了解专家团如何把真实文件转成可复用交付物。</sub></p>
 </div>
 
 WorkCraft 是一个开源桌面 AI 工作台，面向真实文件、长上下文任务和结构化交付物。它把 Tauri 桌面外壳、Next.js 交互界面和 FastAPI Agent 后端组合在一起，让本地文档、工作区、模型提供商、工具、专家团和生成产物都在一个应用里协同工作。

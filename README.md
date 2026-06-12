@@ -22,16 +22,16 @@
   </p>
 
   <p>
-    <video src="docs/assets/readme/workcraft-product-intro-2026-v2.mp4" width="920" controls poster="docs/assets/readme/artifact-panel.png"></video>
+    <video width="920" controls>
+      <source src="docs/assets/readme/workcraft-product-intro-2026-v2.mp4" type="video/mp4">
+    </video>
   </p>
 
   <p>
-    <a href="docs/assets/readme/workcraft-product-intro-2026-v2.mp4">
-      <img src="docs/assets/readme/artifact-panel.png" width="920" alt="WorkCraft artifact workflow preview" />
-    </a>
+    <a href="docs/assets/readme/workcraft-product-intro-2026-v2.mp4">Watch the MP4 product video</a>
   </p>
 
-  <p><sub>Watch the product video, then explore how expert teams turn real files into reusable artifacts.</sub></p>
+  <p><sub>See how expert teams turn real files into reusable artifacts.</sub></p>
 </div>
 
 WorkCraft is an open-source desktop AI workbench for people who need AI to work with real files, long-running context, and structured deliverables. It combines a Tauri desktop shell, a Next.js interface, and a FastAPI agent backend so local documents, workspaces, model providers, tools, expert teams, and generated artifacts can live in one application.
