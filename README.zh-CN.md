@@ -25,10 +25,6 @@
     <img src="docs/assets/readme/workcraft-product-intro-2026-v2.gif" width="920" alt="WorkCraft 产品介绍动画" />
   </p>
 
-  <p>
-    <a href="docs/assets/readme/workcraft-product-intro-2026-v2.mp4">下载 MP4 产品视频</a>
-  </p>
-
   <p><sub>了解专家团如何把真实文件转成可复用交付物。</sub></p>
 </div>
 
