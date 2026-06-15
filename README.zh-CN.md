@@ -88,13 +88,9 @@ WorkCraft 强调“看得见的工作过程”：Agent 可以读取真实文件�
 | --- | --- |
 | <img src="docs/assets/readme/expert-team-artifact-preview.png" alt="WorkCraft 专家团运行与产物预览" width="420" /> | <img src="docs/assets/readme/message-channels.png" alt="WorkCraft 消息渠道配置" width="420" /> |
 
-| 文件驱动的产物交付 | 表格与预算分析 |
+| 技能与连接器 | 模型厂商配置 |
 | --- | --- |
-| <img src="docs/assets/readme/artifact-panel.png" alt="WorkCraft artifact 面板" width="420" /> | <img src="docs/assets/readme/budget-analysis.png" alt="WorkCraft 预算分析" width="420" /> |
-
-| 文档简报生成 | 技能与连接器 |
-| --- | --- |
-| <img src="docs/assets/readme/docx-brief.png" alt="WorkCraft 文档简报" width="420" /> | <img src="docs/assets/readme/skill-store.png" alt="WorkCraft 技能商店" width="420" /> |
+| <img src="docs/assets/readme/skill-store.png" alt="WorkCraft 技能商店" width="420" /> | <img src="docs/assets/readme/model-provider-settings.png" alt="WorkCraft 模型厂商配置" width="420" /> |
 
 ## 专家团
 

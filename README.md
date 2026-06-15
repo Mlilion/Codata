@@ -88,13 +88,9 @@ WorkCraft is built around visible work: agents read files, coordinate through ex
 | --- | --- |
 | <img src="docs/assets/readme/expert-team-artifact-preview.png" alt="WorkCraft expert workflow and artifact preview" width="420" /> | <img src="docs/assets/readme/message-channels.png" alt="WorkCraft message channel setup" width="420" /> |
 
-| File-grounded artifact delivery | Workbook analysis |
+| Skills and connectors | Model provider setup |
 | --- | --- |
-| <img src="docs/assets/readme/artifact-panel.png" alt="WorkCraft artifact panel" width="420" /> | <img src="docs/assets/readme/budget-analysis.png" alt="WorkCraft budget analysis" width="420" /> |
-
-| Document briefing | Skills and connectors |
-| --- | --- |
-| <img src="docs/assets/readme/docx-brief.png" alt="WorkCraft document brief" width="420" /> | <img src="docs/assets/readme/skill-store.png" alt="WorkCraft skill store" width="420" /> |
+| <img src="docs/assets/readme/skill-store.png" alt="WorkCraft skill store" width="420" /> | <img src="docs/assets/readme/model-provider-settings.png" alt="WorkCraft model provider setup" width="420" /> |
 
 ## Expert Teams
 
