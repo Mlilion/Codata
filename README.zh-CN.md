@@ -96,13 +96,9 @@ WorkCraft 强调“看得见的工作过程”：Agent 可以读取真实文件�
 
 安全与项目联系邮箱：[workcraft@126.com](mailto:workcraft@126.com)
 
-反馈微信：
-
-<img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft 反馈微信" />
-
-WorkCraft 交流群：
-
-<img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft 交流群二维码" />
+| 反馈微信 | WorkCraft 交流群 |
+| --- | --- |
+| <img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft 反馈微信" /> | <img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft 交流群二维码" /> |
 
 ## 专家团
 

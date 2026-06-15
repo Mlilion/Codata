@@ -96,13 +96,9 @@ WorkCraft is built around visible work: agents read files, coordinate through ex
 
 Security and project contact: [workcraft@126.com](mailto:workcraft@126.com)
 
-Feedback WeChat:
-
-<img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft feedback WeChat" />
-
-WeChat community group:
-
-<img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft WeChat community group QR code" />
+| Feedback WeChat | WeChat community group |
+| --- | --- |
+| <img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft feedback WeChat" /> | <img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft WeChat community group QR code" /> |
 
 ## Expert Teams
 
