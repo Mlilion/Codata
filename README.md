@@ -80,6 +80,14 @@ The open-source edition is designed as a standalone local application. Users pro
 
 WorkCraft is built around visible work: agents read files, coordinate through expert-team workflows, and turn intermediate reasoning into concrete artifacts that can be reviewed, downloaded, and reused.
 
+| Workspace home | Expert team library |
+| --- | --- |
+| <img src="docs/assets/readme/workspace-home.png" alt="WorkCraft workspace home" width="420" /> | <img src="docs/assets/readme/expert-team-library.png" alt="WorkCraft expert team library" width="420" /> |
+
+| Expert workflow and artifact preview | Message channel setup |
+| --- | --- |
+| <img src="docs/assets/readme/expert-team-artifact-preview.png" alt="WorkCraft expert workflow and artifact preview" width="420" /> | <img src="docs/assets/readme/message-channels.png" alt="WorkCraft message channel setup" width="420" /> |
+
 | File-grounded artifact delivery | Workbook analysis |
 | --- | --- |
 | <img src="docs/assets/readme/artifact-panel.png" alt="WorkCraft artifact panel" width="420" /> | <img src="docs/assets/readme/budget-analysis.png" alt="WorkCraft budget analysis" width="420" /> |
@@ -275,3 +283,7 @@ Security and project contact: [workcraft@126.com](mailto:workcraft@126.com)
 Feedback WeChat:
 
 <img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft feedback WeChat" />
+
+WeChat community group:
+
+<img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft WeChat community group QR code" />

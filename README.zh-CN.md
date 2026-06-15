@@ -80,6 +80,14 @@ WorkCraft 面向文档密集、流程密集的 AI 工作：
 
 WorkCraft 强调“看得见的工作过程”：Agent 可以读取真实文件，通过专家团协作完成中间步骤，并把结果沉淀为可预览、可下载、可复用的 artifact。
 
+| 工作台首页 | 专家团模板库 |
+| --- | --- |
+| <img src="docs/assets/readme/workspace-home.png" alt="WorkCraft 工作台首页" width="420" /> | <img src="docs/assets/readme/expert-team-library.png" alt="WorkCraft 专家团模板库" width="420" /> |
+
+| 专家团运行与产物预览 | 消息渠道配置 |
+| --- | --- |
+| <img src="docs/assets/readme/expert-team-artifact-preview.png" alt="WorkCraft 专家团运行与产物预览" width="420" /> | <img src="docs/assets/readme/message-channels.png" alt="WorkCraft 消息渠道配置" width="420" /> |
+
 | 文件驱动的产物交付 | 表格与预算分析 |
 | --- | --- |
 | <img src="docs/assets/readme/artifact-panel.png" alt="WorkCraft artifact 面板" width="420" /> | <img src="docs/assets/readme/budget-analysis.png" alt="WorkCraft 预算分析" width="420" /> |
@@ -275,3 +283,7 @@ WorkCraft 使用 Apache License, Version 2.0 开源。请见 [LICENSE](LICENSE)�
 反馈微信：
 
 <img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft 反馈微信" />
+
+WorkCraft 交流群：
+
+<img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft 交流群二维码" />
