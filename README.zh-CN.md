@@ -47,6 +47,7 @@ WorkCraft 的核心判断是：复杂任务不应该只交给一个通用助手�
 
 - [WorkCraft 是做什么的](#workcraft-是做什么的)
 - [产品展示](#产品展示)
+- [联系](#联系)
 - [专家团](#专家团)
 - [核心能力](#核心能力)
 - [典型场景](#典型场景)
@@ -60,7 +61,6 @@ WorkCraft 的核心判断是：复杂任务不应该只交给一个通用助手�
 - [文档](#文档)
 - [参与贡献](#参与贡献)
 - [许可证](#许可证)
-- [联系](#联系)
 
 </details>
 
@@ -91,6 +91,18 @@ WorkCraft 强调“看得见的工作过程”：Agent 可以读取真实文件�
 | 技能与连接器 | 模型厂商配置 |
 | --- | --- |
 | <img src="docs/assets/readme/skill-store.png" alt="WorkCraft 技能商店" width="420" /> | <img src="docs/assets/readme/model-provider-settings.png" alt="WorkCraft 模型厂商配置" width="420" /> |
+
+## 联系
+
+安全与项目联系邮箱：[workcraft@126.com](mailto:workcraft@126.com)
+
+反馈微信：
+
+<img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft 反馈微信" />
+
+WorkCraft 交流群：
+
+<img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft 交流群二维码" />
 
 ## 专家团
 
@@ -271,15 +283,3 @@ WorkCraft 默认在本地存储用户数据，包括对话、文件、生成产�
 ## 许可证
 
 WorkCraft 使用 Apache License, Version 2.0 开源。请见 [LICENSE](LICENSE)。
-
-## 联系
-
-安全与项目联系邮箱：[workcraft@126.com](mailto:workcraft@126.com)
-
-反馈微信：
-
-<img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft 反馈微信" />
-
-WorkCraft 交流群：
-
-<img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft 交流群二维码" />

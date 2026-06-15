@@ -47,6 +47,7 @@ Its core idea is simple: a complex request should not be handled by one generic 
 
 - [What WorkCraft Does](#what-workcraft-does)
 - [Product Tour](#product-tour)
+- [Contact](#contact)
 - [Expert Teams](#expert-teams)
 - [Key Features](#key-features)
 - [Use Cases](#use-cases)
@@ -60,7 +61,6 @@ Its core idea is simple: a complex request should not be handled by one generic 
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
-- [Contact](#contact)
 
 </details>
 
@@ -91,6 +91,18 @@ WorkCraft is built around visible work: agents read files, coordinate through ex
 | Skills and connectors | Model provider setup |
 | --- | --- |
 | <img src="docs/assets/readme/skill-store.png" alt="WorkCraft skill store" width="420" /> | <img src="docs/assets/readme/model-provider-settings.png" alt="WorkCraft model provider setup" width="420" /> |
+
+## Contact
+
+Security and project contact: [workcraft@126.com](mailto:workcraft@126.com)
+
+Feedback WeChat:
+
+<img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft feedback WeChat" />
+
+WeChat community group:
+
+<img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft WeChat community group QR code" />
 
 ## Expert Teams
 
@@ -271,15 +283,3 @@ Before opening a PR, run the relevant verification commands for the area you cha
 ## License
 
 WorkCraft is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
-
-## Contact
-
-Security and project contact: [workcraft@126.com](mailto:workcraft@126.com)
-
-Feedback WeChat:
-
-<img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft feedback WeChat" />
-
-WeChat community group:
-
-<img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft WeChat community group QR code" />
