@@ -87,4 +87,5 @@ backend/output/saas-landing-page.html
 
 # === Certificates & keys ===
 *.pem
+.local-secrets/
 .gstack/

@@ -92,7 +92,7 @@
       "endpoints": [
         "https://github.com/Mlilion/workcraft/releases/latest/download/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERGRTg2RTZBMkNDQkI0NkUKUldSdXRNc3NhbTdvM3c3US9IeVhPWjJHaUFJaVc0c1ZCWFMzcmdwajBLQlorSU50Y09WK0cxNWMK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIyM0NFMzEzMjcxRjVDMUUKUldRZVhCOG5FK004c3ExZ3R5OG1wb293RDRPeDBHaTJDL0VuckQ4WGkybktyZnl3em9MMU0xaEkK"
     },
     "shell": {
       "open": true
