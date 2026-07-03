@@ -4,8 +4,13 @@ import { useMemo, useState } from "react";
 import { Database, ChevronDown, ChevronRight, Maximize2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useArtifactStore } from "@/stores/artifact-store";
-import { codataArtifactFromMetadata, codataJobFromMetadata } from "@/lib/codata-artifact";
+import {
+  codataArtifactFromMetadata,
+  codataJobFromMetadata,
+  codataIndicatorsFromMetadata,
+} from "@/lib/codata-artifact";
 import { SqlResultRenderer } from "@/components/artifacts/renderers/sql-result-renderer";
+import { IndicatorListCard } from "./indicator-list-card";
 import type { ToolPart } from "@/types/message";
 
 interface DataResultCardProps {
@@ -32,6 +37,7 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
     [data.call_id, title, metadata],
   );
   const job = useMemo(() => codataJobFromMetadata(metadata), [metadata]);
+  const indicators = useMemo(() => codataIndicatorsFromMetadata(metadata), [metadata]);
 
   const [open, setOpen] = useState(defaultOpen);
 
@@ -43,6 +49,12 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
         <span className="shimmer-text">正在查询…</span>
       </div>
     );
+  }
+
+  // Registered-metric search → list every match (not just the first's SQL).
+  if (indicators) {
+    const total = typeof metadata?.total === "number" ? metadata.total : undefined;
+    return <IndicatorListCard indicators={indicators} total={total} />;
   }
 
   // Async job that hasn't produced rows yet — show its status.

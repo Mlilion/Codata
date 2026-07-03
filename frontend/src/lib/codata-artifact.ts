@@ -11,6 +11,15 @@ export interface SqlJobData {
   sql?: string;
 }
 
+/** One registered metric from a search_indicators / compile_metric_sql result. */
+export interface IndicatorItem {
+  code?: string;
+  name?: string;
+  unit?: string;
+  sql?: string;
+  description?: string;
+}
+
 /**
  * True when a tool result carries a Codata data payload we render as a data
  * card (SQL result / indicator / chart / async job). Used both by the inline
@@ -51,7 +60,10 @@ export function codataArtifactFromMetadata(
 ): Artifact | null {
   if (!hasCodataResult(metadata)) return null;
   const meta = metadata as Record<string, unknown>;
-  const kind = meta.codata_kind;
+
+  // Indicators render as their own list card (see codataIndicatorsFromMetadata),
+  // not as a single-SQL artifact.
+  if (meta.codata_kind === "indicator") return null;
 
   const columns = Array.isArray(meta.columns)
     ? (meta.columns as { name: string; type?: string }[])
@@ -60,13 +72,7 @@ export function codataArtifactFromMetadata(
     ? (meta.rows as (string | number | null)[][])
     : [];
 
-  let sql: string | undefined;
-  if (typeof meta.sql === "string") {
-    sql = meta.sql;
-  } else if (kind === "indicator" && Array.isArray(meta.indicators)) {
-    const first = (meta.indicators as { sql?: string }[])[0];
-    sql = first?.sql;
-  }
+  const sql: string | undefined = typeof meta.sql === "string" ? meta.sql : undefined;
 
   const sqlResult: SqlResultData | undefined =
     columns.length > 0
@@ -98,4 +104,27 @@ export function codataArtifactFromMetadata(
     sqlResult,
     chartSpec,
   };
+}
+
+/**
+ * Extract the full indicator list from a `search_indicators` /
+ * `compile_metric_sql` result, or null for other kinds. Renders as a list so
+ * multi-metric searches don't collapse to just the first metric's SQL.
+ */
+export function codataIndicatorsFromMetadata(
+  metadata?: Record<string, unknown> | null,
+): IndicatorItem[] | null {
+  if (!metadata || metadata.codata_kind !== "indicator") return null;
+  const raw = metadata.indicators;
+  if (!Array.isArray(raw)) return null;
+  const items = (raw as Record<string, unknown>[])
+    .filter((it) => it && typeof it === "object")
+    .map((it) => ({
+      code: typeof it.code === "string" ? it.code : undefined,
+      name: typeof it.name === "string" ? it.name : undefined,
+      unit: typeof it.unit === "string" ? it.unit : undefined,
+      sql: typeof it.sql === "string" ? it.sql : undefined,
+      description: typeof it.description === "string" ? it.description : undefined,
+    }));
+  return items.length > 0 ? items : null;
 }
