@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Database, ChevronDown, ChevronRight, Maximize2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useArtifactStore } from "@/stores/artifact-store";
-import { codataArtifactFromMetadata } from "@/lib/codata-artifact";
+import { codataArtifactFromMetadata, codataJobFromMetadata } from "@/lib/codata-artifact";
 import { SqlResultRenderer } from "@/components/artifacts/renderers/sql-result-renderer";
 import type { ToolPart } from "@/types/message";
 
@@ -31,6 +31,7 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
     () => codataArtifactFromMetadata(data.call_id, title, metadata),
     [data.call_id, title, metadata],
   );
+  const job = useMemo(() => codataJobFromMetadata(metadata), [metadata]);
 
   const [open, setOpen] = useState(defaultOpen);
 
@@ -40,6 +41,36 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
       <div className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-3 text-sm text-[var(--text-tertiary)]">
         <Loader2 className="h-4 w-4 animate-spin" />
         <span className="shimmer-text">正在查询…</span>
+      </div>
+    );
+  }
+
+  // Async job that hasn't produced rows yet — show its status.
+  if (!artifact && job) {
+    const failed = /fail|error/i.test(job.status);
+    return (
+      <div className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-3">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-tertiary)]">
+          {failed ? (
+            <Database className="h-4 w-4 text-[var(--color-destructive)]" />
+          ) : (
+            <Loader2 className="h-4 w-4 animate-spin text-[var(--brand-primary)]" />
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-[var(--text-primary)]">
+            {failed ? "查询失败" : "查询进行中"}
+          </span>
+          <span className="block truncate text-xs text-[var(--text-tertiary)]">
+            {[
+              job.jobId && `任务 ${job.jobId}`,
+              !failed && job.estimatedSeconds ? `预计 ${job.estimatedSeconds}s` : null,
+              job.status && `状态 ${job.status}`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>
+        </span>
       </div>
     );
   }

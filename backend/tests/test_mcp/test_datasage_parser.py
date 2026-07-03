@@ -42,6 +42,28 @@ def test_execute_sql_async():
     assert md["sql"] == "SELECT big"
 
 
+def test_job_status_running():
+    raw = json.dumps({"status": "running", "job_id": "job-1", "estimated_seconds": 8})
+    md = parse_datasage_result("Datasage_get_job_status", {}, raw)
+    assert md["codata_kind"] == "sql_job"
+    assert md["job_id"] == "job-1"
+    assert md["status"] == "running"
+
+
+def test_job_status_finished_becomes_result():
+    raw = json.dumps({
+        "status": "success",
+        "job_id": "job-1",
+        "columns": ["n"],
+        "data": [[1], [2]],
+        "row_count": 2,
+    })
+    md = parse_datasage_result("Datasage_get_job_status", {}, raw)
+    assert md["codata_kind"] == "sql_result"
+    assert md["rows"] == [[1], [2]]
+    assert md["row_count"] == 2
+
+
 def test_search_indicators():
     raw = json.dumps({
         "results": [

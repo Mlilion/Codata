@@ -15,6 +15,8 @@ Confirmed real response shapes (July 2026):
                         "row_count":2,"truncated":false,"duration_ms":98}
   execute_sql  async → {"mode":"async","job_id":"...","estimated_seconds":N}
   execute_sql  export→ {"job_id":"<uuid>", ...}  (format=csv/parquet/json)
+  get_job_status     → running: {"status":"running","job_id":"..."}
+                       done:    {"status":"success","columns":[...],"data":[...]}
   search_indicators  → {"results":[{"code","name","calculation_rule",...}],
                         "total":N}
 """
@@ -36,8 +38,11 @@ logger = logging.getLogger(__name__)
 EXECUTE_SQL = "execute_sql"
 SEARCH_INDICATORS = "search_indicators"
 COMPILE_METRIC_SQL = "compile_metric_sql"
+GET_JOB_STATUS = "get_job_status"
 
-KNOWN_TOOLS = frozenset({EXECUTE_SQL, SEARCH_INDICATORS, COMPILE_METRIC_SQL})
+KNOWN_TOOLS = frozenset(
+    {EXECUTE_SQL, SEARCH_INDICATORS, COMPILE_METRIC_SQL, GET_JOB_STATUS}
+)
 
 
 def _match_tool(tool_id: str) -> str | None:
@@ -76,6 +81,8 @@ def parse_datasage_result(
     try:
         if tool == EXECUTE_SQL:
             return _parse_execute_sql(args, payload)
+        if tool == GET_JOB_STATUS:
+            return _parse_job_status(payload)
         if tool in (SEARCH_INDICATORS, COMPILE_METRIC_SQL):
             return _parse_indicators(payload)
     except Exception:  # defensive: never break the tool result over parsing
@@ -121,27 +128,69 @@ def _parse_execute_sql(
         }
 
     # Sync result with columns + rows.
-    raw_columns = payload.get("columns")
-    raw_rows = payload.get("data")
-    if isinstance(raw_columns, list) and isinstance(raw_rows, list):
-        columns = [
-            {"name": str(c)} if not isinstance(c, dict) else c
-            for c in raw_columns
-        ]
-        row_count = int(payload.get("row_count", len(raw_rows)))
-        rows = raw_rows[:MAX_ROWS]
-        truncated = bool(payload.get("truncated")) or len(raw_rows) > MAX_ROWS
-        return {
-            "codata_kind": "sql_result",
-            "sql": sql or None,
-            "columns": columns,
-            "rows": rows,
-            "row_count": row_count,
-            "truncated": truncated,
-            "duration_ms": payload.get("duration_ms"),
-        }
+    result = _sql_result_from_payload(payload, sql)
+    if result is not None:
+        return result
 
     return None
+
+
+def _sql_result_from_payload(
+    payload: dict[str, Any],
+    sql: str | None,
+) -> dict[str, Any] | None:
+    """Build a ``sql_result`` metadata dict from a payload carrying
+    ``columns`` + ``data``, or None if the shape isn't present."""
+    raw_columns = payload.get("columns")
+    raw_rows = payload.get("data")
+    if not (isinstance(raw_columns, list) and isinstance(raw_rows, list)):
+        return None
+
+    columns = [
+        {"name": str(c)} if not isinstance(c, dict) else c
+        for c in raw_columns
+    ]
+    row_count = int(payload.get("row_count", len(raw_rows)))
+    rows = raw_rows[:MAX_ROWS]
+    truncated = bool(payload.get("truncated")) or len(raw_rows) > MAX_ROWS
+    return {
+        "codata_kind": "sql_result",
+        "sql": sql or None,
+        "columns": columns,
+        "rows": rows,
+        "row_count": row_count,
+        "truncated": truncated,
+        "duration_ms": payload.get("duration_ms"),
+    }
+
+
+def _parse_job_status(payload: Any) -> dict[str, Any] | None:
+    """Parse a get_job_status result.
+
+    When the async job has finished and the payload carries columns+data, emit
+    a ``sql_result`` so the finished query renders as a table/chart. Otherwise
+    surface the job's running/pending/failed state as a ``sql_job`` card. The
+    SQL text isn't in this response, so it stays absent here.
+    """
+    if not isinstance(payload, dict):
+        return None
+
+    result = _sql_result_from_payload(payload, None)
+    if result is not None:
+        return result
+
+    status = str(payload.get("status", "")).lower()
+    job_id = str(payload.get("job_id", ""))
+    # Only emit a job card when we actually have a job to talk about.
+    if not job_id and not status:
+        return None
+    return {
+        "codata_kind": "sql_job",
+        "job_id": job_id,
+        "status": status or "pending",
+        "estimated_seconds": payload.get("estimated_seconds"),
+        "sql": None,
+    }
 
 
 def _parse_indicators(payload: Any) -> dict[str, Any] | None:

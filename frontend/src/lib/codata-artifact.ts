@@ -1,16 +1,41 @@
 import type { Artifact, SqlResultData, ChartSpec } from "@/types/artifact";
 
 /** Codata result kinds carried on tool-result metadata (`codata_kind`). */
-export const CODATA_KINDS = new Set(["sql_result", "indicator", "chart"]);
+export const CODATA_KINDS = new Set(["sql_result", "indicator", "chart", "sql_job"]);
+
+/** A pending/running async SQL job (from execute_sql async / get_job_status). */
+export interface SqlJobData {
+  jobId: string;
+  status: string;
+  estimatedSeconds?: number;
+  sql?: string;
+}
 
 /**
  * True when a tool result carries a Codata data payload we render as a data
- * card (SQL result / indicator / chart). Used both by the inline message
- * dispatcher and the live stream registry so they agree on what counts.
+ * card (SQL result / indicator / chart / async job). Used both by the inline
+ * message dispatcher and the live stream registry so they agree on what counts.
  */
 export function hasCodataResult(metadata?: Record<string, unknown> | null): boolean {
   if (!metadata) return false;
   return typeof metadata.codata_kind === "string" && CODATA_KINDS.has(metadata.codata_kind);
+}
+
+/**
+ * Extract async-job info from a `sql_job` payload, or null for other kinds.
+ * A running/pending async query has no rows yet — the card shows its status.
+ */
+export function codataJobFromMetadata(
+  metadata?: Record<string, unknown> | null,
+): SqlJobData | null {
+  if (!metadata || metadata.codata_kind !== "sql_job") return null;
+  return {
+    jobId: typeof metadata.job_id === "string" ? metadata.job_id : "",
+    status: typeof metadata.status === "string" ? metadata.status : "pending",
+    estimatedSeconds:
+      typeof metadata.estimated_seconds === "number" ? metadata.estimated_seconds : undefined,
+    sql: typeof metadata.sql === "string" ? metadata.sql : undefined,
+  };
 }
 
 /**
