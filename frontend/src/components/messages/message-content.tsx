@@ -6,6 +6,7 @@ import { TextPart } from "@/components/parts/text-part";
 import { ReasoningPart } from "@/components/parts/reasoning-part";
 import { SubtaskPart } from "@/components/parts/subtask-part";
 import { ArtifactCard } from "@/components/parts/artifact-card";
+import { DataResultCard } from "@/components/parts/data-result-card";
 import { FileArtifactCard } from "@/components/parts/file-artifact-card";
 import { PlanFileCard } from "@/components/parts/plan-file-card";
 import { SourcesFooter } from "@/components/parts/sources-footer";
@@ -14,6 +15,7 @@ import { ExpertTeamDraftCard, isExpertTeamDraftTool } from "@/components/parts/e
 import { ActivitySummary } from "@/components/activity/activity-summary";
 import { TodoProgress, type TodoItem } from "@/components/parts/todo-progress";
 import { extractSources } from "@/lib/sources";
+import { hasCodataResult } from "@/lib/codata-artifact";
 import { cn } from "@/lib/utils";
 import type { ActivityData, ChainItem } from "@/stores/activity-store";
 
@@ -23,6 +25,8 @@ interface MessageContentProps {
   isStreaming?: boolean;
   /** Stable key identifying the message — used by ActivitySummary to toggle the activity panel. */
   activityKey?: string;
+  /** Expand the newest data-result card (true for the last message / while streaming). */
+  expandLatestDataCard?: boolean;
 }
 
 const VISIBLE_TOOL_PARTS = new Set(["artifact", "present_file", "submit_plan"]);
@@ -56,6 +60,11 @@ const NON_USER_FACING_FILE_HINTS = ["helper", "scratch", "temp", "tmp", "script"
 
 function isFileCardToolPart(part: PartData): boolean {
   return part.type === "tool" && FILE_CARD_TOOL_PARTS.has((part as ToolPart).tool);
+}
+
+/** A tool part carrying a Codata data payload (SQL result / chart / indicator). */
+function isDataResultToolPart(part: PartData): boolean {
+  return part.type === "tool" && hasCodataResult((part as ToolPart).state.metadata);
 }
 
 function fileExtension(filePath: string): string {
@@ -124,6 +133,7 @@ export function MessageContent({
   parts,
   isStreaming,
   activityKey,
+  expandLatestDataCard,
 }: MessageContentProps) {
   // Thinking duration reported by ReasoningPart's live timer
   const [thinkingDuration, setThinkingDuration] = useState<number | undefined>();
@@ -135,6 +145,15 @@ export function MessageContent({
   for (let i = parts.length - 1; i >= 0; i--) {
     if (parts[i].type === "text" && lastTextIndex === -1) {
       lastTextIndex = i;
+      break;
+    }
+  }
+
+  // The most recent data-result card in this message starts expanded; older ones collapse.
+  let lastDataResultIndex = -1;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    if (isDataResultToolPart(parts[i])) {
+      lastDataResultIndex = i;
       break;
     }
   }
@@ -224,7 +243,9 @@ export function MessageContent({
               p.type === "compaction" ||
               p.type === "subtask" ||
               (p.type === "tool" &&
-                (VISIBLE_TOOL_PARTS.has((p as ToolPart).tool) || isExpertTeamDraftTool(p as ToolPart))),
+                (VISIBLE_TOOL_PARTS.has((p as ToolPart).tool) ||
+                  isExpertTeamDraftTool(p as ToolPart) ||
+                  isDataResultToolPart(p))),
             ),
             chain,
           }
@@ -247,6 +268,7 @@ export function MessageContent({
             p.type === "tool" &&
             !VISIBLE_TOOL_PARTS.has((p as ToolPart).tool) &&
             !isExpertTeamDraftTool(p as ToolPart) &&
+            !isDataResultToolPart(p) &&
             !(
               GENERATED_FILE_TOOL_PARTS.has((p as ToolPart).tool) &&
               fileCardsForTool(p as ToolPart, presentedFilePaths).length > 0
@@ -366,6 +388,18 @@ export function MessageContent({
             const tp = part as ToolPart;
             if (tp.tool === "submit_plan") return <PlanFileCard key={originalIndex} data={tp} />;
             if (isExpertTeamDraftTool(tp)) return <ExpertTeamDraftCard key={originalIndex} data={tp} />;
+            if (isDataResultToolPart(tp)) {
+              return (
+                <DataResultCard
+                  key={originalIndex}
+                  data={tp}
+                  defaultOpen={
+                    (expandLatestDataCard || isStreaming) &&
+                    originalIndex === lastDataResultIndex
+                  }
+                />
+              );
+            }
             return <ArtifactCard key={originalIndex} data={tp} />;
           }
           default:

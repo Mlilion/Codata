@@ -423,6 +423,7 @@ export function MessageList({
                   key={group.messages[0].id}
                   messages={group.messages}
                   isNew={groupIsNew}
+                  isLastMessage={isLastOverall}
                 />
               );
             })}

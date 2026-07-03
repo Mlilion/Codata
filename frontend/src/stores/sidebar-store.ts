@@ -6,6 +6,8 @@ import { SIDEBAR_WIDTH, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "@/lib/const
 
 export type OrganizeMode = "by-project" | "chronological" | "chats-first";
 export type SortBy = "created" | "updated";
+/** Top-level product mode: general chat vs. Codata data-agent workspace. */
+export type AppMode = "chat" | "codata";
 
 interface SidebarStore {
   /** Mobile drawer open state */
@@ -23,6 +25,8 @@ interface SidebarStore {
   organizeMode: OrganizeMode;
   /** Which timestamp sessions are sorted by */
   sortBy: SortBy;
+  /** Top-level product mode (chat vs. Codata data workspace) */
+  appMode: AppMode;
   /** Current sidebar width (drag-resizable) */
   width: number;
   setOpen: (open: boolean) => void;
@@ -34,6 +38,7 @@ interface SidebarStore {
   setSearchModalOpen: (open: boolean) => void;
   setOrganizeMode: (mode: OrganizeMode) => void;
   setSortBy: (sortBy: SortBy) => void;
+  setAppMode: (mode: AppMode) => void;
   collapseAllProjects: (directories: string[]) => void;
   expandAllProjects: () => void;
   setWidth: (width: number) => void;
@@ -54,6 +59,7 @@ export const useSidebarStore = create<SidebarStore>()(
       isSearchModalOpen: false,
       organizeMode: "by-project",
       sortBy: "updated",
+      appMode: "chat",
       width: SIDEBAR_WIDTH,
       setOpen: (open) => set({ isOpen: open }),
       toggle: () => set((s) => ({ isCollapsed: !s.isCollapsed })),
@@ -73,6 +79,7 @@ export const useSidebarStore = create<SidebarStore>()(
       setSearchModalOpen: (open) => set({ isSearchModalOpen: open }),
       setOrganizeMode: (mode) => set({ organizeMode: mode }),
       setSortBy: (sortBy) => set({ sortBy }),
+      setAppMode: (mode) => set({ appMode: mode }),
       collapseAllProjects: (directories) =>
         set(() => {
           const next: Record<string, boolean> = {};
@@ -88,6 +95,7 @@ export const useSidebarStore = create<SidebarStore>()(
         collapsedProjects: s.collapsedProjects,
         organizeMode: s.organizeMode,
         sortBy: s.sortBy,
+        appMode: s.appMode,
         width: s.width,
       }),
       merge: (persisted, current) => {
