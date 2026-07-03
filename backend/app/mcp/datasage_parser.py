@@ -27,14 +27,29 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Tool IDs are ``{sanitised_server_name}_{tool_name}``. The datasage connector
-# is registered with name "Datasage" (see backend/.codata/connectors.json),
-# which sanitises to "Datasage".
-EXECUTE_SQL = "Datasage_execute_sql"
-SEARCH_INDICATORS = "Datasage_search_indicators"
-COMPILE_METRIC_SQL = "Datasage_compile_metric_sql"
+# Tool IDs are ``{sanitised_server_name}_{sanitised_tool_name}``. We match on
+# the *tool-name* suffix rather than a hardcoded server name, so this works
+# regardless of what the user named their datasage MCP server ("Datasage",
+# "datasage", "DataSage", "数据平台", …). The bare tool names below never
+# contain characters that ``sanitise_name`` would rewrite, so the suffix is
+# stable.
+EXECUTE_SQL = "execute_sql"
+SEARCH_INDICATORS = "search_indicators"
+COMPILE_METRIC_SQL = "compile_metric_sql"
 
 KNOWN_TOOLS = frozenset({EXECUTE_SQL, SEARCH_INDICATORS, COMPILE_METRIC_SQL})
+
+
+def _match_tool(tool_id: str) -> str | None:
+    """Return the known datasage tool name a ``tool_id`` refers to, or None.
+
+    ``tool_id`` is ``{server}_{tool}``; we accept an exact tool-name match or a
+    ``_{tool}`` suffix so any server name works.
+    """
+    for name in KNOWN_TOOLS:
+        if tool_id == name or tool_id.endswith(f"_{name}"):
+            return name
+    return None
 
 # Cap rows shipped to the frontend; the full result stays in output text.
 MAX_ROWS = 500
@@ -50,7 +65,8 @@ def parse_datasage_result(
     Returns a dict to merge into ``ToolResult.metadata``, or ``None`` when the
     output isn't recognised (caller leaves metadata untouched).
     """
-    if tool_id not in KNOWN_TOOLS:
+    tool = _match_tool(tool_id)
+    if tool is None:
         return None
 
     payload = _safe_json(raw_text)
@@ -58,9 +74,9 @@ def parse_datasage_result(
         return None
 
     try:
-        if tool_id == EXECUTE_SQL:
+        if tool == EXECUTE_SQL:
             return _parse_execute_sql(args, payload)
-        if tool_id in (SEARCH_INDICATORS, COMPILE_METRIC_SQL):
+        if tool in (SEARCH_INDICATORS, COMPILE_METRIC_SQL):
             return _parse_indicators(payload)
     except Exception:  # defensive: never break the tool result over parsing
         logger.debug("datasage parse failed for %s", tool_id, exc_info=True)

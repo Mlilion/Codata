@@ -65,3 +65,25 @@ def test_unknown_tool_returns_none():
 def test_non_json_returns_none():
     assert parse_datasage_result("Datasage_execute_sql", {}, "some error text") is None
     assert parse_datasage_result("Datasage_execute_sql", {}, "") is None
+
+
+def test_matches_regardless_of_server_name():
+    """The parser keys off the tool-name suffix, not a hardcoded server name."""
+    raw = json.dumps({"mode": "sync", "columns": ["n"], "data": [[1]], "row_count": 1})
+    for tool_id in (
+        "execute_sql",             # no server prefix
+        "datasage_execute_sql",    # lowercase server
+        "DataSage_execute_sql",    # mixed case
+        "my_data_platform_execute_sql",  # arbitrary multi-underscore server
+        "___execute_sql",          # sanitised non-ascii server name (e.g. 数据平台)
+    ):
+        md = parse_datasage_result(tool_id, {}, raw)
+        assert md is not None, tool_id
+        assert md["codata_kind"] == "sql_result"
+
+
+def test_suffix_collision_is_not_matched():
+    """A tool merely ending in the same word but not on an underscore boundary."""
+    raw = json.dumps({"mode": "sync", "columns": ["n"], "data": [[1]]})
+    # 'preexecute_sql' would be a different tool; 'executesql' has no boundary.
+    assert parse_datasage_result("Server_executesql", {}, raw) is None
