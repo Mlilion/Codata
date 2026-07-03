@@ -9,6 +9,7 @@ import { MermaidRenderer } from "./renderers/mermaid-renderer";
 import { HtmlRenderer } from "./renderers/html-renderer";
 import { FilePreviewRenderer } from "./renderers/file-preview-renderer";
 import { CsvRenderer } from "./renderers/csv-renderer";
+import { SqlResultRenderer } from "./renderers/sql-result-renderer";
 // Heavy renderers - lazy loaded to reduce bundle size
 import {
   PdfRenderer,
@@ -64,6 +65,8 @@ export function ArtifactPanelContent() {
       return <PptxRenderer filePath={artifact.filePath} />;
     case "csv":
       return <CsvRenderer content={artifact.content} title={artifact.title} />;
+    case "sql_result":
+      return <SqlResultRenderer artifact={artifact} />;
     case "image":
       return <ImageRenderer filePath={artifact.filePath} />;
     case "video":

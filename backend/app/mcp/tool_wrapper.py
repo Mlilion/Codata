@@ -80,8 +80,21 @@ class McpToolWrapper(ToolDefinition):
         if result.isError:
             return ToolResult(error=output or "MCP tool returned an error")
 
+        # Structure known datasage results into metadata so the frontend can
+        # render SQL / tables / charts instead of a raw text blob.
+        metadata: dict[str, Any] = {}
+        try:
+            from app.mcp.datasage_parser import parse_datasage_result
+
+            parsed = parse_datasage_result(self._tool_id, args, output)
+            if parsed:
+                metadata.update(parsed)
+        except Exception:
+            logger.debug("datasage metadata parse failed", exc_info=True)
+
         return ToolResult(
             output=output,
+            metadata=metadata,
             title=f"{self._client.name}/{self._mcp_tool.name}",
             attachments=attachments,
         )

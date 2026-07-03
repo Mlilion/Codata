@@ -1,6 +1,6 @@
 "use client";
 
-import { X, ChevronLeft, ChevronRight, Code, FileText, FileSpreadsheet, Globe, Image, LayoutDashboard, GitBranch, Presentation, Film } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Code, FileText, FileSpreadsheet, Globe, Image, LayoutDashboard, GitBranch, Presentation, Film, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useArtifactStore } from "@/stores/artifact-store";
 import type { ArtifactType } from "@/types/artifact";
@@ -20,6 +20,7 @@ const TYPE_CONFIG: Record<ArtifactType, { icon: React.ComponentType<{ className?
   image: { icon: Image, label: "Image" },
   video: { icon: Film, label: "Video" },
   "file-preview": { icon: FileText, label: "File" },
+  sql_result: { icon: Database, label: "查询结果" },
 };
 
 export function ArtifactPanelHeader({ showClose = true }: { showClose?: boolean } = {}) {

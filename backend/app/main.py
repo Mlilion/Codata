@@ -474,6 +474,7 @@ def _register_builtin_tools(
     from app.tool.builtin.baoyu_image_generate import BaoyuImageGenerateTool
     from app.tool.builtin.baoyu_publish import BaoyuPublishTool
     from app.tool.builtin.bash import BashTool
+    from app.tool.builtin.chart_spec import ChartSpecTool
     from app.tool.builtin.code_execute import CodeExecuteTool
     from app.tool.builtin.create_expert_teams import CreateExpertTeamsTool
     from app.tool.builtin.edit import EditTool
@@ -500,7 +501,7 @@ def _register_builtin_tools(
         TaskTool, WebFetchTool, WebSearchTool, InvalidTool,
         PlanTool, SubmitPlanTool, ArtifactTool, PresentFileTool,
         CreateExpertTeamsTool, ViMaxGenerateVideoTool,
-        BaoyuImageGenerateTool, BaoyuPublishTool,
+        BaoyuImageGenerateTool, BaoyuPublishTool, ChartSpecTool,
     ]:
         registry.register(tool_cls())
 
