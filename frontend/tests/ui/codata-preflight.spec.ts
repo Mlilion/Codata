@@ -116,6 +116,26 @@ test.describe("Codata UI preflight", () => {
     await expect(page.getByText("Invoice cleanup").first()).toBeVisible();
   });
 
+  test("desktop data path: datasage result renders as an inline data card with tabs", async ({ page }) => {
+    await page.goto("/c/session-data");
+
+    // The user's data question and the assistant preamble render.
+    await expect(page.getByText("近三天各渠道的活跃用户数是多少?")).toBeVisible();
+    await expect(page.getByText("下面是近三天各渠道的活跃用户数。")).toBeVisible();
+
+    // The inline data card shows its summary (3 行 · 2 列) and the newest card
+    // is expanded, so the result table + values are visible.
+    await expect(page.getByText(/3 行 · 2 列/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /结果/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /SQL/ })).toBeVisible();
+    await expect(page.getByText("App").first()).toBeVisible();
+    await expect(page.getByText("12,304").or(page.getByText("12304")).first()).toBeVisible();
+
+    // Switching to the SQL tab reveals the generated query.
+    await page.getByRole("button", { name: /SQL/ }).click();
+    await expect(page.getByText(/SELECT channel, dau FROM dws\.dau_by_channel/)).toBeVisible();
+  });
+
   test("desktop new-chat path: switching from an active session clears stale generating state", async ({ page }) => {
     await page.goto("/c/session-new");
     await expect(page.getByText("Preflight answer streamed from the mock backend.")).toBeVisible();

@@ -156,6 +156,19 @@ const sessionArtifacts = {
   time_updated: "2026-04-23T11:30:00.000Z",
 };
 
+const sessionData = {
+  ...sessionAlpha,
+  id: "session-data",
+  directory: "/Users/alex/codata-demo",
+  title: "Data result showcase",
+  is_pinned: false,
+  summary_additions: 0,
+  summary_deletions: 0,
+  summary_files: 0,
+  time_created: "2026-04-21T10:00:00.000Z",
+  time_updated: "2026-04-21T11:30:00.000Z",
+};
+
 const sessionLong = {
   ...sessionAlpha,
   id: "session-long",
@@ -752,6 +765,85 @@ function artifactToolPart(
     },
   };
 }
+
+// A persisted datasage tool result carrying structured codata_kind metadata,
+// used to prove the inline data card renders from history (P0-2 / main-area
+// card flow). Mirrors the shape the backend datasage_parser emits.
+const dataMessagePage = {
+  total: 2,
+  offset: 0,
+  messages: [
+    {
+      id: "session-data-user-1",
+      session_id: "session-data",
+      time_created: "2026-04-21T11:00:00.000Z",
+      data: { role: "user", agent: "build" },
+      parts: [
+        {
+          id: "session-data-user-part-1",
+          message_id: "session-data-user-1",
+          session_id: "session-data",
+          time_created: "2026-04-21T11:00:00.000Z",
+          data: { type: "text", text: "近三天各渠道的活跃用户数是多少?" },
+        },
+      ],
+    },
+    {
+      id: "session-data-assistant-1",
+      session_id: "session-data",
+      time_created: "2026-04-21T11:02:00.000Z",
+      data: {
+        role: "assistant",
+        agent: "build",
+        model_id: "openrouter/anthropic/claude-sonnet-4.5",
+        provider_id: "openrouter",
+        cost: 0,
+        finish: "stop",
+      },
+      parts: [
+        {
+          id: "session-data-text-1",
+          message_id: "session-data-assistant-1",
+          session_id: "session-data",
+          time_created: "2026-04-21T11:02:00.000Z",
+          data: { type: "text", text: "下面是近三天各渠道的活跃用户数。" },
+        },
+        {
+          id: "session-data-sql-1",
+          message_id: "session-data-assistant-1",
+          session_id: "session-data",
+          time_created: "2026-04-21T11:02:30.000Z",
+          data: {
+            type: "tool",
+            tool: "Datasage_execute_sql",
+            call_id: "datasage-exec-1",
+            state: {
+              status: "completed",
+              input: { sql: "SELECT channel, dau FROM dws.dau_by_channel LIMIT 3" },
+              output: null,
+              metadata: {
+                codata_kind: "sql_result",
+                sql: "SELECT channel, dau FROM dws.dau_by_channel LIMIT 3",
+                columns: [{ name: "channel" }, { name: "dau" }],
+                rows: [
+                  ["App", 12304],
+                  ["Web", 8021],
+                  ["H5", 4560],
+                ],
+                row_count: 3,
+                truncated: false,
+              },
+              title: "查询结果",
+              time_start: "2026-04-21T11:02:00.000Z",
+              time_end: "2026-04-21T11:02:30.000Z",
+              time_compacted: null,
+            },
+          },
+        },
+      ],
+    },
+  ],
+};
 
 const artifactMessagePage = {
   total: 2,
@@ -1369,6 +1461,7 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
     [sessionAlpha.id, cloneJson(sessionAlpha)],
     [sessionBeta.id, cloneJson(sessionBeta)],
     [sessionArtifacts.id, cloneJson(sessionArtifacts)],
+    [sessionData.id, cloneJson(sessionData)],
     [sessionLong.id, cloneJson(sessionLong)],
     [sessionCompact.id, cloneJson(sessionCompact)],
   ]);
@@ -1392,7 +1485,7 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
       : cloneJson(sessionRecords.get(id) ?? sessionAlpha);
   const allSessions = () => [
     ...(state.promptBodies.length || state.editBodies.length ? [createdSession] : []),
-    ...[sessionAlpha.id, sessionBeta.id, sessionArtifacts.id, sessionLong.id, sessionCompact.id]
+    ...[sessionAlpha.id, sessionBeta.id, sessionArtifacts.id, sessionData.id, sessionLong.id, sessionCompact.id]
       .filter((id) => !state.sessionDeletes.includes(id))
       .map((id) => cloneJson(sessionRecords.get(id)!)),
   ];
@@ -1605,6 +1698,7 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
       const offset = Number(url.searchParams.get("offset") ?? -1);
       if (sessionId === "session-new") return fulfillJson(route, createdMessagePageForState(state));
       if (sessionId === "session-artifacts") return fulfillJson(route, artifactMessagePage);
+      if (sessionId === "session-data") return fulfillJson(route, dataMessagePage);
       if (sessionId === "session-long") return fulfillJson(route, paginatedMessages(longConversationMessages, limit, offset));
       if (sessionId === "session-compact") return fulfillJson(route, compactMessagePage(state.compactRequests.length > 0));
       return fulfillJson(route, sessionMessagePageForState(sessionId, state));
