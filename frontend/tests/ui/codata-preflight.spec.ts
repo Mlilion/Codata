@@ -134,6 +134,13 @@ test.describe("Codata UI preflight", () => {
     // Switching to the SQL tab reveals the generated query.
     await page.getByRole("button", { name: /SQL/ }).click();
     await expect(page.getByText(/SELECT channel, dau FROM dws\.dau_by_channel/)).toBeVisible();
+
+    // An async query (sql_job with SQL but no rows) renders as a running-status
+    // card — NOT an empty SQL-only result card. Guards the priority bug where a
+    // job's carried SQL was turned into a result artifact that shadowed status.
+    await expect(page.getByText("查询进行中")).toBeVisible();
+    await expect(page.getByText(/job-async-1/)).toBeVisible();
+    await expect(page.getByText(/预计 12s/)).toBeVisible();
   });
 
   test("desktop new-chat path: switching from an active session clears stale generating state", async ({ page }) => {

@@ -62,8 +62,10 @@ export function codataArtifactFromMetadata(
   const meta = metadata as Record<string, unknown>;
 
   // Indicators render as their own list card (see codataIndicatorsFromMetadata),
-  // not as a single-SQL artifact.
-  if (meta.codata_kind === "indicator") return null;
+  // and async jobs render as a status card (see codataJobFromMetadata) — neither
+  // is a result artifact. Bail early so a job's carried SQL doesn't get turned
+  // into an empty SQL-only result card that then shadows the job status card.
+  if (meta.codata_kind === "indicator" || meta.codata_kind === "sql_job") return null;
 
   const columns = Array.isArray(meta.columns)
     ? (meta.columns as { name: string; type?: string }[])

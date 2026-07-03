@@ -809,6 +809,35 @@ const dataMessagePage = {
           data: { type: "text", text: "下面是近三天各渠道的活跃用户数。" },
         },
         {
+          id: "session-data-job-1",
+          message_id: "session-data-assistant-1",
+          session_id: "session-data",
+          time_created: "2026-04-21T11:02:10.000Z",
+          data: {
+            type: "tool",
+            tool: "Datasage_execute_sql",
+            call_id: "datasage-exec-2",
+            state: {
+              status: "completed",
+              input: { sql: "SELECT * FROM dws.events_wide" },
+              output: null,
+              // Async kickoff: a job with SQL but no rows. Must render as a
+              // 查询进行中 status card, NOT an empty SQL-only result card.
+              metadata: {
+                codata_kind: "sql_job",
+                job_id: "job-async-1",
+                status: "pending",
+                estimated_seconds: 12,
+                sql: "SELECT * FROM dws.events_wide",
+              },
+              title: "查询进行中",
+              time_start: "2026-04-21T11:02:00.000Z",
+              time_end: "2026-04-21T11:02:10.000Z",
+              time_compacted: null,
+            },
+          },
+        },
+        {
           id: "session-data-sql-1",
           message_id: "session-data-assistant-1",
           session_id: "session-data",
