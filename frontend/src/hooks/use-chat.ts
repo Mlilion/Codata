@@ -16,6 +16,7 @@ import { useSettingsStore } from "@/stores/settings-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useActivityStore } from "@/stores/activity-store";
 import { useRightSidebarStore } from "@/stores/right-sidebar-store";
+import { useSidebarStore } from "@/stores/sidebar-store";
 import { DRAFT_EXPERT_SESSION_ID, useExpertSessionStore } from "@/stores/expert-session-store";
 import { startStream, stopStream } from "@/lib/session-stream-registry";
 import { useRemoteGenerationSync } from "./use-remote-generation-sync";
@@ -177,7 +178,13 @@ export function useChat(currentSessionId?: string) {
               agent: settingsState.selectedAgent,
               attachments: attachments ?? [],
               skills: options?.skills ?? [],
-              mode: options?.mode ?? (expertCreationMode ? "expert_team_creation" : null),
+              mode:
+                options?.mode ??
+                (expertCreationMode
+                  ? "expert_team_creation"
+                  : useSidebarStore.getState().appMode === "codata"
+                    ? "codata"
+                    : null),
               permission_presets: permissionPresets,
               permission_rules: permissionRules,
               reasoning: settingsState.reasoningEnabled,
@@ -307,7 +314,11 @@ export function useChat(currentSessionId?: string) {
           agent: settingsState.selectedAgent,
           attachments: attachments ?? [],
           skills: expertCreationMode ? [expertCreationMode.skill] : [],
-          mode: expertCreationMode ? "expert_team_creation" : null,
+          mode: expertCreationMode
+            ? "expert_team_creation"
+            : useSidebarStore.getState().appMode === "codata"
+              ? "codata"
+              : null,
           permission_presets: permissionPresets,
           permission_rules: permissionRules,
           reasoning: settingsState.reasoningEnabled,

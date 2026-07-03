@@ -27,6 +27,22 @@ class TestSystemPrompt:
         assert "Platform" in prompt
         assert "date" in prompt
 
+    def test_codata_mode_adds_data_guidance(self):
+        ar = AgentRegistry()
+        build = ar.get("build")
+        base = build_system_prompt(build).as_plain_text()
+        codata = build_system_prompt(build, app_mode="codata").as_plain_text()
+        assert "Codata Data Workspace Mode" not in base
+        assert "Codata Data Workspace Mode" in codata
+        assert "datasage" in codata
+        assert "chart_spec" in codata
+
+    def test_non_codata_mode_has_no_data_guidance(self):
+        ar = AgentRegistry()
+        build = ar.get("build")
+        prompt = build_system_prompt(build, app_mode="expert_team_creation").as_plain_text()
+        assert "Codata Data Workspace Mode" not in prompt
+
     def test_plan_agent_prompt(self):
         ar = AgentRegistry()
         plan = ar.get("plan")

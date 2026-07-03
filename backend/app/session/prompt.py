@@ -445,6 +445,7 @@ class SessionPrompt:
             workspace=self.workspace,
             fts_status=self.fts_status,
             workspace_memory_section=self.workspace_memory_section,
+            app_mode=self.request.mode,
         )
 
         # --- 5. Merge permission rulesets ---
@@ -1097,6 +1098,7 @@ class SessionPrompt:
             workspace=self.workspace,
             fts_status=self.fts_status,
             workspace_memory_section=self.workspace_memory_section,
+            app_mode=self.request.mode,
         )
 
 

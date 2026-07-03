@@ -70,6 +70,7 @@ def build_system_prompt(
     workspace: str | None = None,
     fts_status: dict | None = None,
     workspace_memory_section: str | None = None,
+    app_mode: str | None = None,
 ) -> SystemPromptParts:
     """Build the complete system prompt for an LLM call.
 
@@ -91,6 +92,10 @@ def build_system_prompt(
     # --- Dynamic sections (change each turn) ---
     dynamic_parts: list[str] = []
 
+    # Codata data-workspace mode guidance
+    if app_mode == "codata":
+        dynamic_parts.append(_codata_mode_section())
+
     # Workspace-scoped memory
     if workspace_memory_section:
         dynamic_parts.append(workspace_memory_section)
@@ -107,6 +112,36 @@ def build_system_prompt(
         cached="\n\n".join(cached_parts),
         dynamic="\n\n".join(dynamic_parts),
     )
+
+
+def _codata_mode_section() -> str:
+    """Guidance injected when the user is in Codata data-workspace mode.
+
+    Biases the model toward the datasage data pipeline (metadata search →
+    authoritative SQL → execute → visualize) so switching to Codata actually
+    changes behaviour, not just the sidebar.
+    """
+    return """# Codata Data Workspace Mode
+The user is in Codata mode — a data-analysis workspace. Treat requests as data
+questions to answer with the connected datasage data platform, and produce
+results that render as tables and charts, not prose dumps.
+
+Preferred workflow:
+1. Discover data with datasage tools before writing SQL — search_tables /
+   list_tables to find the right table, get_table_profile for its schema, and
+   search_indicators for registered metrics (each carries an authoritative,
+   verified calculation_rule SQL — prefer it over hand-writing SQL).
+2. Run queries with datasage execute_sql. Never invent column or table names;
+   confirm them from a profile first.
+3. When a result is worth visualising, call the chart_spec tool with the same
+   columns/rows to render a chart in the user's data panel. Use line/multi_line
+   for time series, bar/grouped_bar/stacked_bar for categorical comparison, pie
+   for part-of-whole.
+4. Query results already display as an interactive table + SQL + chart card, so
+   keep your text brief — summarise the finding, don't repaste the whole table.
+
+If no datasage/data connection is available, say so and ask the user to connect
+one rather than fabricating data."""
 
 
 def _environment_section(directory: str | None = None, *, workspace: str | None = None, fts_status: dict | None = None) -> str:
