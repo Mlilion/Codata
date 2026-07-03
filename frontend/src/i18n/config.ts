@@ -46,7 +46,7 @@ i18n
     },
     detection: {
       order: ["localStorage", "navigator"],
-      lookupLocalStorage: "workcraft-language",
+      lookupLocalStorage: "codata-language",
       caches: ["localStorage"],
     },
   });

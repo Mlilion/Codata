@@ -1,6 +1,6 @@
 """OpenRouter provider.
 
-Primary provider for WorkCraft. Uses OpenAI-compatible API at
+Primary provider for Codata. Uses OpenAI-compatible API at
 https://openrouter.ai/api/v1 with reasoning support.
 """
 

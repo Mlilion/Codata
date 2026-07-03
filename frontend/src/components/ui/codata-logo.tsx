@@ -1,16 +1,16 @@
-interface WorkCraftLogoProps {
+interface CodataLogoProps {
   size?: number;
   className?: string;
 }
 
-export function WorkCraftLogo({ size = 20, className }: WorkCraftLogoProps) {
+export function CodataLogo({ size = 20, className }: CodataLogoProps) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/logo-512.png"
       width={size}
       height={size}
-      alt="WorkCraft"
+      alt="Codata"
       className={className}
       style={{ width: size, height: size }}
     />

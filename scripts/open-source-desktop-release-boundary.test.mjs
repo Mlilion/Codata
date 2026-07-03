@@ -7,11 +7,11 @@ const tauriLib = fs.readFileSync("desktop-tauri/src-tauri/src/lib.rs", "utf8");
 const sessionItem = fs.readFileSync("frontend/src/components/layout/session-item.tsx", "utf8");
 
 test("open-source desktop app uses an isolated application identifier", () => {
-  assert.equal(tauriConfig.identifier, "com.workcraft.opensource");
+  assert.equal(tauriConfig.identifier, "com.codata.opensource");
 });
 
 test("open-source desktop deep links use an isolated URL scheme", () => {
-  assert.deepEqual(tauriConfig.plugins["deep-link"].desktop.schemes, ["workcraft-oss"]);
-  assert.match(tauriLib, /url\.scheme\(\) != "workcraft-oss"/);
-  assert.match(sessionItem, /workcraft-oss:\/\/chat\?sessionId=/);
+  assert.deepEqual(tauriConfig.plugins["deep-link"].desktop.schemes, ["codata-oss"]);
+  assert.match(tauriLib, /url\.scheme\(\) != "codata-oss"/);
+  assert.match(sessionItem, /codata-oss:\/\/chat\?sessionId=/);
 });

@@ -56,7 +56,7 @@ async def _run(model: str, calls: int, env_file: str | None) -> list[UsageRow]:
     api_key = settings.openrouter_api_key
     if not api_key:
         raise RuntimeError(
-            "WORKCRAFT_OPENROUTER_API_KEY not found. Set it in environment or backend/.env"
+            "CODATA_OPENROUTER_API_KEY not found. Set it in environment or backend/.env"
         )
 
     provider = OpenRouterProvider(api_key, enable_reasoning=True)
@@ -69,8 +69,8 @@ async def _run(model: str, calls: int, env_file: str | None) -> list[UsageRow]:
         api_key=api_key,
         base_url="https://openrouter.ai/api/v1",
         default_headers={
-            "HTTP-Referer": "https://github.com/workcraft/desktop",
-            "X-Title": "WorkCraft",
+            "HTTP-Referer": "https://github.com/codata/desktop",
+            "X-Title": "Codata",
         },
     )
 

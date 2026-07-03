@@ -1,18 +1,18 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
-  mockWorkCraftApi,
-  seedWorkCraftStorage,
-  type WorkCraftMockOptions,
-  type WorkCraftMockState,
-} from "./fixtures/workcraft-api";
+  mockCodataApi,
+  seedCodataStorage,
+  type CodataMockOptions,
+  type CodataMockState,
+} from "./fixtures/codata-api";
 
 async function setupMockedApp(
   page: Page,
-  options?: WorkCraftMockOptions,
-  seedOptions?: Parameters<typeof seedWorkCraftStorage>[1],
-): Promise<WorkCraftMockState> {
-  await seedWorkCraftStorage(page, seedOptions);
-  return mockWorkCraftApi(page, options);
+  options?: CodataMockOptions,
+  seedOptions?: Parameters<typeof seedCodataStorage>[1],
+): Promise<CodataMockState> {
+  await seedCodataStorage(page, seedOptions);
+  return mockCodataApi(page, options);
 }
 
 async function expectNoAppCrash(page: Page) {
@@ -31,7 +31,7 @@ async function sendPrompt(page: Page, text: string) {
 
 async function seedByokProvider(page: Page) {
   await page.addInitScript(() => {
-    const raw = window.localStorage.getItem("workcraft-settings");
+    const raw = window.localStorage.getItem("codata-settings");
     const settings = raw ? JSON.parse(raw) : { state: {}, version: 0 };
     settings.state = {
       ...settings.state,
@@ -40,11 +40,11 @@ async function seedByokProvider(page: Page) {
       selectedModel: "openrouter/anthropic/claude-sonnet-4.5",
       selectedProviderId: "openrouter",
     };
-    window.localStorage.setItem("workcraft-settings", JSON.stringify(settings));
+    window.localStorage.setItem("codata-settings", JSON.stringify(settings));
   });
 }
 
-test.describe("WorkCraft deep claimed-feature GUI surfaces", () => {
+test.describe("Codata deep claimed-feature GUI surfaces", () => {
   test.describe.configure({ timeout: 90_000 });
   test.skip(({ isMobile }) => isMobile, "Desktop-only surfaces are covered alongside separate mobile GUI workflows.");
 
@@ -240,7 +240,7 @@ test.describe("WorkCraft deep claimed-feature GUI surfaces", () => {
       hasCompletedOnboarding: false,
     });
     await onboarding.goto("/c/new");
-    await expect(onboarding.getByRole("heading", { name: "Welcome to WorkCraft" })).toBeVisible();
+    await expect(onboarding.getByRole("heading", { name: "Welcome to Codata" })).toBeVisible();
 
     await onboarding.getByText("Skip, I'll use my own API key").click();
     await expect(onboarding).toHaveURL(/\/settings\?tab=providers$/);

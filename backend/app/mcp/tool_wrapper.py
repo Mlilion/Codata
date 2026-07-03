@@ -1,4 +1,4 @@
-"""MCP tool wrapper — adapts an MCP tool to the WorkCraft ToolDefinition interface."""
+"""MCP tool wrapper — adapts an MCP tool to the Codata ToolDefinition interface."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class McpToolWrapper(ToolDefinition):
-    """Wraps an MCP server tool as a WorkCraft ToolDefinition.
+    """Wraps an MCP server tool as a Codata ToolDefinition.
 
     Tool ID: ``{server_name}_{tool_name}`` (sanitised).
     """

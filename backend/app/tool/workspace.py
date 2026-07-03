@@ -51,17 +51,17 @@ def resolve_and_validate(file_path: str, workspace: str | None) -> str:
 
 
 def get_default_output_dir(workspace: str | None) -> str | None:
-    """Return the ``workcraft_written`` subdirectory of *workspace*, or ``None``."""
+    """Return the ``codata_written`` subdirectory of *workspace*, or ``None``."""
     if not workspace:
         return None
-    return str(Path(workspace).resolve() / "workcraft_written")
+    return str(Path(workspace).resolve() / "codata_written")
 
 
 def resolve_for_write(file_path: str, workspace: str | None) -> str:
     """Resolve a file path for write operations.
 
     If *workspace* is set and *file_path* is relative (not absolute),
-    resolve it against ``{workspace}/workcraft_written/`` instead of cwd.
+    resolve it against ``{workspace}/codata_written/`` instead of cwd.
     Workspace restriction is still enforced afterwards.
 
     Returns the resolved absolute path string.
@@ -69,7 +69,7 @@ def resolve_for_write(file_path: str, workspace: str | None) -> str:
     """
     p = Path(file_path)
     if workspace and not p.is_absolute():
-        output_dir = Path(workspace).resolve() / "workcraft_written"
+        output_dir = Path(workspace).resolve() / "codata_written"
         resolved = (output_dir / file_path).resolve()
     else:
         resolved = p.resolve()

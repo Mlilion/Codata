@@ -17,7 +17,7 @@ import { TitleBar } from "@/components/desktop/title-bar";
 import { WindowTopIcons } from "@/components/layout/window-top-icons";
 import { UpdateBanner } from "@/components/desktop/update-banner";
 import { Button } from "@/components/ui/button";
-import { WorkCraftLogo } from "@/components/ui/workcraft-logo";
+import { CodataLogo } from "@/components/ui/codata-logo";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useSettingsHasHydrated } from "@/stores/settings-store";
@@ -224,7 +224,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   onClick={toggleSidebar}
                   aria-label={t("openSidebar")}
                 >
-                  <WorkCraftLogo size={18} />
+                  <CodataLogo size={18} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">{t("openSidebar")}</TooltipContent>

@@ -1,7 +1,7 @@
 """Channels API — manage in-process messaging platform channels.
 
 Replaces the old OpenClaw-based system with nanobot's native channel
-architecture running directly inside WorkCraft (no external Node.js process).
+architecture running directly inside Codata (no external Node.js process).
 """
 
 from __future__ import annotations
@@ -134,7 +134,7 @@ _WEIXIN_QR_SESSION_TTL_S = 5 * 60
 _FEISHU_DEFAULT_ACCOUNTS_BASE_URL = "https://accounts.feishu.cn"
 _FEISHU_DEFAULT_LARK_ACCOUNTS_BASE_URL = "https://accounts.larksuite.com"
 _FEISHU_REGISTRATION_ENDPOINT = "/oauth/v1/app/registration"
-_FEISHU_QR_SOURCE = "workcraft"
+_FEISHU_QR_SOURCE = "codata"
 
 
 # ---------------------------------------------------------------------------

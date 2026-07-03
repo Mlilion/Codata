@@ -2,7 +2,7 @@
 
 import { CheckCircle2, ChevronRight, Wrench } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { WorkCraftLogo } from "@/components/ui/workcraft-logo";
+import { CodataLogo } from "@/components/ui/codata-logo";
 import { useActivityStore, type ActivityData } from "@/stores/activity-store";
 import { useRightSidebarStore } from "@/stores/right-sidebar-store";
 
@@ -62,7 +62,7 @@ export function ActivitySummary({ data }: ActivitySummaryProps) {
       {isCompleted ? (
         <CheckCircle2 className="h-3.5 w-3.5 text-[var(--tool-completed)]" />
       ) : hasReasoning ? (
-        <WorkCraftLogo size={14} />
+        <CodataLogo size={14} />
       ) : (
         <Wrench className="h-3.5 w-3.5" />
       )}

@@ -1,15 +1,15 @@
-# WorkCraft
+# Codata
 
 <div align="center">
-  <img src="frontend/public/logo.svg" width="96" alt="WorkCraft" />
+  <img src="frontend/public/logo.svg" width="96" alt="Codata" />
 
   <h3>Local-first desktop AI workspace with expert-team multi-agent collaboration</h3>
 
   <p>
     <a href="README.zh-CN.md">简体中文</a> ·
-    <a href="docs/workcraft-user-manual.html">User Manual</a> ·
-    <a href="docs/workcraft-office-user-guide.html">Office Guide</a> ·
-    <a href="https://work-craft.com/download/">Commercial Download</a> ·
+    <a href="docs/codata-user-manual.html">User Manual</a> ·
+    <a href="docs/codata-office-user-guide.html">Office Guide</a> ·
+    <a href="https://example.com/download/">Commercial Download</a> ·
     <a href="LICENSE">Apache-2.0</a>
   </p>
 
@@ -22,15 +22,15 @@
   </p>
 
   <p>
-    <img src="docs/assets/readme/workcraft-product-intro-2026-v2.gif" width="920" alt="WorkCraft product intro animation" />
+    <img src="docs/assets/readme/codata-product-intro-2026-v2.gif" width="920" alt="Codata product intro animation" />
   </p>
 
   <p><sub>See how expert teams turn real files into reusable artifacts.</sub></p>
 </div>
 
-WorkCraft is an open-source desktop AI workbench for people who need AI to work with real files, long-running context, and structured deliverables. It combines a Tauri desktop shell, a Next.js interface, and a FastAPI agent backend so local documents, workspaces, model providers, tools, expert teams, and generated artifacts can live in one application.
+Codata is an open-source desktop AI workbench for people who need AI to work with real files, long-running context, and structured deliverables. It combines a Tauri desktop shell, a Next.js interface, and a FastAPI agent backend so local documents, workspaces, model providers, tools, expert teams, and generated artifacts can live in one application.
 
-Its core idea is simple: a complex request should not be handled by one generic assistant. WorkCraft can route the work through a configurable **expert team** where specialized agents research, analyze, write, review, delegate, and produce a final deliverable together.
+Its core idea is simple: a complex request should not be handled by one generic assistant. Codata can route the work through a configurable **expert team** where specialized agents research, analyze, write, review, delegate, and produce a final deliverable together.
 
 ### Open Source - Local First - Bring Your Own Models - Expert Teams
 
@@ -40,12 +40,12 @@ Its core idea is simple: a complex request should not be handled by one generic 
 - **BYOK model routing**: connect your own provider keys, OpenAI-compatible endpoints, custom endpoints, or local Ollama models.
 - **MCP, tools, skills, and plugins**: extend agents with controlled capabilities for files, code, search, connectors, and domain workflows.
 - **Local persistence by default**: conversations, files, settings, memory, workflow metadata, and artifacts are stored locally unless you choose an external provider or connector.
-- **Commercial and enterprise options**: same core product capabilities, with WorkCraft-managed sign-in, more stable managed models such as GPT-5.5, cost-effective GPT access options, and enterprise SSO, audit, model, and private deployment support.
+- **Commercial and enterprise options**: same core product capabilities, with Codata-managed sign-in, more stable managed models such as GPT-5.5, cost-effective GPT access options, and enterprise SSO, audit, model, and private deployment support.
 
 <details>
 <summary><kbd>Table of Contents</kbd></summary>
 
-- [What WorkCraft Does](#what-workcraft-does)
+- [What Codata Does](#what-codata-does)
 - [Product Tour](#product-tour)
 - [Contact](#contact)
 - [Expert Teams](#expert-teams)
@@ -64,9 +64,9 @@ Its core idea is simple: a complex request should not be handled by one generic 
 
 </details>
 
-## What WorkCraft Does
+## What Codata Does
 
-WorkCraft is built for document-heavy and workflow-heavy AI tasks:
+Codata is built for document-heavy and workflow-heavy AI tasks:
 
 - Load local files and workspace folders into AI conversations.
 - Let agents inspect documents, spreadsheets, PDFs, code, and generated artifacts.
@@ -78,31 +78,31 @@ The open-source edition is designed as a standalone local application. Users pro
 
 ## Product Tour
 
-WorkCraft is built around visible work: agents read files, coordinate through expert-team workflows, and turn intermediate reasoning into concrete artifacts that can be reviewed, downloaded, and reused.
+Codata is built around visible work: agents read files, coordinate through expert-team workflows, and turn intermediate reasoning into concrete artifacts that can be reviewed, downloaded, and reused.
 
 | Workspace home | Expert team library |
 | --- | --- |
-| <img src="docs/assets/readme/workspace-home.png" alt="WorkCraft workspace home" width="420" /> | <img src="docs/assets/readme/expert-team-library.png" alt="WorkCraft expert team library" width="420" /> |
+| <img src="docs/assets/readme/workspace-home.png" alt="Codata workspace home" width="420" /> | <img src="docs/assets/readme/expert-team-library.png" alt="Codata expert team library" width="420" /> |
 
 | Expert workflow and artifact preview | Message channel setup |
 | --- | --- |
-| <img src="docs/assets/readme/expert-team-artifact-preview.png" alt="WorkCraft expert workflow and artifact preview" width="420" /> | <img src="docs/assets/readme/message-channels.png" alt="WorkCraft message channel setup" width="420" /> |
+| <img src="docs/assets/readme/expert-team-artifact-preview.png" alt="Codata expert workflow and artifact preview" width="420" /> | <img src="docs/assets/readme/message-channels.png" alt="Codata message channel setup" width="420" /> |
 
 | Skills and connectors | Model provider setup |
 | --- | --- |
-| <img src="docs/assets/readme/skill-store.png" alt="WorkCraft skill store" width="420" /> | <img src="docs/assets/readme/model-provider-settings.png" alt="WorkCraft model provider setup" width="420" /> |
+| <img src="docs/assets/readme/skill-store.png" alt="Codata skill store" width="420" /> | <img src="docs/assets/readme/model-provider-settings.png" alt="Codata model provider setup" width="420" /> |
 
 ## Contact
 
-Security and project contact: [workcraft@126.com](mailto:workcraft@126.com)
+Security and project contact: [codata@126.com](mailto:codata@126.com)
 
 | Feedback WeChat | WeChat community group |
 | --- | --- |
-| <img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft feedback WeChat" /> | <img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft WeChat community group QR code" /> |
+| <img src="frontend/public/feedback-wechat.jpg" width="180" alt="Codata feedback WeChat" /> | <img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="Codata WeChat community group QR code" /> |
 
 ## Expert Teams
 
-Expert Teams are the main WorkCraft differentiator. A team is a typed configuration that describes who participates, how work is split, what context each member receives, and what final result should be delivered.
+Expert Teams are the main Codata differentiator. A team is a typed configuration that describes who participates, how work is split, what context each member receives, and what final result should be delivered.
 
 An expert team can include:
 
@@ -111,7 +111,7 @@ An expert team can include:
 - **Inputs**: structured fields collected before a run, such as report goal, market, competitors, metric focus, or reporting period.
 - **Finalization**: coordinator summary, last-task output, or required deliverables such as Markdown, HTML, PDF, DOCX, XLSX, PPTX, code, image, video, or artifact panel output.
 
-WorkCraft supports three execution modes:
+Codata supports three execution modes:
 
 | Mode | Best for | How it works |
 | --- | --- | --- |
@@ -125,11 +125,11 @@ Built-in presets include data analysis reports, document review and polish, meet
 
 ### Multi-agent expert workforce
 
-WorkCraft lets you build a reusable AI workforce for specific job types. Each expert can have its own role prompt, provider/model selection, tool access, skills, and connector permissions. Complex work becomes observable: users can inspect who did what, which dependency fed the next step, and what artifact was produced.
+Codata lets you build a reusable AI workforce for specific job types. Each expert can have its own role prompt, provider/model selection, tool access, skills, and connector permissions. Complex work becomes observable: users can inspect who did what, which dependency fed the next step, and what artifact was produced.
 
 ### File and artifact workflow
 
-WorkCraft is not just a chat window. It can read and reason over DOCX, XLSX, PPTX, PDF, CSV, local project files, and generated outputs. Results can be surfaced as Markdown, HTML, office documents, tables, code, previews, or artifact panel entries.
+Codata is not just a chat window. It can read and reason over DOCX, XLSX, PPTX, PDF, CSV, local project files, and generated outputs. Results can be surfaced as Markdown, HTML, office documents, tables, code, previews, or artifact panel entries.
 
 ### Tool execution with boundaries
 
@@ -154,7 +154,7 @@ The codebase includes support for plugins, bundled skills, MCP connectors, sched
 
 ## Model Support
 
-WorkCraft open source uses a bring-your-own-model setup:
+Codata open source uses a bring-your-own-model setup:
 
 - OpenAI-compatible endpoints and custom endpoints.
 - OpenRouter and direct provider adapters where configured.
@@ -162,7 +162,7 @@ WorkCraft open source uses a bring-your-own-model setup:
 - Local Ollama models for local-first or reduced-cloud workflows.
 - Per-expert provider/model overrides for teams that need different cost, latency, or reasoning profiles.
 
-Model calls require a configured provider route or local model. The open-source flow runs without a WorkCraft-hosted login.
+Model calls require a configured provider route or local model. The open-source flow runs without a Codata-hosted login.
 
 ## Editions
 
@@ -171,10 +171,10 @@ The open-source, commercial, and enterprise editions share the same core product
 | Edition | Best for | What it includes |
 | --- | --- | --- |
 | Open source | Developers and teams that want full local control | BYOK provider setup, OpenAI-compatible endpoints, custom endpoints, local Ollama models, local persistence, and the Apache-2.0 open-source codebase. |
-| Commercial | Users who want the same WorkCraft experience with simpler onboarding | Same product capabilities as open source, WorkCraft-managed sign-in, more stable managed model routes such as GPT-5.5, and more cost-effective GPT access options. Download from the official site: [work-craft.com/download](https://work-craft.com/download/). |
+| Commercial | Users who want the same Codata experience with simpler onboarding | Same product capabilities as open source, Codata-managed sign-in, more stable managed model routes such as GPT-5.5, and more cost-effective GPT access options. Download from the official site: [example.com/download](https://example.com/download/). |
 | Enterprise | Organizations that need governance, integration, and deployment control | SSO login, audit support, enterprise-grade model options, private deployment, and custom solution services. Contact dedicated support through the official site for enterprise planning. |
 
-Choose the open-source edition if you want to run WorkCraft entirely with your own model providers and local configuration. Choose the commercial or enterprise edition when you need managed onboarding, stable model access, lower GPT usage cost options, or organization-level support.
+Choose the open-source edition if you want to run Codata entirely with your own model providers and local configuration. Choose the commercial or enterprise edition when you need managed onboarding, stable model access, lower GPT usage cost options, or organization-level support.
 
 ## Architecture
 
@@ -203,8 +203,8 @@ User
 ### Install dependencies
 
 ```bash
-git clone https://github.com/Mlilion/workcraft.git
-cd workcraft
+git clone https://github.com/Mlilion/Codata.git
+cd codata
 
 npm install
 cd frontend && npm install --legacy-peer-deps
@@ -245,7 +245,7 @@ npm run verify:frontend-assets
 npm run preflight:ui
 ```
 
-The desktop release build expects the exported frontend in `frontend/out` and the bundled backend in `backend/dist/workcraft-backend`. Run `npm run sync:desktop-meta` before desktop builds so Tauri metadata matches the root package version.
+The desktop release build expects the exported frontend in `frontend/out` and the bundled backend in `backend/dist/codata-backend`. Run `npm run sync:desktop-meta` before desktop builds so Tauri metadata matches the root package version.
 
 ## Repository Layout
 
@@ -260,14 +260,14 @@ design-system/    Product design references and design assets
 
 ## Data Boundary
 
-WorkCraft stores user data locally by default, including conversations, files, generated artifacts, settings, memory, and workflow metadata. When a cloud model or external connector is selected, WorkCraft sends the prompt context and required payload to that provider or connector.
+Codata stores user data locally by default, including conversations, files, generated artifacts, settings, memory, and workflow metadata. When a cloud model or external connector is selected, Codata sends the prompt context and required payload to that provider or connector.
 
 Users are responsible for selecting provider routes, local models, connector permissions, and deployment settings that match their security, privacy, and compliance needs.
 
 ## Documentation
 
-- [WorkCraft User Manual](docs/workcraft-user-manual.html)
-- [WorkCraft Office Guide](docs/workcraft-office-user-guide.html)
+- [Codata User Manual](docs/codata-user-manual.html)
+- [Codata Office Guide](docs/codata-office-user-guide.html)
 - [Security Policy](SECURITY.md)
 
 ## Contributing
@@ -278,4 +278,4 @@ Before opening a PR, run the relevant verification commands for the area you cha
 
 ## License
 
-WorkCraft is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
+Codata is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).

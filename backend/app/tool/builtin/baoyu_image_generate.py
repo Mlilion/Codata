@@ -1,4 +1,4 @@
-"""Native WorkCraft wrapper for baoyu-image-gen."""
+"""Native Codata wrapper for baoyu-image-gen."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ class BaoyuImageGenerateTool(ToolDefinition):
                 },
                 "output_path": {
                     "type": "string",
-                    "description": "Output image path. Relative paths are written under workcraft_written/.",
+                    "description": "Output image path. Relative paths are written under codata_written/.",
                 },
                 "provider": {
                     "type": "string",

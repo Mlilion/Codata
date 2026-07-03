@@ -78,11 +78,11 @@ class TestWriteTool:
         assert not result.success
 
     @pytest.mark.asyncio
-    async def test_relative_path_workcraft_written(self, tool: WriteTool, tmp_path: Path):
+    async def test_relative_path_codata_written(self, tool: WriteTool, tmp_path: Path):
         result = await tool.execute(
             {"file_path": "output.txt", "content": "relative"},
             _make_ctx(workspace=str(tmp_path)),
         )
         assert result.success
-        expected = tmp_path / "workcraft_written" / "output.txt"
+        expected = tmp_path / "codata_written" / "output.txt"
         assert expected.read_text() == "relative"

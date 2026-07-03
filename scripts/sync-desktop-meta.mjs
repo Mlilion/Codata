@@ -12,10 +12,10 @@ const description = rootPkg.description;
 
 const tauriConf = JSON.parse(fs.readFileSync(tauriConfPath, "utf8"));
 tauriConf.version = version;
-tauriConf.productName = "WorkCraft";
+tauriConf.productName = "Codata";
 tauriConf.app.windows = tauriConf.app.windows.map((window) => ({
   ...window,
-  title: "WorkCraft",
+  title: "Codata",
 }));
 fs.writeFileSync(tauriConfPath, `${JSON.stringify(tauriConf, null, 2)}\n`);
 

@@ -1,19 +1,19 @@
 import { expect, test, type Page } from "@playwright/test";
-import { mockWorkCraftApi, seedWorkCraftStorage, type WorkCraftMockState } from "./fixtures/workcraft-api";
+import { mockCodataApi, seedCodataStorage, type CodataMockState } from "./fixtures/codata-api";
 
-let mockState: WorkCraftMockState;
+let mockState: CodataMockState;
 
 test.beforeEach(async ({ page }) => {
-  await seedWorkCraftStorage(page);
-  mockState = await mockWorkCraftApi(page);
+  await seedCodataStorage(page);
+  mockState = await mockCodataApi(page);
 });
 
 async function openNewChat(page: Page, workspace = false) {
   const path = workspace
-    ? `/c/new?directory=${encodeURIComponent("/Users/alex/workcraft-demo")}`
+    ? `/c/new?directory=${encodeURIComponent("/Users/alex/codata-demo")}`
     : "/c/new";
   await page.goto(path);
-  await expect(page.getByRole("heading", { name: /What should (WorkCraft help you do|we do in)/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /What should (Codata help you do|we do in)/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /Best Free/i })).toBeVisible({ timeout: 15_000 });
 }
 
@@ -26,7 +26,7 @@ async function sendPrompt(page: Page, text: string) {
   await promptResponse;
 }
 
-test.describe("WorkCraft UI preflight", () => {
+test.describe("Codata UI preflight", () => {
   test("desktop chat path: landing, mode switch, attachments, mentions, send, workspace panel", async ({ page }) => {
     await openNewChat(page, true);
 
@@ -155,7 +155,7 @@ test.describe("WorkCraft UI preflight", () => {
     await expect(page.getByText(/Validate desktop GUI workflows/i)).toBeVisible();
 
     await page.getByRole("button", { name: /Demo Page/i }).click();
-    await expect(page.frameLocator("iframe").getByText("WorkCraft GUI Preflight")).toBeVisible();
+    await expect(page.frameLocator("iframe").getByText("Codata GUI Preflight")).toBeVisible();
 
     await page.getByRole("button", { name: /Coverage Matrix/i }).click();
     await expect(page.getByText("CSV", { exact: true }).last()).toBeVisible();
@@ -163,7 +163,7 @@ test.describe("WorkCraft UI preflight", () => {
 
     await page.getByRole("button", { name: /GUI Preflight Plan/i }).click();
     await expect(page.getByText("Plan Review")).toBeVisible();
-    await expect(page.getByText("frontend/tests/ui/workcraft-preflight.spec.ts")).toBeVisible();
+    await expect(page.getByText("frontend/tests/ui/codata-preflight.spec.ts")).toBeVisible();
   });
 
   test("desktop interactive path: permission request is answered through the GUI", async ({ page }) => {
@@ -176,7 +176,7 @@ test.describe("WorkCraft UI preflight", () => {
     await expect(page.getByText("Allow running this shell command?")).toBeVisible();
     await expect(page.getByText("Command", { exact: true })).toBeVisible();
     await expect(page.locator("pre", { hasText: "npm run preflight:ui" })).toBeVisible();
-    await expect(page.getByText("/Users/alex/workcraft-demo/frontend")).toBeVisible();
+    await expect(page.getByText("/Users/alex/codata-demo/frontend")).toBeVisible();
 
     const respond = page.waitForResponse((res) =>
       res.url().includes("/api/chat/respond") && res.status() === 200,
@@ -341,7 +341,7 @@ test.describe("WorkCraft UI preflight", () => {
 
     await expect(page.getByText("Accept this plan?")).toBeVisible();
     await expect(page.getByText("Preflight implementation plan")).toBeVisible();
-    await expect(page.getByText("frontend/tests/ui/workcraft-preflight.spec.ts")).toBeVisible();
+    await expect(page.getByText("frontend/tests/ui/codata-preflight.spec.ts")).toBeVisible();
 
     const respond = page.waitForResponse((res) =>
       res.url().includes("/api/chat/respond") && res.status() === 200,
@@ -387,7 +387,7 @@ test.describe("WorkCraft UI preflight", () => {
 
     await page.getByRole("button", { name: "Memory" }).click();
     await expect(page.getByRole("heading", { name: "Memory" })).toBeVisible();
-    await page.getByRole("button", { name: /alex\/workcraft-demo/i }).click();
+    await page.getByRole("button", { name: /alex\/codata-demo/i }).click();
     await expect(page.getByText("Prefer concise release notes.")).toBeVisible();
     await page.getByTitle("Edit").click();
     await page.getByPlaceholder("Workspace memory (Markdown)...").fill("# Project Memory\nPrefer GUI preflight reports.");
@@ -400,7 +400,7 @@ test.describe("WorkCraft UI preflight", () => {
   });
 
   test("settings permissions path: remembered choices can be reviewed and cleared", async ({ page }) => {
-    await seedWorkCraftStorage(page, {
+    await seedCodataStorage(page, {
       force: true,
       savedPermissions: [
         { tool: "bash", allow: true, timestamp: Date.parse("2026-04-26T12:00:00.000Z") },

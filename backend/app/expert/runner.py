@@ -1,4 +1,4 @@
-"""Expert team runner that reuses WorkCraft providers, tools, streams, and sessions."""
+"""Expert team runner that reuses Codata providers, tools, streams, and sessions."""
 
 from __future__ import annotations
 
@@ -3382,7 +3382,7 @@ class ExpertTeamRunner:
         if member.backstory:
             lines.append(member.backstory)
         if skills:
-            lines.append("Use these WorkCraft skills when relevant: " + ", ".join(skills))
+            lines.append("Use these Codata skills when relevant: " + ", ".join(skills))
         if connectors:
             lines.append("The team may rely on these MCP connectors: " + ", ".join(connectors))
         lines.append("Work as one member of an expert team. Be concise, concrete, and hand off useful context to the next expert.")
@@ -3392,7 +3392,7 @@ class ExpertTeamRunner:
                 "\n".join(
                     [
                         "Output style:",
-                        "- Keep the visible answer concise and decision-oriented, like a normal WorkCraft answer.",
+                        "- Keep the visible answer concise and decision-oriented, like a normal Codata answer.",
                         "- Lead with the conclusion or completed action.",
                         "- Include only key evidence, assumptions, risks, and next handoff.",
                         "- Do not write a long report unless the task explicitly asks for one or you are creating a deliverable.",
@@ -3417,7 +3417,7 @@ class ExpertTeamRunner:
             {
                 "role": "user",
                 "content": (
-                    "The following WorkCraft skills are preloaded for this expert task. "
+                    "The following Codata skills are preloaded for this expert task. "
                     "Follow them when relevant, and treat bundled resource paths as relative to each skill base directory.\n\n"
                     + loaded
                     + "\n\n---\n\nContinue with the assigned expert task below."

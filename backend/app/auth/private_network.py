@@ -15,7 +15,7 @@ class PrivateNetworkAccessMiddleware:
     middleware does not emit ``Access-Control-Allow-Private-Network``, so
     otherwise the browser may block the actual request before it reaches
     the authenticated API. We only add the header for origins that already
-    pass WorkCraft's Origin allowlist.
+    pass Codata's Origin allowlist.
     """
 
     def __init__(self, app, *, extra_allowed_origins: Iterable[str] = ()):

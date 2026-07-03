@@ -40,7 +40,7 @@ def load_plugin(plugin_dir: Path) -> PluginLoadResult:
     """Load a single Claude-format plugin directory.
 
     Parses plugin.json, discovers skills, parses MCP config, and converts
-    everything to WorkCraft-compatible objects. All errors are non-fatal.
+    everything to Codata-compatible objects. All errors are non-fatal.
     """
     result = PluginLoadResult()
 

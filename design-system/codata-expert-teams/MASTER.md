@@ -6,7 +6,7 @@
 
 ---
 
-**Project:** WorkCraft Expert Teams
+**Project:** Codata Expert Teams
 **Generated:** 2026-05-28 18:57:09
 **Category:** Micro SaaS
 

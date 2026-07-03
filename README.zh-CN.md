@@ -1,15 +1,15 @@
-# WorkCraft
+# Codata
 
 <div align="center">
-  <img src="frontend/public/logo.svg" width="96" alt="WorkCraft" />
+  <img src="frontend/public/logo.svg" width="96" alt="Codata" />
 
   <h3>本地优先的桌面 AI 工作台，核心能力是专家团多 Agent 协作</h3>
 
   <p>
     <a href="README.md">English</a> ·
-    <a href="docs/workcraft-user-manual.html">用户手册</a> ·
-    <a href="docs/workcraft-office-user-guide.html">办公指南</a> ·
-    <a href="https://work-craft.com/download/">商业版下载</a> ·
+    <a href="docs/codata-user-manual.html">用户手册</a> ·
+    <a href="docs/codata-office-user-guide.html">办公指南</a> ·
+    <a href="https://example.com/download/">商业版下载</a> ·
     <a href="LICENSE">Apache-2.0</a>
   </p>
 
@@ -22,15 +22,15 @@
   </p>
 
   <p>
-    <img src="docs/assets/readme/workcraft-product-intro-2026-v2.gif" width="920" alt="WorkCraft 产品介绍动画" />
+    <img src="docs/assets/readme/codata-product-intro-2026-v2.gif" width="920" alt="Codata 产品介绍动画" />
   </p>
 
   <p><sub>了解专家团如何把真实文件转成可复用交付物。</sub></p>
 </div>
 
-WorkCraft 是一个开源桌面 AI 工作台，面向真实文件、长上下文任务和结构化交付物。它把 Tauri 桌面外壳、Next.js 交互界面和 FastAPI Agent 后端组合在一起，让本地文档、工作区、模型提供商、工具、专家团和生成产物都在一个应用里协同工作。
+Codata 是一个开源桌面 AI 工作台，面向真实文件、长上下文任务和结构化交付物。它把 Tauri 桌面外壳、Next.js 交互界面和 FastAPI Agent 后端组合在一起，让本地文档、工作区、模型提供商、工具、专家团和生成产物都在一个应用里协同工作。
 
-WorkCraft 的核心判断是：复杂任务不应该只交给一个通用助手。它可以把任务交给可配置的 **专家团**，让多个专业 Agent 按角色分工完成研究、分析、写作、审阅、委派和最终交付。
+Codata 的核心判断是：复杂任务不应该只交给一个通用助手。它可以把任务交给可配置的 **专家团**，让多个专业 Agent 按角色分工完成研究、分析、写作、审阅、委派和最终交付。
 
 ### 开源 - 本地优先 - 自带模型 - 专家团协作
 
@@ -40,12 +40,12 @@ WorkCraft 的核心判断是：复杂任务不应该只交给一个通用助手�
 - **BYOK 模型路由**：接入自己的模型厂商 API Key、OpenAI-compatible endpoint、自定义端点或本地 Ollama 模型。
 - **MCP、工具、技能与插件**：为 Agent 增加受控的文件、代码、搜索、连接器和领域流程能力。
 - **默认本地持久化**：对话、文件、设置、记忆、工作流元数据和生成产物默认保存在本机；只有用户选择外部模型或连接器时才发送必要上下文。
-- **提供商业版和企业版**：核心产品能力与开源版一致；商业版保留 WorkCraft 独立登录能力，提供 GPT-5.5 等更稳定的托管模型和更优惠的 GPT 调用方案；企业版支持 SSO、审计、企业级模型和私有化方案定制。
+- **提供商业版和企业版**：核心产品能力与开源版一致；商业版保留 Codata 独立登录能力，提供 GPT-5.5 等更稳定的托管模型和更优惠的 GPT 调用方案；企业版支持 SSO、审计、企业级模型和私有化方案定制。
 
 <details>
 <summary><kbd>目录</kbd></summary>
 
-- [WorkCraft 是做什么的](#workcraft-是做什么的)
+- [Codata 是做什么的](#codata-是做什么的)
 - [产品展示](#产品展示)
 - [联系](#联系)
 - [专家团](#专家团)
@@ -64,9 +64,9 @@ WorkCraft 的核心判断是：复杂任务不应该只交给一个通用助手�
 
 </details>
 
-## WorkCraft 是做什么的
+## Codata 是做什么的
 
-WorkCraft 面向文档密集、流程密集的 AI 工作：
+Codata 面向文档密集、流程密集的 AI 工作：
 
 - 把本地文件和工作区文件夹加入 AI 会话。
 - 让 Agent 检查文档、表格、PDF、代码和生成产物。
@@ -78,31 +78,31 @@ WorkCraft 面向文档密集、流程密集的 AI 工作：
 
 ## 产品展示
 
-WorkCraft 强调“看得见的工作过程”：Agent 可以读取真实文件，通过专家团协作完成中间步骤，并把结果沉淀为可预览、可下载、可复用的 artifact。
+Codata 强调“看得见的工作过程”：Agent 可以读取真实文件，通过专家团协作完成中间步骤，并把结果沉淀为可预览、可下载、可复用的 artifact。
 
 | 工作台首页 | 专家团模板库 |
 | --- | --- |
-| <img src="docs/assets/readme/workspace-home.png" alt="WorkCraft 工作台首页" width="420" /> | <img src="docs/assets/readme/expert-team-library.png" alt="WorkCraft 专家团模板库" width="420" /> |
+| <img src="docs/assets/readme/workspace-home.png" alt="Codata 工作台首页" width="420" /> | <img src="docs/assets/readme/expert-team-library.png" alt="Codata 专家团模板库" width="420" /> |
 
 | 专家团运行与产物预览 | 消息渠道配置 |
 | --- | --- |
-| <img src="docs/assets/readme/expert-team-artifact-preview.png" alt="WorkCraft 专家团运行与产物预览" width="420" /> | <img src="docs/assets/readme/message-channels.png" alt="WorkCraft 消息渠道配置" width="420" /> |
+| <img src="docs/assets/readme/expert-team-artifact-preview.png" alt="Codata 专家团运行与产物预览" width="420" /> | <img src="docs/assets/readme/message-channels.png" alt="Codata 消息渠道配置" width="420" /> |
 
 | 技能与连接器 | 模型厂商配置 |
 | --- | --- |
-| <img src="docs/assets/readme/skill-store.png" alt="WorkCraft 技能商店" width="420" /> | <img src="docs/assets/readme/model-provider-settings.png" alt="WorkCraft 模型厂商配置" width="420" /> |
+| <img src="docs/assets/readme/skill-store.png" alt="Codata 技能商店" width="420" /> | <img src="docs/assets/readme/model-provider-settings.png" alt="Codata 模型厂商配置" width="420" /> |
 
 ## 联系
 
-安全与项目联系邮箱：[workcraft@126.com](mailto:workcraft@126.com)
+安全与项目联系邮箱：[codata@126.com](mailto:codata@126.com)
 
-| 反馈微信 | WorkCraft 交流群 |
+| 反馈微信 | Codata 交流群 |
 | --- | --- |
-| <img src="frontend/public/feedback-wechat.jpg" width="180" alt="WorkCraft 反馈微信" /> | <img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="WorkCraft 交流群二维码" /> |
+| <img src="frontend/public/feedback-wechat.jpg" width="180" alt="Codata 反馈微信" /> | <img src="docs/assets/readme/wechat-group-qr.jpeg" width="220" alt="Codata 交流群二维码" /> |
 
 ## 专家团
 
-专家团是 WorkCraft 最核心的差异化能力。一个专家团是一份结构化配置，描述谁参与、任务如何拆分、每个成员接收哪些上下文，以及最终结果如何交付。
+专家团是 Codata 最核心的差异化能力。一个专家团是一份结构化配置，描述谁参与、任务如何拆分、每个成员接收哪些上下文，以及最终结果如何交付。
 
 一个专家团可以包含：
 
@@ -111,7 +111,7 @@ WorkCraft 强调“看得见的工作过程”：Agent 可以读取真实文件�
 - **输入项**：运行前收集的结构化字段，例如报告目标、目标市场、竞品、指标重点、报告周期。
 - **最终交付**：协调者总结、最后任务输出，或 Markdown、HTML、PDF、DOCX、XLSX、PPTX、代码、图片、视频、artifact 面板等交付物。
 
-WorkCraft 支持三种执行模式：
+Codata 支持三种执行模式：
 
 | 模式 | 适合场景 | 工作方式 |
 | --- | --- | --- |
@@ -125,11 +125,11 @@ WorkCraft 支持三种执行模式：
 
 ### 多 Agent 专家团队
 
-WorkCraft 可以为特定任务类型构建可复用的 AI 专家团队。每个专家都能有自己的角色提示词、provider/model 选择、工具权限、技能和连接器权限。复杂任务的过程是可观察的：用户可以看到谁完成了哪一步、哪个上游结果进入了下一步、最终产物从哪里生成。
+Codata 可以为特定任务类型构建可复用的 AI 专家团队。每个专家都能有自己的角色提示词、provider/model 选择、工具权限、技能和连接器权限。复杂任务的过程是可观察的：用户可以看到谁完成了哪一步、哪个上游结果进入了下一步、最终产物从哪里生成。
 
 ### 文件与产物工作流
 
-WorkCraft 不只是聊天窗口。它可以读取并理解 DOCX、XLSX、PPTX、PDF、CSV、本地项目文件和生成产物。结果可以作为 Markdown、HTML、办公文档、表格、代码、预览或 artifact 面板条目交付。
+Codata 不只是聊天窗口。它可以读取并理解 DOCX、XLSX、PPTX、PDF、CSV、本地项目文件和生成产物。结果可以作为 Markdown、HTML、办公文档、表格、代码、预览或 artifact 面板条目交付。
 
 ### 带边界的工具执行
 
@@ -154,7 +154,7 @@ Agent 可以使用文件工具、搜索工具、代码执行、artifact 创建�
 
 ## 模型支持
 
-WorkCraft 开源版采用用户自带模型的方式：
+Codata 开源版采用用户自带模型的方式：
 
 - OpenAI-compatible endpoint 和自定义端点。
 - OpenRouter 以及已配置的直接 provider adapter。
@@ -162,7 +162,7 @@ WorkCraft 开源版采用用户自带模型的方式：
 - 本地 Ollama 模型，适合本地优先或减少云端调用的任务。
 - 专家团成员可以单独指定 provider/model，用不同成本、延迟和推理能力完成不同步骤。
 
-模型调用需要配置可用的 provider 路径或本地模型。开源版流程不需要 WorkCraft 托管登录。
+模型调用需要配置可用的 provider 路径或本地模型。开源版流程不需要 Codata 托管登录。
 
 ## 版本选择
 
@@ -171,7 +171,7 @@ WorkCraft 开源版采用用户自带模型的方式：
 | 版本 | 适合对象 | 包含能力 |
 | --- | --- | --- |
 | 开源版 | 希望完全掌控本地配置和模型来源的开发者与团队 | BYOK 模型配置、OpenAI-compatible endpoint、自定义端点、本地 Ollama、本地持久化，以及 Apache-2.0 开源代码。 |
-| 商业版 | 希望开箱即用、减少模型配置成本的用户 | 与开源版相同的核心产品能力，保留 WorkCraft 独立登录能力，提供 GPT-5.5 等更稳定的托管模型路线，以及更优惠的 GPT 模型调用方案。商业版可在官网下载：[work-craft.com/download](https://work-craft.com/download/)。 |
+| 商业版 | 希望开箱即用、减少模型配置成本的用户 | 与开源版相同的核心产品能力，保留 Codata 独立登录能力，提供 GPT-5.5 等更稳定的托管模型路线，以及更优惠的 GPT 模型调用方案。商业版可在官网下载：[example.com/download](https://example.com/download/)。 |
 | 企业版 | 需要统一身份、治理审计、企业模型和部署控制的组织 | SSO 登录、审计支持、企业级模型、私有化部署和解决方案定制。企业用户可通过官网联系专属客服，获取部署与方案规划支持。 |
 
 如果你希望完全使用自己的模型厂商、OpenAI 兼容端点、自定义端点或本地 Ollama，建议使用开源版。如果你需要托管登录、稳定模型、更优惠的 GPT 调用成本或企业级支持，可以选择商业版或企业版。
@@ -203,8 +203,8 @@ User
 ### 安装依赖
 
 ```bash
-git clone https://github.com/Mlilion/workcraft.git
-cd workcraft
+git clone https://github.com/Mlilion/Codata.git
+cd codata
 
 npm install
 cd frontend && npm install --legacy-peer-deps
@@ -245,7 +245,7 @@ npm run verify:frontend-assets
 npm run preflight:ui
 ```
 
-桌面发布构建依赖 `frontend/out` 中导出的前端静态资源，以及 `backend/dist/workcraft-backend` 中的后端 bundle。桌面构建前运行 `npm run sync:desktop-meta`，确保 Tauri metadata 与根 package 版本一致。
+桌面发布构建依赖 `frontend/out` 中导出的前端静态资源，以及 `backend/dist/codata-backend` 中的后端 bundle。桌面构建前运行 `npm run sync:desktop-meta`，确保 Tauri metadata 与根 package 版本一致。
 
 ## 仓库结构
 
@@ -260,14 +260,14 @@ design-system/    产品设计参考和设计资产
 
 ## 数据边界
 
-WorkCraft 默认在本地存储用户数据，包括对话、文件、生成产物、设置、记忆和工作流元数据。当用户选择云端模型或外部连接器时，WorkCraft 会把 prompt 上下文和必要 payload 发送给对应 provider 或 connector。
+Codata 默认在本地存储用户数据，包括对话、文件、生成产物、设置、记忆和工作流元数据。当用户选择云端模型或外部连接器时，Codata 会把 prompt 上下文和必要 payload 发送给对应 provider 或 connector。
 
 用户需要自行选择符合安全、隐私和合规要求的 provider 路径、本地模型、连接器权限和部署设置。
 
 ## 文档
 
-- [WorkCraft 用户手册](docs/workcraft-user-manual.html)
-- [WorkCraft 办公指南](docs/workcraft-office-user-guide.html)
+- [Codata 用户手册](docs/codata-user-manual.html)
+- [Codata 办公指南](docs/codata-office-user-guide.html)
 - [安全策略](SECURITY.md)
 
 ## 参与贡献
@@ -278,4 +278,4 @@ WorkCraft 默认在本地存储用户数据，包括对话、文件、生成产�
 
 ## 许可证
 
-WorkCraft 使用 Apache License, Version 2.0 开源。请见 [LICENSE](LICENSE)。
+Codata 使用 Apache License, Version 2.0 开源。请见 [LICENSE](LICENSE)。

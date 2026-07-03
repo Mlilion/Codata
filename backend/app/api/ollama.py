@@ -143,7 +143,7 @@ async def uninstall_ollama(
     registry.unregister("ollama")
 
     from app.api.config import _remove_env_key
-    _remove_env_key("WORKCRAFT_OLLAMA_BASE_URL")
+    _remove_env_key("CODATA_OLLAMA_BASE_URL")
     settings.ollama_base_url = ""
 
     return {"status": "uninstalled", **result}
@@ -307,6 +307,6 @@ async def _register_ollama_provider(base_url: str) -> None:
         logger.warning("Failed to refresh models after Ollama registration: %s", e)
 
     # Persist so it auto-starts next time
-    _update_env_file("WORKCRAFT_OLLAMA_BASE_URL", base_url)
+    _update_env_file("CODATA_OLLAMA_BASE_URL", base_url)
     settings = get_settings()
     settings.ollama_base_url = base_url

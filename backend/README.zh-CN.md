@@ -1,6 +1,6 @@
 [English](README.md)
 
-# WorkCraft 后端
+# Codata 后端
 
 Python FastAPI 后端，复刻 OpenCode 完整 agent 架构，让开源模型（通过 OpenRouter）拥有 Claude Code 级别的 agentic 能力。
 
@@ -12,7 +12,7 @@ pip install -e ".[dev]"
 
 # 2. 配置环境变量
 cp .env.example .env
-# 编辑 .env，填入 WORKCRAFT_OPENROUTER_API_KEY
+# 编辑 .env，填入 CODATA_OPENROUTER_API_KEY
 
 # 3. 启动服务
 uvicorn app.main:app --reload
@@ -266,7 +266,7 @@ app/
 | 硅基流动（SiliconFlow） | BYOK | |
 | Xiaomi MiMo | BYOK | |
 
-所有 BYOK 提供者密钥遵循 `WORKCRAFT_{PROVIDER}_API_KEY` 格式。
+所有 BYOK 提供者密钥遵循 `CODATA_{PROVIDER}_API_KEY` 格式。
 
 ## 使用示例
 
@@ -309,21 +309,21 @@ curl http://localhost:8000/api/agents
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `WORKCRAFT_OPENROUTER_API_KEY` | OpenRouter API 密钥 | （可选） |
-| `WORKCRAFT_DATABASE_URL` | 数据库连接字符串 | `sqlite+aiosqlite:///./data/workcraft.db` |
-| `WORKCRAFT_HOST` | 监听地址 | `0.0.0.0` |
-| `WORKCRAFT_PORT` | 监听端口 | `8000` |
-| `WORKCRAFT_DEBUG` | 调试模式 | `false` |
-| `WORKCRAFT_PROJECT_DIR` | 工作区根目录（文件操作用） | `.` |
-| `WORKCRAFT_COMPACTION_AUTO` | 自动上下文压缩 | `true` |
-| `WORKCRAFT_DAILY_SEARCH_LIMIT` | 每日网页搜索配额 | `20` |
-| `WORKCRAFT_FTS_ENABLED` | 全文搜索索引 | `true` |
-| `WORKCRAFT_OLLAMA_BASE_URL` | Ollama 服务地址（setup 自动设置） | `` |
-| `WORKCRAFT_OLLAMA_AUTO_START` | 启动时自动启动托管的 Ollama | `true` |
-| `WORKCRAFT_OLLAMA_LAST_MODEL` | 上次使用的模型（用于启动预热） | `` |
-| `WORKCRAFT_CHANNELS_ENABLED` | 启用进程内消息渠道 | `true` |
-| `WORKCRAFT_CHANNELS_CONFIG_PATH` | 消息渠道配置 JSON 路径 | `data/channels.json` |
-| `WORKCRAFT_BRAVE_SEARCH_API_KEY` | Brave Search API 密钥（增强网页搜索） | `` |
+| `CODATA_OPENROUTER_API_KEY` | OpenRouter API 密钥 | （可选） |
+| `CODATA_DATABASE_URL` | 数据库连接字符串 | `sqlite+aiosqlite:///./data/codata.db` |
+| `CODATA_HOST` | 监听地址 | `0.0.0.0` |
+| `CODATA_PORT` | 监听端口 | `8000` |
+| `CODATA_DEBUG` | 调试模式 | `false` |
+| `CODATA_PROJECT_DIR` | 工作区根目录（文件操作用） | `.` |
+| `CODATA_COMPACTION_AUTO` | 自动上下文压缩 | `true` |
+| `CODATA_DAILY_SEARCH_LIMIT` | 每日网页搜索配额 | `20` |
+| `CODATA_FTS_ENABLED` | 全文搜索索引 | `true` |
+| `CODATA_OLLAMA_BASE_URL` | Ollama 服务地址（setup 自动设置） | `` |
+| `CODATA_OLLAMA_AUTO_START` | 启动时自动启动托管的 Ollama | `true` |
+| `CODATA_OLLAMA_LAST_MODEL` | 上次使用的模型（用于启动预热） | `` |
+| `CODATA_CHANNELS_ENABLED` | 启用进程内消息渠道 | `true` |
+| `CODATA_CHANNELS_CONFIG_PATH` | 消息渠道配置 JSON 路径 | `data/channels.json` |
+| `CODATA_BRAVE_SEARCH_API_KEY` | Brave Search API 密钥（增强网页搜索） | `` |
 
 ## 构建与部署
 
@@ -335,6 +335,6 @@ uvicorn app.main:app --reload
 python run.py --port 8100 --data-dir /path/to/app/data
 
 # 生产构建（PyInstaller 打包）
-pyinstaller workcraft.spec
-./dist/workcraft
+pyinstaller codata.spec
+./dist/codata
 ```

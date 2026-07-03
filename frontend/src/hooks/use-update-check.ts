@@ -6,7 +6,7 @@ import { desktopAPI } from "@/lib/tauri-api";
 
 const CHECK_INTERVAL = 4 * 60 * 60 * 1000; // 4 hours
 const STARTUP_DELAY = 5000; // 5 seconds
-const DISMISSED_KEY = "workcraft-dismissed-update";
+const DISMISSED_KEY = "codata-dismissed-update";
 
 interface UpdateState {
   available: boolean;

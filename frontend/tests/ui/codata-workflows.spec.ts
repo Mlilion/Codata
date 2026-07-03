@@ -1,13 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
-  mockWorkCraftApi,
-  seedWorkCraftStorage,
-  type WorkCraftMockState,
-} from "./fixtures/workcraft-api";
+  mockCodataApi,
+  seedCodataStorage,
+  type CodataMockState,
+} from "./fixtures/codata-api";
 
-async function setupMockedApp(page: Page): Promise<WorkCraftMockState> {
-  await seedWorkCraftStorage(page);
-  return mockWorkCraftApi(page);
+async function setupMockedApp(page: Page): Promise<CodataMockState> {
+  await seedCodataStorage(page);
+  return mockCodataApi(page);
 }
 
 async function expectNoAppCrash(page: Page) {
@@ -24,14 +24,14 @@ async function sendPrompt(page: Page, text: string) {
   await promptResponse;
 }
 
-test.describe("WorkCraft complete GUI workflows", () => {
+test.describe("Codata complete GUI workflows", () => {
   test.describe.configure({ timeout: 60_000 });
 
   test("chat task journey: workspace, attachment, mention, send, persist, search, reopen", async ({ page }) => {
     const state = await setupMockedApp(page);
 
-    await page.goto(`/c/new?directory=${encodeURIComponent("/Users/alex/workcraft-demo")}`);
-    await expect(page.getByRole("heading", { name: /What should (WorkCraft help you do|we do in)/i })).toBeVisible();
+    await page.goto(`/c/new?directory=${encodeURIComponent("/Users/alex/codata-demo")}`);
+    await expect(page.getByRole("heading", { name: /What should (Codata help you do|we do in)/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /Best Free/i })).toBeVisible();
 
     await page.locator('input[type="file"]').setInputFiles({
@@ -56,7 +56,7 @@ test.describe("WorkCraft complete GUI workflows", () => {
 
     expect(state.fileUploads).toEqual(["sample-preflight.csv"]);
     expect(JSON.stringify(state.promptBodies[0])).toContain("Create a UI preflight checklist");
-    expect(JSON.stringify(state.promptBodies[0])).toContain("/Users/alex/workcraft-demo");
+    expect(JSON.stringify(state.promptBodies[0])).toContain("/Users/alex/codata-demo");
     expect(JSON.stringify(state.promptBodies[0])).toContain("release-notes.md");
 
     await page.reload();
@@ -89,7 +89,7 @@ test.describe("WorkCraft complete GUI workflows", () => {
     expect(JSON.stringify(state.providerSaves)).toContain("sk-or-workflow");
 
     await expect
-      .poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("workcraft-settings") ?? "{}")?.state?.activeProvider))
+      .poll(() => page.evaluate(() => JSON.parse(window.localStorage.getItem("codata-settings") ?? "{}")?.state?.activeProvider))
       .toBe("byok");
 
     await page.goto("/c/new");

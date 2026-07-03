@@ -452,7 +452,7 @@ def _local_provider_status(settings: Any, registry: Any) -> LocalProviderStatus:
 
 @router.get("/config/vimax-media", response_model=ViMaxMediaConfigStatus)
 async def get_vimax_media_config(settings: SettingsDep) -> ViMaxMediaConfigStatus:
-    """Return the WorkCraft-managed media model defaults for ViMax."""
+    """Return the Codata-managed media model defaults for ViMax."""
     return _vimax_media_config_status(settings)
 
 
@@ -484,17 +484,17 @@ async def update_vimax_media_config(
         _persist_runtime_setting(
             settings,
             "vimax_media_preset",
-            "WORKCRAFT_VIMAX_MEDIA_PRESET",
+            "CODATA_VIMAX_MEDIA_PRESET",
             normalize_vimax_media_preset(body.preset),
         )
 
     if body.clear_api_key:
-        _persist_runtime_setting(settings, "vimax_media_api_key", "WORKCRAFT_VIMAX_MEDIA_API_KEY", "")
+        _persist_runtime_setting(settings, "vimax_media_api_key", "CODATA_VIMAX_MEDIA_API_KEY", "")
     elif body.api_key is not None:
         _persist_runtime_setting(
             settings,
             "vimax_media_api_key",
-            "WORKCRAFT_VIMAX_MEDIA_API_KEY",
+            "CODATA_VIMAX_MEDIA_API_KEY",
             str(body.api_key or "").strip(),
         )
 
@@ -502,18 +502,18 @@ async def update_vimax_media_config(
         _persist_runtime_setting(
             settings,
             "vimax_media_base_url",
-            "WORKCRAFT_VIMAX_MEDIA_BASE_URL",
+            "CODATA_VIMAX_MEDIA_BASE_URL",
             "",
         )
 
     for attr, env_key, value in [
-        ("vimax_image_model", "WORKCRAFT_VIMAX_IMAGE_MODEL", body.image_model),
-        ("vimax_video_model", "WORKCRAFT_VIMAX_VIDEO_MODEL", body.video_model),
-        ("vimax_video_t2v_model", "WORKCRAFT_VIMAX_VIDEO_T2V_MODEL", body.video_t2v_model),
-        ("vimax_video_ff2v_model", "WORKCRAFT_VIMAX_VIDEO_FF2V_MODEL", body.video_ff2v_model),
-        ("vimax_video_flf2v_model", "WORKCRAFT_VIMAX_VIDEO_FLF2V_MODEL", body.video_flf2v_model),
-        ("vimax_image_api_version", "WORKCRAFT_VIMAX_IMAGE_API_VERSION", body.image_api_version),
-        ("vimax_video_api_version", "WORKCRAFT_VIMAX_VIDEO_API_VERSION", body.video_api_version),
+        ("vimax_image_model", "CODATA_VIMAX_IMAGE_MODEL", body.image_model),
+        ("vimax_video_model", "CODATA_VIMAX_VIDEO_MODEL", body.video_model),
+        ("vimax_video_t2v_model", "CODATA_VIMAX_VIDEO_T2V_MODEL", body.video_t2v_model),
+        ("vimax_video_ff2v_model", "CODATA_VIMAX_VIDEO_FF2V_MODEL", body.video_ff2v_model),
+        ("vimax_video_flf2v_model", "CODATA_VIMAX_VIDEO_FLF2V_MODEL", body.video_flf2v_model),
+        ("vimax_image_api_version", "CODATA_VIMAX_IMAGE_API_VERSION", body.image_api_version),
+        ("vimax_video_api_version", "CODATA_VIMAX_VIDEO_API_VERSION", body.video_api_version),
     ]:
         if value is not None:
             _persist_runtime_setting(settings, attr, env_key, str(value or ""))
@@ -571,7 +571,7 @@ async def update_api_key(registry: ProviderRegistryDep, body: ApiKeyUpdate) -> A
         logger.warning("Model refresh failed after API key update: %s — will retry on next request", e)
 
     # Persist to .env so it survives restarts
-    _update_env_file("WORKCRAFT_OPENROUTER_API_KEY", api_key)
+    _update_env_file("CODATA_OPENROUTER_API_KEY", api_key)
 
     return ApiKeyStatus(
         is_configured=True,
@@ -584,7 +584,7 @@ async def update_api_key(registry: ProviderRegistryDep, body: ApiKeyUpdate) -> A
 async def delete_api_key(settings: SettingsDep, registry: ProviderRegistryDep) -> ApiKeyStatus:
     """Delete the stored OpenRouter API key."""
     settings.openrouter_api_key = ""
-    _remove_env_key("WORKCRAFT_OPENROUTER_API_KEY")
+    _remove_env_key("CODATA_OPENROUTER_API_KEY")
     registry.unregister("openrouter")
 
     return ApiKeyStatus(is_configured=False)
@@ -650,7 +650,7 @@ async def connect_ollama(
         logger.warning("Model refresh failed after Ollama connect: %s", e)
 
     # Persist to .env and runtime settings
-    _update_env_file("WORKCRAFT_OLLAMA_BASE_URL", base_url)
+    _update_env_file("CODATA_OLLAMA_BASE_URL", base_url)
     settings.ollama_base_url = base_url
 
     return OllamaStatus(
@@ -664,7 +664,7 @@ async def connect_ollama(
 async def disconnect_ollama(settings: SettingsDep, registry: ProviderRegistryDep) -> OllamaStatus:
     """Disconnect Ollama: remove provider and clear config."""
     settings.ollama_base_url = ""
-    _remove_env_key("WORKCRAFT_OLLAMA_BASE_URL")
+    _remove_env_key("CODATA_OLLAMA_BASE_URL")
 
     registry.unregister("ollama")
 
@@ -780,7 +780,7 @@ async def set_provider_key(
 
         # Persist base_url
         setattr(settings, url_setting, base_url)
-        _update_env_file(f"WORKCRAFT_{url_setting.upper()}", base_url)
+        _update_env_file(f"CODATA_{url_setting.upper()}", base_url)
 
     model_count, _ = await _validate_provider_connection(provider_id, api_key, **extra_kwargs)
 
@@ -805,10 +805,10 @@ async def set_provider_key(
             )
 
     # Persist to .env
-    env_key = f"WORKCRAFT_{pdef.settings_key.upper()}"
+    env_key = f"CODATA_{pdef.settings_key.upper()}"
     _update_env_file(env_key, api_key)
     settings.disabled_providers = ",".join(sorted(disabled))
-    _update_env_file("WORKCRAFT_DISABLED_PROVIDERS", settings.disabled_providers)
+    _update_env_file("CODATA_DISABLED_PROVIDERS", settings.disabled_providers)
 
     # Update runtime settings
     setattr(settings, pdef.settings_key, api_key)
@@ -860,12 +860,12 @@ async def delete_provider_key(
     setattr(settings, pdef.settings_key, "")
 
     # Remove from .env
-    env_key = f"WORKCRAFT_{pdef.settings_key.upper()}"
+    env_key = f"CODATA_{pdef.settings_key.upper()}"
     _remove_env_key(env_key)
 
     if pdef.kind == "openai_compat_azure":
         settings.azure_openai_base_url = ""
-        _remove_env_key("WORKCRAFT_AZURE_OPENAI_BASE_URL")
+        _remove_env_key("CODATA_AZURE_OPENAI_BASE_URL")
 
     # Unregister provider
     registry.unregister(provider_id)
@@ -922,7 +922,7 @@ async def toggle_provider(
 
     # Persist disabled list
     settings.disabled_providers = ",".join(sorted(disabled))
-    _update_env_file("WORKCRAFT_DISABLED_PROVIDERS", settings.disabled_providers)
+    _update_env_file("CODATA_DISABLED_PROVIDERS", settings.disabled_providers)
 
     # Build response
     provider = registry.get_provider(provider_id)
@@ -985,7 +985,7 @@ async def create_custom_endpoint(
         endpoints.append(new_config)
 
         settings.custom_endpoints = json.dumps(endpoints)
-        _update_env_file("WORKCRAFT_CUSTOM_ENDPOINTS", settings.custom_endpoints)
+        _update_env_file("CODATA_CUSTOM_ENDPOINTS", settings.custom_endpoints)
 
     if enabled:
         registry.register(test_provider)
@@ -1022,7 +1022,7 @@ async def delete_custom_endpoint(
             raise HTTPException(404, "Custom endpoint not found")
 
         settings.custom_endpoints = json.dumps(endpoints)
-        _update_env_file("WORKCRAFT_CUSTOM_ENDPOINTS", settings.custom_endpoints)
+        _update_env_file("CODATA_CUSTOM_ENDPOINTS", settings.custom_endpoints)
 
     registry.unregister(endpoint_id)
 
@@ -1093,7 +1093,7 @@ async def update_custom_endpoint(
         endpoints[found_idx] = updated_config
 
         settings.custom_endpoints = json.dumps(endpoints)
-        _update_env_file("WORKCRAFT_CUSTOM_ENDPOINTS", settings.custom_endpoints)
+        _update_env_file("CODATA_CUSTOM_ENDPOINTS", settings.custom_endpoints)
 
     if enabled and needs_rebuild and test_provider is not None:
         registry.unregister(endpoint_id)

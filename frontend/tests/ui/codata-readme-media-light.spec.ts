@@ -1,10 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { mockWorkCraftApi, seedWorkCraftStorage } from "./fixtures/workcraft-api";
+import { mockCodataApi, seedCodataStorage } from "./fixtures/codata-api";
 
 const repoRoot = path.resolve(__dirname, "../../..");
-const artifactRoot = path.join(repoRoot, ".codex-artifacts", "workcraft-readme-media-clean-20260428");
+const artifactRoot = path.join(repoRoot, ".codex-artifacts", "codata-readme-media-clean-20260428");
 const frameRoot = path.join(artifactRoot, "frames");
 const stillRoot = path.join(artifactRoot, "stills");
 
@@ -47,10 +47,10 @@ const files = {
   },
 } satisfies Record<string, UploadFixture>;
 
-test.describe("WorkCraft clean light README media", () => {
+test.describe("Codata clean light README media", () => {
   test.describe.configure({ mode: "serial", timeout: 900_000 });
   test.skip(
-    process.env.WORKCRAFT_CAPTURE_README_MEDIA !== "true",
+    process.env.CODATA_CAPTURE_README_MEDIA !== "true",
     "README media capture is an explicit documentation asset generation workflow.",
   );
 
@@ -82,7 +82,7 @@ test.describe("WorkCraft clean light README media", () => {
     await submitCurrentPrompt(page);
     await expect(page.locator("#main-content").getByText("VP-ready memo").last()).toBeVisible({ timeout: 25_000 });
     await recorder.capture(page);
-    await saveStill(page, "workcraft-docx-brief.png", { x: 450, y: 120, width: 1120, height: 760 });
+    await saveStill(page, "codata-docx-brief.png", { x: 450, y: 120, width: 1120, height: 760 });
   });
 
   test("record budget-analysis still", async ({ page }) => {
@@ -96,7 +96,7 @@ test.describe("WorkCraft clean light README media", () => {
     );
     await submitCurrentPrompt(page);
     await expect(page.locator("#main-content").getByText("Finance workbook review").last()).toBeVisible({ timeout: 25_000 });
-    await saveStill(page, "workcraft-budget-analysis.png", { x: 450, y: 120, width: 1120, height: 760 });
+    await saveStill(page, "codata-budget-analysis.png", { x: 450, y: 120, width: 1120, height: 760 });
   });
 
   test("record multi-file artifact workflow", async ({ page }) => {
@@ -120,7 +120,7 @@ test.describe("WorkCraft clean light README media", () => {
 
     await openArtifactPanel(page);
     await recorder.capture(page);
-    await saveStill(page, "workcraft-artifact-panel.png", { x: 300, y: 70, width: 1540, height: 930 });
+    await saveStill(page, "codata-artifact-panel.png", { x: 300, y: 70, width: 1540, height: 930 });
   });
 
   test("record long-context and auto-compress workflow", async ({ page }) => {
@@ -128,7 +128,7 @@ test.describe("WorkCraft clean light README media", () => {
     await page.goto("/c/session-long");
     await expect(page.getByText("Long conversation load test").first()).toBeVisible();
     await expect(page.getByText("Final version: launch is approved with conditions.")).toBeVisible();
-    await saveStill(page, "workcraft-long-context.png", { x: 280, y: 70, width: 1580, height: 930 });
+    await saveStill(page, "codata-long-context.png", { x: 280, y: 70, width: 1580, height: 930 });
 
     const recorder = await recorderFor("auto-compress");
     await page.goto("/c/new");
@@ -152,16 +152,16 @@ test.describe("WorkCraft clean light README media", () => {
     });
     await expect(page.getByText("Failed to upload file")).toBeVisible();
     await expect(page.getByPlaceholder(/Describe the result you want/i)).toBeVisible();
-    await saveStill(page, "workcraft-error-recovery.png", { x: 660, y: 0, width: 1200, height: 620 });
+    await saveStill(page, "codata-error-recovery.png", { x: 660, y: 0, width: 1200, height: 620 });
   });
 });
 
-async function setupCleanLightApp(page: Page, options?: Parameters<typeof mockWorkCraftApi>[1]) {
-  await seedWorkCraftStorage(page, { force: true });
+async function setupCleanLightApp(page: Page, options?: Parameters<typeof mockCodataApi>[1]) {
+  await seedCodataStorage(page, { force: true });
   await page.addInitScript(() => {
     window.localStorage.setItem("theme", "light");
     window.localStorage.setItem(
-      "workcraft-settings",
+      "codata-settings",
       JSON.stringify({
         state: {
           hasCompletedOnboarding: true,
@@ -210,11 +210,11 @@ async function setupCleanLightApp(page: Page, options?: Parameters<typeof mockWo
     if (document.documentElement) inject();
     else document.addEventListener("DOMContentLoaded", inject, { once: true });
   });
-  await mockWorkCraftApi(page, options);
+  await mockCodataApi(page, options);
 }
 
 async function expectHome(page: Page) {
-  await expect(page.getByRole("heading", { name: /What should (WorkCraft help you do|we do in)/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /What should (Codata help you do|we do in)/i })).toBeVisible();
   await expect(page.locator("html")).not.toHaveClass(/dark/);
   await expect(page.getByText("Runtime", { exact: false })).toHaveCount(0);
   await expect(page.getByText("API 401", { exact: false })).toHaveCount(0);

@@ -1,8 +1,8 @@
-"""Plugin system — load Claude knowledge-work-plugins into WorkCraft.
+"""Plugin system — load Claude knowledge-work-plugins into Codata.
 
 Bundled plugins ship with the backend in ``app/data/plugins/``.
-Users can add more in ``.workcraft/plugins/`` (project-level) or
-``~/.workcraft/plugins/`` (global) — later sources override earlier ones.
+Users can add more in ``.codata/plugins/`` (project-level) or
+``~/.codata/plugins/`` (global) — later sources override earlier ones.
 """
 
 from __future__ import annotations
@@ -19,12 +19,12 @@ _BUNDLED_PLUGINS_DIR = Path(__file__).resolve().parent.parent / "data" / "plugin
 
 
 def load_plugins(project_dir: str | None = None) -> PluginLoadResult:
-    """Scan for Claude-format plugins and convert them to WorkCraft objects.
+    """Scan for Claude-format plugins and convert them to Codata objects.
 
     Search order (lowest → highest priority):
       1. Bundled plugins:  app/data/plugins/
-      2. Global plugins:   ~/.workcraft/plugins/
-      3. Project plugins:  {project_dir}/.workcraft/plugins/
+      2. Global plugins:   ~/.codata/plugins/
+      3. Project plugins:  {project_dir}/.codata/plugins/
     """
     combined = PluginLoadResult()
 
@@ -33,13 +33,13 @@ def load_plugins(project_dir: str | None = None) -> PluginLoadResult:
         combined.merge(scan_plugins_dir(_BUNDLED_PLUGINS_DIR))
 
     # 2. Global user plugins
-    global_dir = Path.home() / ".workcraft" / "plugins"
+    global_dir = Path.home() / ".codata" / "plugins"
     if global_dir.is_dir():
         combined.merge(scan_plugins_dir(global_dir))
 
     # 3. Project-level plugins
     if project_dir:
-        project_plugins = Path(project_dir).resolve() / ".workcraft" / "plugins"
+        project_plugins = Path(project_dir).resolve() / ".codata" / "plugins"
         if project_plugins.is_dir():
             combined.merge(scan_plugins_dir(project_plugins))
 
@@ -68,14 +68,14 @@ def load_plugins_by_source(
         if r.skills or r.agents:
             sources.append(("builtin", r))
 
-    global_dir = Path.home() / ".workcraft" / "plugins"
+    global_dir = Path.home() / ".codata" / "plugins"
     if global_dir.is_dir():
         r = scan_plugins_dir(global_dir)
         if r.skills or r.agents:
             sources.append(("global", r))
 
     if project_dir:
-        project_plugins = Path(project_dir).resolve() / ".workcraft" / "plugins"
+        project_plugins = Path(project_dir).resolve() / ".codata" / "plugins"
         if project_plugins.is_dir():
             r = scan_plugins_dir(project_plugins)
             if r.skills or r.agents:

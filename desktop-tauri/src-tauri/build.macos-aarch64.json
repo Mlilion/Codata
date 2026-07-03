@@ -5,7 +5,7 @@
   "bundle": {
     "targets": ["dmg", "app"],
     "resources": {
-      "../../backend/dist/workcraft-backend": "backend",
+      "../../backend/dist/codata-backend": "backend",
       "../../backend/resources/nodejs": "nodejs"
     }
   }

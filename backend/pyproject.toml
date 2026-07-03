@@ -1,5 +1,5 @@
 [project]
-name = "workcraft-backend"
+name = "codata-backend"
 version = "1.1.12"
 description = "Your local AI assistant"
 license = "Apache-2.0"

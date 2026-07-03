@@ -6084,7 +6084,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "workcraft"
+name = "codata"
 version = "1.1.5"
 dependencies = [
  "env_logger",

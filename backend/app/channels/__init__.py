@@ -1,4 +1,4 @@
-"""Nanobot-based messaging channels for WorkCraft.
+"""Nanobot-based messaging channels for Codata.
 
 Ported from https://github.com/HKUDS/nanobot (MIT license).
 Provides a pluggable channel system for DingTalk, Feishu, WeChat,

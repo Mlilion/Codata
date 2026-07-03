@@ -973,7 +973,7 @@ function ExpertTeamModal({
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-subtle)] bg-[var(--surface-primary)] px-6 py-4">
           <div className="flex items-center gap-2 text-ui-2xs text-[var(--text-tertiary)]">
             <CheckCircle2 className="h-4 w-4 text-[var(--color-success)]" />
-            {comingSoon ? "该专家团暂未开放召唤" : "输出会进入一个新的 WorkCraft 会话"}
+            {comingSoon ? "该专家团暂未开放召唤" : "输出会进入一个新的 Codata 会话"}
           </div>
           <div className="flex items-center gap-2.5">
             {editable && detail && (

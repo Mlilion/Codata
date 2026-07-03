@@ -118,7 +118,7 @@ export function GeneralTab() {
               key={value}
               onClick={() => {
                 i18n.changeLanguage(value);
-                localStorage.setItem("workcraft-language", value);
+                localStorage.setItem("codata-language", value);
               }}
               className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-colors ${
                 mounted && i18n.language.startsWith(value)
@@ -182,7 +182,7 @@ def hello(name: str) -> str:
     return f"Hello, {name}!"
 
 # Usage
-result = hello("WorkCraft")
+result = hello("Codata")
 print(result)
 \`\`\`
 
@@ -201,7 +201,7 @@ The code block above should feel like a distinct zone with premium quality.
 
 ## 弱结构文本测试
 
-项目名称：WorkCraft
+项目名称：Codata
 类型：AI 桌面助手
 技术栈：Tauri + Next.js + FastAPI
 开源协议：MIT

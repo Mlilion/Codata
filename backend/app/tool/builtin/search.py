@@ -63,7 +63,7 @@ class SearchTool(ToolDefinition):
         if index_manager is None:
             return ToolResult(
                 error="Search tool requires FTS indexing to be enabled. "
-                      "Set WORKCRAFT_FTS_ENABLED=true and select a workspace."
+                      "Set CODATA_FTS_ENABLED=true and select a workspace."
             )
 
         workspace = ctx.workspace

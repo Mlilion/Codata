@@ -30,7 +30,7 @@ class ToolContext:
     allowed_file_paths: set[str] = field(default_factory=set)
     """Absolute file paths that tools may read even when outside workspace.
 
-    Used for user-uploaded attachments, which live in WorkCraft's upload
+    Used for user-uploaded attachments, which live in Codata's upload
     directory rather than the active project workspace.
     """
     index_manager: Any | None = None  # FTS IndexManager; None when FTS disabled

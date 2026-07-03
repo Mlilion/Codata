@@ -227,7 +227,7 @@ Quick overview:
 
 ## 6. Dependencies
 
-Core (included with WorkCraft):
+Core (included with Codata):
 - `pypdf` — read, merge, split, rotate, encrypt, forms
 
 Optional (install as needed):

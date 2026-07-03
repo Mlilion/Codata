@@ -102,7 +102,7 @@ class TestViMaxGenerateVideoTool:
         assert error is not None
         assert "must be one of" in error
 
-    def test_build_submit_payload_injects_workcraft_keys(self) -> None:
+    def test_build_submit_payload_injects_codata_keys(self) -> None:
         tool = ViMaxGenerateVideoTool()
         with patch("app.tool.builtin.vimax_generate_video.get_settings", return_value=_Settings()):
             payload = tool._build_submit_payload(
@@ -384,9 +384,9 @@ class TestViMaxGenerateVideoTool:
         overrides = payload["config_overrides"]
         assert overrides["chat_model"]["init_args"]["api_key"] == "openrouter-key"
         assert overrides["chat_model"]["init_args"]["base_url"] == "https://openrouter.ai/api/v1"
-        assert payload["metadata"]["workcraft"]["session_id"] == "test-session"
-        assert payload["metadata"]["workcraft"]["message_id"] == "test-message"
-        assert payload["metadata"]["workcraft"]["call_id"] == "test-call"
+        assert payload["metadata"]["codata"]["session_id"] == "test-session"
+        assert payload["metadata"]["codata"]["message_id"] == "test-message"
+        assert payload["metadata"]["codata"]["call_id"] == "test-call"
 
     @pytest.mark.asyncio
     async def test_completed_task_returns_video_attachment(self, tmp_path: Path) -> None:
@@ -429,7 +429,7 @@ class TestViMaxGenerateVideoTool:
                 "stage": "resume_queued",
                 "message": "Task resume queued",
                 "working_dir": "/tmp/vimax/task-resume/work",
-                "metadata": {"workcraft": {"session_id": "test-session"}},
+                "metadata": {"codata": {"session_id": "test-session"}},
             }
         )
 
@@ -450,8 +450,8 @@ class TestViMaxGenerateVideoTool:
         assert client.posts[0][0] == "http://runtime/tasks/task-resume/resume"
         payload = client.posts[0][1]
         assert payload["script"] == "INT. TEST - DAY"
-        assert payload["metadata"]["workcraft"]["resume_task_id"] == "task-resume"
-        assert result.metadata["workcraft_context"]["session_id"] == "test-session"
+        assert payload["metadata"]["codata"]["resume_task_id"] == "task-resume"
+        assert result.metadata["codata_context"]["session_id"] == "test-session"
 
     @pytest.mark.asyncio
     async def test_resume_without_task_id_uses_latest_session_tool_call(self) -> None:
@@ -500,7 +500,7 @@ class TestViMaxGenerateVideoTool:
 
         assert result.success
         assert client.posts[0][0] == "http://runtime/tasks/task-from-history/resume"
-        assert client.posts[0][1]["metadata"]["workcraft"]["session_id"] == "test-session"
+        assert client.posts[0][1]["metadata"]["codata"]["session_id"] == "test-session"
 
     @pytest.mark.asyncio
     async def test_resume_prefers_persisted_task_run_record(self, session_factory) -> None:
@@ -540,7 +540,7 @@ class TestViMaxGenerateVideoTool:
                 "stage": "resume_queued",
                 "message": "Task resume queued",
                 "working_dir": "/tmp/vimax/task-db/work",
-                "metadata": {"workcraft": {"session_id": "test-session"}},
+                "metadata": {"codata": {"session_id": "test-session"}},
             }
         )
 
@@ -550,7 +550,7 @@ class TestViMaxGenerateVideoTool:
         assert result.success
         assert client.posts[0][0] == "http://runtime/tasks/task-db/resume"
         assert client.posts[0][1]["script"] == "INT. DB - DAY"
-        assert client.posts[0][1]["metadata"]["workcraft"]["resume_task_id"] == "task-db"
+        assert client.posts[0][1]["metadata"]["codata"]["resume_task_id"] == "task-db"
 
     @pytest.mark.asyncio
     async def test_completed_task_returns_vimax_process_artifacts(self, tmp_path: Path) -> None:

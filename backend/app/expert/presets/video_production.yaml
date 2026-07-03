@@ -50,7 +50,7 @@ team:
           value: doubao
           description: 使用云雾 API Key 调用豆包 Seedream 生图和 Seedance 生视频。
     - name: runtime_url
-      description: 可选 ViMax runtime 地址；不填则使用 WORKCRAFT_VIMAX_RUNTIME_URL。
+      description: 可选 ViMax runtime 地址；不填则使用 CODATA_VIMAX_RUNTIME_URL。
       required: false
       default: ""
   skills: []
@@ -89,7 +89,7 @@ team:
         视频目标：
         {{video_goal}}
 
-        用户本次覆盖的生图/生视频模型方案（为空则使用 WorkCraft 模型配置页默认值）：
+        用户本次覆盖的生图/生视频模型方案（为空则使用 Codata 模型配置页默认值）：
         {{media_preset}}
 
         输出要包含：目标受众、核心信息、视频时长建议、风格方向、素材缺口、风险点和交付标准。
@@ -109,7 +109,7 @@ team:
         用户需求：
         {{user_input}}
 
-        用户本次覆盖的生图/生视频模型方案（为空则使用 WorkCraft 模型配置页默认值）：
+        用户本次覆盖的生图/生视频模型方案（为空则使用 Codata 模型配置页默认值）：
         {{media_preset}}
 
         输出应尽量直接转成视频生成参数，包含：场景顺序、视觉风格、用户要求和镜头节奏。
@@ -133,7 +133,7 @@ team:
         请使用 vimax_generate_video：
         - mode 由脚本内容决定，通常是 script2video。
         - runtime_url 可直接使用 {{runtime_url}}，若为空则使用环境默认。
-        - media_preset 是可选参数；如果 {{media_preset}} 为空，不要传 media_preset，让 WorkCraft 模型配置页默认值生效。
+        - media_preset 是可选参数；如果 {{media_preset}} 为空，不要传 media_preset，让 Codata 模型配置页默认值生效。
         - 如果 {{media_preset}} 不为空，media_preset 只能传 {{media_preset}}，可选值仅限 doubao，不要改写成其他模型名。
         - 调用时必须传 wait=true、max_wait_seconds=3600、poll_interval_seconds=5。
         - 只有当工具返回 status=completed 且 final_video_path 对应的视频文件已作为结果附件返回时，才算渲染完成。

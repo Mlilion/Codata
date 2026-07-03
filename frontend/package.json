@@ -1,8 +1,8 @@
 {
-  "name": "workcraft-frontend",
+  "name": "codata-frontend",
   "version": "1.1.12",
   "private": true,
-  "description": "WorkCraft frontend",
+  "description": "Codata frontend",
   "license": "Apache-2.0",
   "scripts": {
     "dev": "next dev --turbopack",

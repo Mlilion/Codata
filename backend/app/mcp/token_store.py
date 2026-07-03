@@ -15,15 +15,15 @@ logger = logging.getLogger(__name__)
 class McpTokenStore:
     """Persist OAuth tokens per MCP server to a JSON file.
 
-    Storage path: {project_dir}/.workcraft/mcp-tokens.json
-    Fallback:     ~/.workcraft/mcp-tokens.json
+    Storage path: {project_dir}/.codata/mcp-tokens.json
+    Fallback:     ~/.codata/mcp-tokens.json
     """
 
     def __init__(self, project_dir: str | None = None) -> None:
         if project_dir:
-            self._path = Path(project_dir).resolve() / ".workcraft" / "mcp-tokens.json"
+            self._path = Path(project_dir).resolve() / ".codata" / "mcp-tokens.json"
         else:
-            self._path = Path.home() / ".workcraft" / "mcp-tokens.json"
+            self._path = Path.home() / ".codata" / "mcp-tokens.json"
         self._data: dict[str, dict[str, Any]] = self._load()
         self._migrate_namespaced_keys()
 

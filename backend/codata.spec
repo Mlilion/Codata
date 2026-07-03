@@ -1,10 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec for the WorkCraft backend.
+PyInstaller spec for the Codata backend.
 
 Build with:
     cd backend
-    pyinstaller workcraft.spec
+    pyinstaller codata.spec
 """
 
 import os
@@ -29,7 +29,7 @@ backend_dir = os.path.abspath('.')
 app_dir = os.path.join(backend_dir, 'app')
 repo_root = os.path.abspath(os.path.join(backend_dir, '..'))
 frontend_out = os.environ.get(
-    'WORKCRAFT_FRONTEND_OUT',
+    'CODATA_FRONTEND_OUT',
     os.path.join(repo_root, 'frontend', 'out'),
 )
 
@@ -57,7 +57,7 @@ _required_datas = [
 _missing = [src for src, _ in _required_datas if not os.path.exists(src)]
 if _missing:
     sys.stderr.write(
-        '\n[workcraft.spec] FATAL: required build inputs are missing:\n'
+        '\n[codata.spec] FATAL: required build inputs are missing:\n'
     )
     for p in _missing:
         sys.stderr.write(f'  - {p}\n')
@@ -76,7 +76,7 @@ if _missing:
 _next_dir = os.path.join(frontend_out, '_next')
 if not os.path.isdir(_next_dir):
     sys.stderr.write(
-        f'\n[workcraft.spec] FATAL: frontend export at {frontend_out} is incomplete.\n'
+        f'\n[codata.spec] FATAL: frontend export at {frontend_out} is incomplete.\n'
         f'Expected {_next_dir}/ to exist.\n'
         'Rebuild the frontend with DESKTOP_BUILD=true before packaging.\n'
     )
@@ -412,7 +412,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='workcraft-backend',
+    name='codata-backend',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -428,5 +428,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='workcraft-backend',
+    name='codata-backend',
 )

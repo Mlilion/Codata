@@ -14,7 +14,7 @@ import { ChatHeader } from "./chat-header";
 import { OfflineOverlay } from "@/components/layout/offline-overlay";
 import { StreamingMessage } from "@/components/messages/assistant-message";
 import { FileChip } from "./file-chip";
-import { WorkCraftLogo } from "@/components/ui/workcraft-logo";
+import { CodataLogo } from "@/components/ui/codata-logo";
 import { useChat } from "@/hooks/use-chat";
 import { useChatStore } from "@/stores/chat-store";
 import { useArtifactStore } from "@/stores/artifact-store";
@@ -170,7 +170,7 @@ export function Landing({ directoryParam = null, skillParam = null }: LandingPro
           <main className="min-w-0">
             <div className="mb-5 flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-sm)]">
-                <WorkCraftLogo size={34} className="rounded-xl" />
+                <CodataLogo size={34} className="rounded-xl" />
               </div>
               <div className="min-w-0">
                 <span className="sr-only">

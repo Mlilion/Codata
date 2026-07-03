@@ -34,9 +34,9 @@ class ConnectorRegistry:
 
         # Persistence paths
         if project_dir:
-            self._state_path = Path(project_dir).resolve() / ".workcraft" / "connectors.json"
+            self._state_path = Path(project_dir).resolve() / ".codata" / "connectors.json"
         else:
-            self._state_path = Path.home() / ".workcraft" / "connectors.json"
+            self._state_path = Path.home() / ".codata" / "connectors.json"
 
         self._persisted_state = self._load_state()
 

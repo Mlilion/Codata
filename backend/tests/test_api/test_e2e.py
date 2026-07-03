@@ -3,7 +3,7 @@
 Tests the complete flow:
   POST /api/chat/prompt → SSE stream → tool execution → multi-step → done
 
-Requires a valid WORKCRAFT_OPENROUTER_API_KEY.
+Requires a valid CODATA_OPENROUTER_API_KEY.
 """
 
 from __future__ import annotations

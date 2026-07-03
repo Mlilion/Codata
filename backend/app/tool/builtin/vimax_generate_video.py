@@ -126,11 +126,11 @@ class ViMaxGenerateVideoTool(ToolDefinition):
                 },
                 "runtime_url": {
                     "type": "string",
-                    "description": "Optional ViMax runtime URL. Defaults to WORKCRAFT_VIMAX_RUNTIME_URL.",
+                    "description": "Optional ViMax runtime URL. Defaults to CODATA_VIMAX_RUNTIME_URL.",
                 },
                 "config_path": {
                     "type": "string",
-                    "description": "Optional ViMax YAML config path. Defaults to WORKCRAFT_VIMAX_CONFIG_PATH.",
+                    "description": "Optional ViMax YAML config path. Defaults to CODATA_VIMAX_CONFIG_PATH.",
                 },
                 "wait": {
                     "type": "boolean",
@@ -183,7 +183,7 @@ class ViMaxGenerateVideoTool(ToolDefinition):
             return ToolResult(
                 error=(
                     "ViMax runtime is not configured. Start the local ViMax runtime and set "
-                    "WORKCRAFT_VIMAX_RUNTIME_URL, or pass runtime_url."
+                    "CODATA_VIMAX_RUNTIME_URL, or pass runtime_url."
                 )
             )
 
@@ -240,7 +240,7 @@ class ViMaxGenerateVideoTool(ToolDefinition):
         script = str(args.get("script") or "")
         config_path = str(args.get("config_path") or settings.vimax_config_path or "").strip()
         if not config_path:
-            return "ViMax config_path is required. Set WORKCRAFT_VIMAX_CONFIG_PATH or pass config_path."
+            return "ViMax config_path is required. Set CODATA_VIMAX_CONFIG_PATH or pass config_path."
         if mode == "idea2video" and not idea.strip():
             return "idea is required for idea2video."
         if mode == "script2video" and not script.strip():
@@ -252,15 +252,15 @@ class ViMaxGenerateVideoTool(ToolDefinition):
             config_overrides = _deep_merge(config_overrides, raw_overrides)
         media_provider = str(args.get("media_provider") or "auto")
         media_preset = str(args.get("media_preset") or getattr(settings, "vimax_media_preset", "")).strip()
-        workcraft_overrides = _workcraft_config_overrides(
+        codata_overrides = _codata_config_overrides(
             ctx,
             settings,
             media_provider=media_provider,
             media_preset=media_preset,
         )
-        if isinstance(workcraft_overrides, str):
-            return workcraft_overrides
-        config_overrides = _deep_merge(config_overrides, workcraft_overrides)
+        if isinstance(codata_overrides, str):
+            return codata_overrides
+        config_overrides = _deep_merge(config_overrides, codata_overrides)
 
         return {
             "mode": mode,
@@ -270,7 +270,7 @@ class ViMaxGenerateVideoTool(ToolDefinition):
             "user_requirement": str(args.get("user_requirement") or ""),
             "style": str(args.get("style") or ""),
             "config_overrides": config_overrides,
-            "metadata": _workcraft_task_metadata(ctx, resume_task_id=resume_task_id),
+            "metadata": _codata_task_metadata(ctx, resume_task_id=resume_task_id),
         }
 
     async def _status(
@@ -334,7 +334,7 @@ class ViMaxGenerateVideoTool(ToolDefinition):
         if not task_id:
             previous = await _latest_session_task(ctx)
             if not previous:
-                return ToolResult(error="No previous ViMax task found in this WorkCraft session. Pass task_id to resume.")
+                return ToolResult(error="No previous ViMax task found in this Codata session. Pass task_id to resume.")
             task_id = previous["task_id"]
             resume_args = _deep_merge(previous.get("input", {}), resume_args)
             resume_args["task_id"] = task_id
@@ -388,7 +388,7 @@ class ViMaxGenerateVideoTool(ToolDefinition):
         while True:
             if ctx.is_aborted:
                 await self._cancel(client, runtime_url, task_id)
-                return ToolResult(error=f"ViMax task cancelled because the WorkCraft run was aborted: {task_id}")
+                return ToolResult(error=f"ViMax task cancelled because the Codata run was aborted: {task_id}")
 
             try:
                 resp = await client.get(f"{runtime_url}/tasks/{task_id}")
@@ -517,7 +517,7 @@ def _status_metadata(status: dict[str, Any]) -> dict[str, Any]:
         "vimax_progress": progress,
         "vimax_artifacts": artifacts if isinstance(artifacts, dict) else {},
         "stale": bool(status.get("stale")),
-        "workcraft_context": (status.get("metadata") or {}).get("workcraft")
+        "codata_context": (status.get("metadata") or {}).get("codata")
         if isinstance(status.get("metadata"), dict)
         else None,
     }
@@ -781,7 +781,7 @@ def _public_status(status: dict[str, Any]) -> dict[str, Any]:
     return public
 
 
-def _workcraft_config_overrides(
+def _codata_config_overrides(
     ctx: ToolContext,
     settings: Any,
     *,
@@ -859,12 +859,12 @@ def _media_generator_override(
         if preset in dataeyes_presets:
             return (
                 f"ViMax media_preset '{preset}' requires a DataEyes-compatible media API key. "
-                "Set WORKCRAFT_VIMAX_MEDIA_API_KEY or configure a custom endpoint whose base_url contains dataeyes.ai."
+                "Set CODATA_VIMAX_MEDIA_API_KEY or configure a custom endpoint whose base_url contains dataeyes.ai."
             )
         if preset in {GEMINI_MEDIA_PRESET, DOUBAO_MEDIA_PRESET}:
             return (
                 f"ViMax media_preset '{preset}' requires a Yunwu-compatible media API key. "
-                "Set WORKCRAFT_VIMAX_MEDIA_API_KEY, WORKCRAFT_VIMAX_YUNWU_API_KEY, "
+                "Set CODATA_VIMAX_MEDIA_API_KEY, CODATA_VIMAX_YUNWU_API_KEY, "
                 "or configure a custom endpoint whose base_url contains yunwu.ai."
             )
 
@@ -1122,7 +1122,7 @@ def _custom_endpoint_api_key(
             continue
         candidates.append(endpoint)
 
-    # Prefer endpoints enabled for normal WorkCraft use, but allow a saved
+    # Prefer endpoints enabled for normal Codata use, but allow a saved
     # endpoint as a ViMax credential fallback because rendering is explicit.
     for endpoint in [*filter(lambda item: item.get("enabled", True), candidates), *candidates]:
         api_key = str(endpoint.get("api_key") or "").strip()
@@ -1155,7 +1155,7 @@ def _chat_model_override(provider_id: str, model_id: str, settings: Any) -> dict
     if provider_def is None:
         return {}
 
-    if provider_id == "openrouter" and model_id.startswith("workcraft/"):
+    if provider_id == "openrouter" and model_id.startswith("codata/"):
         model_id = "openrouter/free"
 
     api_key = str(getattr(settings, provider_def.settings_key, "") or "")
@@ -1183,7 +1183,7 @@ def _chat_model_override(provider_id: str, model_id: str, settings: Any) -> dict
     }
 
 
-def _workcraft_task_metadata(ctx: ToolContext, *, resume_task_id: str = "") -> dict[str, Any]:
+def _codata_task_metadata(ctx: ToolContext, *, resume_task_id: str = "") -> dict[str, Any]:
     metadata = {
         "session_id": ctx.session_id,
         "message_id": ctx.message_id,
@@ -1194,7 +1194,7 @@ def _workcraft_task_metadata(ctx: ToolContext, *, resume_task_id: str = "") -> d
     }
     if resume_task_id:
         metadata["resume_task_id"] = resume_task_id
-    return {"workcraft": {key: value for key, value in metadata.items() if value not in (None, "")}}
+    return {"codata": {key: value for key, value in metadata.items() if value not in (None, "")}}
 
 
 async def _record_task_status(
@@ -1212,8 +1212,8 @@ async def _record_task_status(
         return
 
     metadata = status.get("metadata") if isinstance(status.get("metadata"), dict) else {}
-    workcraft = metadata.get("workcraft") if isinstance(metadata.get("workcraft"), dict) else {}
-    task_id = str(status.get("task_id") or workcraft.get("resume_task_id") or "").strip()
+    codata = metadata.get("codata") if isinstance(metadata.get("codata"), dict) else {}
+    task_id = str(status.get("task_id") or codata.get("resume_task_id") or "").strip()
     if not task_id:
         return
 
@@ -1227,9 +1227,9 @@ async def _record_task_status(
             async with db.begin():
                 await upsert_vimax_task_run(
                     db,
-                    session_id=str(workcraft.get("session_id") or ctx.session_id),
-                    message_id=str(workcraft.get("message_id") or ctx.message_id),
-                    call_id=str(workcraft.get("call_id") or ctx.call_id),
+                    session_id=str(codata.get("session_id") or ctx.session_id),
+                    message_id=str(codata.get("message_id") or ctx.message_id),
+                    call_id=str(codata.get("call_id") or ctx.call_id),
                     task_id=task_id,
                     tool_id=tool_id,
                     mode=str(status.get("mode") or input_args.get("mode") or "script2video"),
@@ -1243,9 +1243,9 @@ async def _record_task_status(
                 )
                 await _sync_vimax_tool_part_status(
                     db,
-                    session_id=str(workcraft.get("session_id") or ctx.session_id),
-                    message_id=str(workcraft.get("message_id") or ctx.message_id),
-                    call_id=str(workcraft.get("call_id") or ctx.call_id),
+                    session_id=str(codata.get("session_id") or ctx.session_id),
+                    message_id=str(codata.get("message_id") or ctx.message_id),
+                    call_id=str(codata.get("call_id") or ctx.call_id),
                     task_id=task_id,
                     input_args=input_args,
                     status=status,

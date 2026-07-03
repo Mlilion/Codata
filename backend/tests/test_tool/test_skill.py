@@ -37,7 +37,7 @@ class TestSkillToolProperties:
         assert "No skills are currently available" in tool.description
 
     def test_description_with_skills(self, tmp_path: Path):
-        skills_dir = tmp_path / ".workcraft" / "skills" / "test-skill"
+        skills_dir = tmp_path / ".codata" / "skills" / "test-skill"
         skills_dir.mkdir(parents=True)
         (skills_dir / "SKILL.md").write_text(
             "---\nname: test-skill\ndescription: A test.\n---\nContent",
@@ -63,7 +63,7 @@ class TestSkillToolProperties:
 class TestSkillToolExecute:
     @pytest.mark.asyncio
     async def test_execute_loads_skill(self, tmp_path: Path):
-        skills_dir = tmp_path / ".workcraft" / "skills" / "my-skill"
+        skills_dir = tmp_path / ".codata" / "skills" / "my-skill"
         skills_dir.mkdir(parents=True)
         (skills_dir / "SKILL.md").write_text(
             "---\nname: my-skill\ndescription: My skill.\n---\n\n# Skill body\nInstructions here.",
@@ -102,7 +102,7 @@ class TestSkillToolExecute:
 
     @pytest.mark.asyncio
     async def test_execute_lists_bundled_files(self, tmp_path: Path):
-        skills_dir = tmp_path / ".workcraft" / "skills" / "rich-skill"
+        skills_dir = tmp_path / ".codata" / "skills" / "rich-skill"
         skills_dir.mkdir(parents=True)
         (skills_dir / "SKILL.md").write_text(
             "---\nname: rich-skill\ndescription: Has extra files.\n---\n\nMain content.",

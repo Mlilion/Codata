@@ -91,7 +91,7 @@ pub fn create_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         true,
         None::<&str>,
     )?;
-    let about = PredefinedMenuItem::about(app, Some("About WorkCraft"), None)?;
+    let about = PredefinedMenuItem::about(app, Some("About Codata"), None)?;
     let help_menu = Submenu::with_items(
         app,
         "Help",

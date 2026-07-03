@@ -1,7 +1,7 @@
-"""Channel configuration schema for WorkCraft.
+"""Channel configuration schema for Codata.
 
 Replaces the nanobot Config dependency with a lightweight schema
-that reads from WorkCraft's data/channels.json.
+that reads from Codata's data/channels.json.
 """
 
 from __future__ import annotations

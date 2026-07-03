@@ -459,7 +459,7 @@ async def test_start_feishu_qr_registration_creates_session(monkeypatch, tmp_pat
     assert response.status_code == 200
     payload = response.json()
     assert payload["scan_url"].startswith("https://accounts.feishu.cn/passport/device?")
-    assert "source=node-sdk%2Fworkcraft" in payload["scan_url"]
+    assert "source=node-sdk%2Fcodata" in payload["scan_url"]
     assert payload["status"] == "waiting_scan"
 
     sessions = app.state.feishu_qr_sessions

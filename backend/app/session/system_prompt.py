@@ -125,7 +125,7 @@ def _environment_section(directory: str | None = None, *, workspace: str | None 
 - Current year: {now.year}"""
 
     if workspace:
-        output_dir = str(Path(workspace) / "workcraft_written")
+        output_dir = str(Path(workspace) / "codata_written")
         section += f"""
 
 # Workspace Restriction
@@ -176,8 +176,8 @@ def _load_project_instructions(directory: str | None) -> str | None:
     # Check common instruction file locations
     candidates = [
         os.path.join(directory, "AGENTS.md"),
-        os.path.join(directory, ".workcraft", "instructions.md"),
-        os.path.join(directory, ".workcraft", "instructions"),
+        os.path.join(directory, ".codata", "instructions.md"),
+        os.path.join(directory, ".codata", "instructions"),
     ]
 
     for path in candidates:

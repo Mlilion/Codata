@@ -3,7 +3,7 @@ import path from "path";
 
 const isDesktopBuild = process.env.DESKTOP_BUILD === "true";
 const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const devSessionToken = process.env.NEXT_PUBLIC_WORKCRAFT_DEV_SESSION_TOKEN;
+const devSessionToken = process.env.NEXT_PUBLIC_CODATA_DEV_SESSION_TOKEN;
 
 function backendApiDestination(): string {
   const base = `${backendUrl}/api/:path*`;

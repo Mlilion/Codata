@@ -1,13 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
-  mockWorkCraftApi,
-  seedWorkCraftStorage,
-  type WorkCraftMockState,
-} from "./fixtures/workcraft-api";
+  mockCodataApi,
+  seedCodataStorage,
+  type CodataMockState,
+} from "./fixtures/codata-api";
 
-async function setupMockedApp(page: Page): Promise<WorkCraftMockState> {
-  await seedWorkCraftStorage(page);
-  return mockWorkCraftApi(page);
+async function setupMockedApp(page: Page): Promise<CodataMockState> {
+  await seedCodataStorage(page);
+  return mockCodataApi(page);
 }
 
 async function sendPrompt(page: Page, text: string) {
@@ -24,7 +24,7 @@ async function expectNoAppCrash(page: Page) {
   await expect(page.getByText("API 401", { exact: false })).toHaveCount(0);
 }
 
-test.describe("WorkCraft conversation scale and compaction GUI workflows", () => {
+test.describe("Codata conversation scale and compaction GUI workflows", () => {
   test.describe.configure({ timeout: 75_000 });
 
   test("manual compression workflow: context indicator starts compaction and persists the marker", async ({ page }) => {
@@ -49,7 +49,7 @@ test.describe("WorkCraft conversation scale and compaction GUI workflows", () =>
     await setupMockedApp(page);
 
     await page.goto("/c/new");
-    await expect(page.getByRole("heading", { name: /What should (WorkCraft help you do|we do in)/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /What should (Codata help you do|we do in)/i })).toBeVisible();
     await sendPrompt(page, "Trigger auto compress during a long context answer");
 
     await expect(page).toHaveURL(/\/c\/session-new$/);

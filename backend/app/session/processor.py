@@ -292,7 +292,7 @@ async def _save_artifact_as_file(
     workspace: str | None,
     metadata: dict[str, Any],
 ) -> None:
-    """Save artifact content to workcraft_written/ and track as a session file."""
+    """Save artifact content to codata_written/ and track as a session file."""
     import re
     from pathlib import Path
 
@@ -320,7 +320,7 @@ async def _save_artifact_as_file(
         safe_title = safe_title[:100]
 
     filename = f"{safe_title}{ext}"
-    output_dir = Path(workspace).resolve() / "workcraft_written"
+    output_dir = Path(workspace).resolve() / "codata_written"
 
     try:
         output_dir.mkdir(parents=True, exist_ok=True)

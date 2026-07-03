@@ -1,9 +1,9 @@
-"""Bearer-token authentication middleware for the WorkCraft local API.
+"""Bearer-token authentication middleware for the Codata local API.
 
 Threat model
 ------------
 
-WorkCraft's FastAPI backend binds to ``127.0.0.1`` on an ephemeral port. The
+Codata's FastAPI backend binds to ``127.0.0.1`` on an ephemeral port. The
 loopback interface is not a user-isolation boundary: on any Unix host
 every local user shares the same ``127.0.0.1``, and from the backend's
 perspective a request from Pepe's shell and a request from Ana's shell
@@ -20,7 +20,7 @@ a non-browser client on the host, would bypass it.
 
 This middleware therefore enforces **mandatory bearer-token auth on
 every privileged request, regardless of the source interface** — the
-session token lives in a 0600 file that only the WorkCraft-running user
+session token lives in a 0600 file that only the Codata-running user
 can read, and any client that cannot present the token is rejected.
 
 Pass-through paths
@@ -247,7 +247,7 @@ class AuthMiddleware:
             "headers": [
                 [b"content-type", b"application/json"],
                 [b"content-length", str(len(data)).encode()],
-                [b"www-authenticate", b'Bearer realm="workcraft"'],
+                [b"www-authenticate", b'Bearer realm="codata"'],
             ],
         })
         await send({

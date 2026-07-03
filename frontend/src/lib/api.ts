@@ -1,4 +1,4 @@
-/** Lightweight fetch wrapper for the WorkCraft backend API. */
+/** Lightweight fetch wrapper for the Codata backend API. */
 
 import {
   getBackendToken,

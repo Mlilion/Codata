@@ -47,7 +47,7 @@ class TestToggleProvider:
         assert registry.register.call_count == 0
         assert registry.refresh_models.await_count == 0
         assert registry.unregister.call_count == 2
-        update_env.assert_any_call("WORKCRAFT_DISABLED_PROVIDERS", "xiaomi")
+        update_env.assert_any_call("CODATA_DISABLED_PROVIDERS", "xiaomi")
 
     async def test_empty_body_keeps_legacy_toggle_behavior(self, app_client):
         settings = app_client.app.state.settings
@@ -119,8 +119,8 @@ class TestViMaxMediaConfig:
         assert settings.vimax_media_preset == "doubao"
         assert settings.vimax_media_api_key == "sk-new-media"
         assert settings.vimax_media_base_url == ""
-        update_env.assert_any_call("WORKCRAFT_VIMAX_MEDIA_PRESET", "doubao")
-        update_env.assert_any_call("WORKCRAFT_VIMAX_MEDIA_API_KEY", "sk-new-media")
+        update_env.assert_any_call("CODATA_VIMAX_MEDIA_PRESET", "doubao")
+        update_env.assert_any_call("CODATA_VIMAX_MEDIA_API_KEY", "sk-new-media")
 
     async def test_saved_vimax_media_config_is_used_by_video_tool(self, app_client):
         settings = app_client.app.state.settings

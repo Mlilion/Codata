@@ -8,13 +8,13 @@ import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
 import { desktopAPI } from "@/lib/tauri-api";
 import { useIsMacOS } from "@/hooks/use-platform";
 
-function WorkCraftLogo() {
+function CodataLogo() {
   return (
     <Image
       src="/favicon.svg"
       width={18}
       height={18}
-      alt="WorkCraft"
+      alt="Codata"
       className="shrink-0"
       unoptimized
     />
@@ -70,9 +70,9 @@ export function TitleBar() {
       }}
     >
       <div className="flex items-center gap-2 pl-3 h-full shrink-0">
-        <WorkCraftLogo />
+        <CodataLogo />
         <span className="text-xs font-medium text-[var(--text-secondary)] tracking-wide">
-          WorkCraft
+          Codata
         </span>
       </div>
 

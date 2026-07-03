@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * Verify a PyInstaller bundle of the WorkCraft backend.
+ * Verify a PyInstaller bundle of the Codata backend.
  *
  * This is the single source of truth for "what must ship inside
- * backend/dist/workcraft-backend/" — shared by local dev and CI so the
+ * backend/dist/codata-backend/" — shared by local dev and CI so the
  * two can never drift.
  *
  * Usage:
  *   node scripts/verify-bundle.mjs [dist-dir]
- *   node scripts/verify-bundle.mjs backend/dist/workcraft-backend
- *   node scripts/verify-bundle.mjs path/to/WorkCraft.app/Contents/Resources/backend
+ *   node scripts/verify-bundle.mjs backend/dist/codata-backend
+ *   node scripts/verify-bundle.mjs path/to/Codata.app/Contents/Resources/backend
  *
  * Exits non-zero (with a loud message) if anything critical is missing.
  * Why this exists: 1.0.7 shipped without `frontend_out` because the
@@ -24,7 +24,7 @@ import { argv, env, exit, platform } from "node:process";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 
-const distArg = argv[2] ?? "backend/dist/workcraft-backend";
+const distArg = argv[2] ?? "backend/dist/codata-backend";
 const dist = resolve(distArg);
 
 if (!existsSync(dist)) {
@@ -32,7 +32,7 @@ if (!existsSync(dist)) {
 }
 
 const internal = join(dist, "_internal");
-const exeName = platform === "win32" ? "workcraft-backend.exe" : "workcraft-backend";
+const exeName = platform === "win32" ? "codata-backend.exe" : "codata-backend";
 const expertPresetFiles = [
   "video_production.yaml",
   "data_analysis_report.yaml",
@@ -167,7 +167,7 @@ if (problems.length > 0) {
   for (const p of problems) console.error(`  ✗ ${p}`);
   console.error(
     "\nThis is the guard that would have caught the 1.0.7 static-asset\n" +
-      "regression. Fix the build (workcraft.spec + frontend next build) and\n" +
+      "regression. Fix the build (codata.spec + frontend next build) and\n" +
       "re-run before uploading any artifacts.\n",
   );
   exit(1);
@@ -199,7 +199,7 @@ await smokeTest(binary, port);
 
 async function smokeTest(bin, port) {
   // Isolated data dir so the smoke test never writes into the repo.
-  const dataDir = mkdtempSync(join(tmpdir(), "workcraft-smoke-"));
+  const dataDir = mkdtempSync(join(tmpdir(), "codata-smoke-"));
   console.log(`[verify-bundle] smoke: launching ${bin} --port ${port} --data-dir ${dataDir}`);
   const child = spawn(bin, ["--port", String(port), "--data-dir", dataDir], {
     stdio: ["ignore", "pipe", "pipe"],

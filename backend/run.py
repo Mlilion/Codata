@@ -1,4 +1,4 @@
-"""Standalone entry point for WorkCraft backend in desktop mode.
+"""Standalone entry point for Codata backend in desktop mode.
 
 Usage:
     python run.py --port 8100 --data-dir /path/to/app/data
@@ -51,7 +51,7 @@ def _install_crash_reporter() -> None:
 def main() -> None:
     _install_crash_reporter()
 
-    parser = argparse.ArgumentParser(description="WorkCraft backend server")
+    parser = argparse.ArgumentParser(description="Codata backend server")
     parser.add_argument("--port", type=int, default=8000, help="Port to listen on")
     parser.add_argument("--data-dir", type=str, default=None, help="Data directory (for desktop mode)")
     parser.add_argument("--resource-dir", type=str, default=None, help="Resource directory (bundled assets from Tauri)")
@@ -65,7 +65,7 @@ def main() -> None:
 
     # Store resource dir as env var so the app can find bundled assets (e.g. Node.js)
     if args.resource_dir:
-        os.environ["WORKCRAFT_RESOURCE_DIR"] = args.resource_dir
+        os.environ["CODATA_RESOURCE_DIR"] = args.resource_dir
 
     import uvicorn
     from app.main import create_app

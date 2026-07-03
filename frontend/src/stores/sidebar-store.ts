@@ -83,7 +83,7 @@ export const useSidebarStore = create<SidebarStore>()(
       setWidth: (width) => set({ width: clampWidth(width) }),
     }),
     {
-      name: "workcraft-sidebar",
+      name: "codata-sidebar",
       partialize: (s) => ({
         collapsedProjects: s.collapsedProjects,
         organizeMode: s.organizeMode,

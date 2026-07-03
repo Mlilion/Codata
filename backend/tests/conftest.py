@@ -45,7 +45,7 @@ def settings() -> Settings:
 def api_key(settings: Settings) -> str:
     key = settings.openrouter_api_key
     if not key:
-        pytest.skip("WORKCRAFT_OPENROUTER_API_KEY not set")
+        pytest.skip("CODATA_OPENROUTER_API_KEY not set")
     return key
 
 

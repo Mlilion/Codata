@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest a new feature or enhancement for WorkCraft
+description: Suggest a new feature or enhancement for Codata
 labels: ["enhancement", "triage"]
 body:
   - type: markdown

@@ -36,7 +36,7 @@ export const useAppearanceStore = create<AppearanceState>()(
       setPointerCursors: (v) => set({ pointerCursors: v }),
     }),
     {
-      name: "workcraft-appearance",
+      name: "codata-appearance",
       partialize: (s) => ({
         uiFontSize: s.uiFontSize,
         codeFontSize: s.codeFontSize,

@@ -1,4 +1,4 @@
-"""Native WorkCraft wrapper for baoyu publishing scripts."""
+"""Native Codata wrapper for baoyu publishing scripts."""
 
 from __future__ import annotations
 

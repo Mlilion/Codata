@@ -37,7 +37,7 @@ export function TryFixButton({ error, artifactType, artifactTitle }: TryFixButto
       className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-tertiary)] hover:bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-default)] transition-colors"
     >
       <Wrench className="h-3.5 w-3.5" />
-      Try fixing with WorkCraft
+      Try fixing with Codata
     </button>
   );
 }

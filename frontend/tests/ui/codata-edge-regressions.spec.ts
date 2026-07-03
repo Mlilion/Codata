@@ -1,18 +1,18 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
-  mockWorkCraftApi,
-  seedWorkCraftStorage,
-  type WorkCraftMockOptions,
-  type WorkCraftMockState,
-} from "./fixtures/workcraft-api";
+  mockCodataApi,
+  seedCodataStorage,
+  type CodataMockOptions,
+  type CodataMockState,
+} from "./fixtures/codata-api";
 
 async function setupMockedApp(
   page: Page,
-  options?: WorkCraftMockOptions,
-  seedOptions?: Parameters<typeof seedWorkCraftStorage>[1],
-): Promise<WorkCraftMockState> {
-  await seedWorkCraftStorage(page, seedOptions);
-  return mockWorkCraftApi(page, options);
+  options?: CodataMockOptions,
+  seedOptions?: Parameters<typeof seedCodataStorage>[1],
+): Promise<CodataMockState> {
+  await seedCodataStorage(page, seedOptions);
+  return mockCodataApi(page, options);
 }
 
 async function expectNoAppCrash(page: Page) {
@@ -20,7 +20,7 @@ async function expectNoAppCrash(page: Page) {
   await expect(page.getByText("API 401", { exact: false })).toHaveCount(0);
 }
 
-test.describe("WorkCraft edge-state GUI regressions", () => {
+test.describe("Codata edge-state GUI regressions", () => {
   test.describe.configure({ timeout: 75_000 });
 
   test("auth expiry workflow: backend 401 while sending is recoverable and keeps the composer usable", async ({ page }) => {

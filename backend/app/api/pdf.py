@@ -87,10 +87,10 @@ def _build_font_candidates() -> tuple[list[tuple[Path, bool]], list[tuple[Path, 
 
 _BODY_FONT_CANDIDATES, _MONO_FONT_CANDIDATES = _build_font_candidates()
 
-_BODY_FAMILY = "WorkCraftBody"
-_BODY_CSS_NAME = "workcraftbody"  # CSS font-family name (lowercase for xhtml2pdf)
-_MONO_FAMILY = "WorkCraftMono"
-_MONO_CSS_NAME = "workcraftmono"
+_BODY_FAMILY = "CodataBody"
+_BODY_CSS_NAME = "codatabody"  # CSS font-family name (lowercase for xhtml2pdf)
+_MONO_FAMILY = "CodataMono"
+_MONO_CSS_NAME = "codatamono"
 
 _fonts_registered = False
 _body_font_family = "Helvetica"

@@ -51,8 +51,8 @@ _pending_states: dict[str, dict[str, str]] = {}
 def _get_token_path(project_dir: str | None) -> Path:
     """Where to store Google OAuth tokens."""
     if project_dir:
-        return Path(project_dir).resolve() / ".workcraft" / "google-tokens.json"
-    return Path.home() / ".workcraft" / "google-tokens.json"
+        return Path(project_dir).resolve() / ".codata" / "google-tokens.json"
+    return Path.home() / ".codata" / "google-tokens.json"
 
 
 def load_google_tokens(project_dir: str | None) -> dict[str, Any] | None:
@@ -79,7 +79,7 @@ async def google_auth_start(request: Request) -> dict[str, Any]:
     settings = request.app.state.settings
 
     if not settings.google_client_id:
-        return {"success": False, "error": "Google OAuth not configured (missing WORKCRAFT_GOOGLE_CLIENT_ID)"}
+        return {"success": False, "error": "Google OAuth not configured (missing CODATA_GOOGLE_CLIENT_ID)"}
 
     host = settings.host if settings.host != "0.0.0.0" else "localhost"
     redirect_uri = f"http://{host}:{settings.port}/api/google/callback"

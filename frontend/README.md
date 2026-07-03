@@ -1,8 +1,8 @@
 [中文](README.zh-CN.md)
 
-# WorkCraft Frontend
+# Codata Frontend
 
-Next.js 15 frontend providing a professional-grade Chat UI for the WorkCraft backend, inspired by LibreChat's UX architecture.
+Next.js 15 frontend providing a professional-grade Chat UI for the Codata backend, inspired by LibreChat's UX architecture.
 
 ## Quick Start
 

@@ -3,7 +3,7 @@ import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 
-const defaultSiteBaseUrl = "https://work-craft.com";
+const defaultSiteBaseUrl = "https://example.com";
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -126,7 +126,7 @@ export async function verifyReleaseSite({
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   verifyReleaseSite({
     releaseSiteDir: process.argv[2] || "release-site",
-    siteBaseUrl: process.env.WORKCRAFT_SITE_BASE_URL || defaultSiteBaseUrl,
+    siteBaseUrl: process.env.CODATA_SITE_BASE_URL || defaultSiteBaseUrl,
   }).catch((error) => {
     console.error(error);
     process.exit(1);

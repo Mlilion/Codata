@@ -9,7 +9,7 @@ import { desktopAPI } from "@/lib/tauri-api";
 import { useUpdateCheck } from "@/hooks/use-update-check";
 import packageJson from "../../../package.json";
 
-const USER_GUIDE_URL = "https://work-craft.com/workcraft-office-user-guide.html";
+const USER_GUIDE_URL = "https://example.com/codata-office-user-guide.html";
 
 export function AboutTab() {
   const { t } = useTranslation("settings");

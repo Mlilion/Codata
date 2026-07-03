@@ -18,10 +18,10 @@ export interface SavedPermissionRule {
 
 export type ActiveProvider = "byok" | "ollama" | "local" | "custom" | null;
 
-type PersistedActiveProvider = ActiveProvider | "workcraft" | undefined | null;
+type PersistedActiveProvider = ActiveProvider | "codata" | undefined | null;
 
 function normalizeActiveProvider(provider: PersistedActiveProvider): ActiveProvider {
-  return provider === "workcraft" ? null : provider ?? null;
+  return provider === "codata" ? null : provider ?? null;
 }
 
 /**
@@ -187,14 +187,14 @@ export const useSettingsStore = create<SettingsStore>()(
       setHasSeenHints: (seen) => set({ hasSeenHints: seen }),
       setLanguage: (lang) => {
         set({ language: lang });
-        localStorage.setItem("workcraft-language", lang);
+        localStorage.setItem("codata-language", lang);
         // Dynamic import to avoid circular dependency
         import("@/i18n/config").then((mod) => mod.default.changeLanguage(lang));
       },
       setActiveProvider: (provider) => set({ activeProvider: normalizeActiveProvider(provider) }),
     }),
     {
-      name: "workcraft-settings",
+      name: "codata-settings",
       merge: (persisted, current) => {
         if (!persisted || typeof persisted !== "object") return current;
         const state = persisted as Partial<SettingsStore> & {

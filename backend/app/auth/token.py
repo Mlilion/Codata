@@ -1,10 +1,10 @@
-"""Session token generation, storage, and validation for WorkCraft's local API.
+"""Session token generation, storage, and validation for Codata's local API.
 
 The session token is generated on every backend startup, written to
 ``<data_dir>/session_token.json`` with mode 0600, and handed to the
 desktop shell via the Tauri IPC bridge. It keeps the local HTTP API
 unreachable from processes that do not share the filesystem identity of
-the user who launched WorkCraft.
+the user who launched Codata.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-_SESSION_PREFIX = "workcraft_st_"
+_SESSION_PREFIX = "codata_st_"
 
 
 def _generate(prefix: str) -> str:
@@ -69,7 +69,7 @@ def ensure_session_token(path: Path, token: str | None = None) -> str:
     if token is None:
         token = generate_session_token()
     elif not token.startswith(_SESSION_PREFIX):
-        raise ValueError("Session token override must use workcraft_st_ prefix")
+        raise ValueError("Session token override must use codata_st_ prefix")
     _write_token_file(path, token)
     logger.info("Session token generated (0600): %s", path)
     return token

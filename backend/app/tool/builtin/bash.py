@@ -67,7 +67,7 @@ class BashTool(ToolDefinition):
         timeout = min(args.get("timeout", default_timeout), max_timeout)
         cwd = args.get("cwd")
 
-        # Workspace restriction: validate/default cwd (defaults to workcraft_written/)
+        # Workspace restriction: validate/default cwd (defaults to codata_written/)
         try:
             if not cwd and ctx.workspace:
                 cwd = get_default_output_dir(ctx.workspace)
@@ -75,7 +75,7 @@ class BashTool(ToolDefinition):
         except WorkspaceViolation as e:
             return ToolResult(error=str(e))
 
-        # Ensure cwd exists — workcraft_written/ may not have been created yet
+        # Ensure cwd exists — codata_written/ may not have been created yet
         if cwd:
             import pathlib
             try:

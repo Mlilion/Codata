@@ -201,7 +201,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             if pdef.kind == "openai_compat_azure":
                 azure_url = getattr(settings, "azure_openai_base_url", "")
                 if not azure_url:
-                    logger.warning("Azure API key set but WORKCRAFT_AZURE_OPENAI_BASE_URL is missing — skipping")
+                    logger.warning("Azure API key set but CODATA_AZURE_OPENAI_BASE_URL is missing — skipping")
                     continue
                 extra_kwargs["base_url"] = azure_url
 
@@ -248,7 +248,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.provider_registry = registry
     set_provider_registry(registry)
 
-    # Agent registry (built-in + custom agents from config / .workcraft/agents/*.md)
+    # Agent registry (built-in + custom agents from config / .codata/agents/*.md)
     agent_registry = AgentRegistry()
     agent_registry.load_custom_agents(settings.agents, settings.project_dir)
     app.state.agent_registry = agent_registry
@@ -288,7 +288,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     connector_registry = ConnectorRegistry(project_dir=settings.project_dir)
 
-    # Plugin loader (Claude knowledge-work-plugins → WorkCraft registries)
+    # Plugin loader (Claude knowledge-work-plugins → Codata registries)
     from app.plugin import load_plugins_by_source
     from app.plugin.manager import PluginManager
 
@@ -589,14 +589,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         settings = Settings()
 
     app = FastAPI(
-        title="WorkCraft",
+        title="Codata",
         version="0.0.1",
         lifespan=lifespan,
     )
     app.state.settings = settings
     set_settings(settings)
 
-    # CORS — restricted to the WorkCraft frontend origins. Wildcard would let
+    # CORS — restricted to the Codata frontend origins. Wildcard would let
     # any webpage read responses from this local server cross-origin, which
     # is a PII-leak vector on top of the CSRF risk handled below.
     #   - Tauri desktop shell: tauri://localhost (macOS/Linux) and

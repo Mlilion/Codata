@@ -1,4 +1,4 @@
-"""Tests for WorkCraft's native baoyu wrappers."""
+"""Tests for Codata's native baoyu wrappers."""
 
 from __future__ import annotations
 
@@ -48,17 +48,17 @@ def test_baoyu_command_cwd_prefers_backend_config(tmp_path: Path) -> None:
     assert baoyu_command_cwd(_ctx(workspace), "baoyu-post-to-wechat") == workspace / "backend"
 
 
-def test_resolve_input_path_checks_workcraft_written_first(tmp_path: Path) -> None:
-    target = tmp_path / "workcraft_written" / "content-output" / "article.md"
+def test_resolve_input_path_checks_codata_written_first(tmp_path: Path) -> None:
+    target = tmp_path / "codata_written" / "content-output" / "article.md"
     target.parent.mkdir(parents=True)
     target.write_text("# Article\n", encoding="utf-8")
 
     assert resolve_input_path("content-output/article.md", _ctx(tmp_path)) == str(target.resolve())
 
 
-def test_baoyu_subprocess_env_passes_workcraft_openai_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_baoyu_subprocess_env_passes_codata_openai_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Settings:
-        openai_api_key = "workcraft-openai-key"
+        openai_api_key = "codata-openai-key"
         openai_base_url = "https://aihub2.top/v1"
         openrouter_api_key = ""
         google_api_key = ""
@@ -91,7 +91,7 @@ def test_baoyu_subprocess_env_passes_workcraft_openai_settings(monkeypatch: pyte
 
 def test_baoyu_subprocess_env_can_use_disabled_custom_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Settings:
-        openai_api_key = "workcraft-openai-key"
+        openai_api_key = "codata-openai-key"
         openai_base_url = "https://aihub2.top/v1"
         openrouter_api_key = ""
         google_api_key = ""
@@ -143,7 +143,7 @@ def test_image_command_defaults_to_openai_gpt_image_2(tmp_path: Path) -> None:
     assert command[command.index("--model") + 1] == "gpt-image-2"
     assert command[command.index("--ar") + 1] == "16:9"
     assert command[-1] == "--json"
-    assert str(tmp_path / "workcraft_written" / "visual-assets" / "cover.png") in command
+    assert str(tmp_path / "codata_written" / "visual-assets" / "cover.png") in command
 
 
 def test_image_command_groups_reference_images_after_one_ref_flag(tmp_path: Path) -> None:
@@ -171,7 +171,7 @@ def test_image_command_groups_reference_images_after_one_ref_flag(tmp_path: Path
 
 @pytest.mark.asyncio
 async def test_image_generate_metadata_includes_generated_files(tmp_path: Path) -> None:
-    image_path = tmp_path / "workcraft_written" / "visual-assets" / "cover.png"
+    image_path = tmp_path / "codata_written" / "visual-assets" / "cover.png"
     image_path.parent.mkdir(parents=True)
     image_path.write_bytes(b"png")
     stdout = f'{{"savedImage":"{image_path}"}}'

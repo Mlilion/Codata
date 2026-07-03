@@ -28,9 +28,9 @@ data/
 backend/data/
 !backend/app/data/
 !backend/app/data/**
-.workcraftdb/
-.workcraft/
-backend/.workcraft/
+.codatadb/
+.codata/
+backend/.codata/
 
 # === IDE & OS ===
 .vscode/
@@ -82,7 +82,7 @@ desktop-tauri/src-tauri/gen/schemas/
 
 # === Generated content outputs ===
 backend/content-output/
-backend/workcraft_written/
+backend/codata_written/
 backend/output/saas-landing-page.html
 
 # === Certificates & keys ===

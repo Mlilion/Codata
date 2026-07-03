@@ -21,11 +21,11 @@ logger = logging.getLogger(__name__)
 
 _ID_RE = re.compile(r"[^a-zA-Z0-9_-]+")
 
-_SYSTEM_PROMPT = """你是 WorkCraft 的专家团架构师，负责把用户需求转换成可执行的 ExpertTeamConfig JSON。
+_SYSTEM_PROMPT = """你是 Codata 的专家团架构师，负责把用户需求转换成可执行的 ExpertTeamConfig JSON。
 
 规则：
 - 只输出 JSON，不要 Markdown，不要代码块。
-- 专家团必须能被 WorkCraft 原生专家团运行器执行。
+- 专家团必须能被 Codata 原生专家团运行器执行。
 - 优先从给定的 agency-agents-zh 角色库选择成员，并把 role_ref/role_source/system_prompt 写入成员。
 - 成员数量通常 2-5 个；任务数量通常 2-7 个；除非需求明确需要，不要过度拆分。
 - 先判断流程复杂度再选择 process：简单固定顺序用 sequential；固定 DAG/可并发流程用 workflow；需要 manager 统筹、动态委派、跨角色反复协调、长链路或需求边界不确定时用 hierarchical。
@@ -35,7 +35,7 @@ _SYSTEM_PROMPT = """你是 WorkCraft 的专家团架构师，负责把用户需�
 - 如果 task 引用上游 output，必须在 depends_on/context 中包含生产该 output 的任务。
 - context_policy 优先用 auto；大输出或汇总任务用 summary；需要严格模板变量时用 explicit。
 - 每个 output 变量只能由一个任务生产。
-- 工具只使用 WorkCraft 内置工具名：read, glob, grep, search, web_search, web_fetch, skill, code_execute, write, edit, bash。
+- 工具只使用 Codata 内置工具名：read, glob, grep, search, web_search, web_fetch, skill, code_execute, write, edit, bash。
 - 不要给普通专家成员配置 question 工具。运行器会在专家团开始前由协调员统一做资料预检和补充提问。
 - 默认避免 write/edit/bash，只有用户需求明确需要落地改文件或运行命令时才给相关专家配置。
 - coordinator_prompt 必须说明如何综合专家输出、解决冲突、给出下一步。
@@ -890,7 +890,7 @@ def create_tool_agent() -> AgentInfo:
     """Agent descriptor used for direct tool execution tests and schema docs."""
     return AgentInfo(
         name="expert-team-creator",
-        description="Create WorkCraft expert teams",
+        description="Create Codata expert teams",
         mode="hidden",
         tools=["create_expert_teams"],
         permissions=Ruleset(rules=[

@@ -178,7 +178,7 @@ class OllamaProvider(OpenAICompatProvider):
 
     async def stream_chat(self, model: str, messages: list[dict[str, Any]], **kwargs: Any):
         """Stream chat, stripping the ``ollama/`` prefix for the Ollama API."""
-        # The model ID stored in WorkCraft is "ollama/<name>" but Ollama
+        # The model ID stored in Codata is "ollama/<name>" but Ollama
         # expects just "<name>" in the API call.
         bare_model = model.removeprefix("ollama/")
         async for chunk in super().stream_chat(bare_model, messages, **kwargs):

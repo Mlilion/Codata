@@ -290,7 +290,7 @@ wb.save("modified.xlsx")
 
 ## 7. Dependencies
 
-Core (included with WorkCraft):
+Core (included with Codata):
 - `openpyxl` — read, create, edit, charts, formatting
 
 Optional (install as needed):

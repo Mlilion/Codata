@@ -45,7 +45,7 @@ def _team_payload(team_id: str, name: str = "远程专家团") -> dict:
 def _manifest(*entries: dict) -> dict:
     return {
         "schema_version": "1.0",
-        "tenant_id": "workcraft",
+        "tenant_id": "codata",
         "account_id": "acct-1",
         "etag": "test",
         "teams": list(entries),

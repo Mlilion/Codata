@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicerobot/tauri/dev/crates/tauri-utils/schema.json",
   "identifier": "default",
-  "description": "Default capabilities for WorkCraft desktop",
+  "description": "Default capabilities for Codata desktop",
   "windows": ["main"],
   "permissions": [
     "core:default",

@@ -1,7 +1,7 @@
 """Channel manager for coordinating chat channels.
 
 Ported from nanobot.channels.manager (MIT license).
-Adapted for WorkCraft: uses ChannelsConfig instead of nanobot Config,
+Adapted for Codata: uses ChannelsConfig instead of nanobot Config,
 stdlib logging instead of loguru.
 """
 

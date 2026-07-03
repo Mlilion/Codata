@@ -5,7 +5,7 @@ scraped from https://skillsmp.com (see
 ``scripts/update_skills_catalog.py``). Hitting SkillsMP live every time
 a user opens the browser is a non-starter: their anon quota is 50
 req/day per IP, which burns out under debounced search-as-you-type.
-Instead we ship a JSON catalog and refresh it on each WorkCraft release.
+Instead we ship a JSON catalog and refresh it on each Codata release.
 
 Install still uses live GitHub raw content so the actual SKILL.md
 body is always authoritative; only discovery is offline.
@@ -176,7 +176,7 @@ def _slug(name: str) -> str:
 
 
 def _global_skills_dir() -> Path:
-    d = Path.home() / ".workcraft" / "skills"
+    d = Path.home() / ".codata" / "skills"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -275,7 +275,7 @@ async def install_skill(
     body: InstallRequest,
 ) -> dict[str, Any]:
     """Download a SKILL.md from GitHub and install it to the global
-    user skills directory (``~/.workcraft/skills/<slug>/SKILL.md``).
+    user skills directory (``~/.codata/skills/<slug>/SKILL.md``).
 
     The registry is rescanned so the new skill is immediately available
     without restarting the backend. Existing skills with the same

@@ -61,7 +61,7 @@ async def test_resume_task_marks_existing_tool_part_running(app_client, session_
                     runtime_status={
                         "task_id": "task-1",
                         "status": "failed",
-                        "workcraft_context": {"provider_id": "openrouter", "model_id": "google/gemini-test"},
+                        "codata_context": {"provider_id": "openrouter", "model_id": "google/gemini-test"},
                     },
                 )
             )

@@ -1,7 +1,7 @@
 """Auto-discovery for built-in channel modules.
 
 Ported from nanobot.channels.registry (MIT license).
-Adapted for WorkCraft: uses stdlib logging, scans app.channels package.
+Adapted for Codata: uses stdlib logging, scans app.channels package.
 """
 
 from __future__ import annotations

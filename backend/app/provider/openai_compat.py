@@ -103,7 +103,7 @@ class OpenAICompatProvider(BaseProvider):
     ):
         headers = dict(default_headers or {})
         if is_custom:
-            headers.setdefault("User-Agent", "WorkCraft/1.0")
+            headers.setdefault("User-Agent", "Codata/1.0")
 
         effective_key = api_key if api_key else ("sk-no-key" if is_custom else api_key)
 

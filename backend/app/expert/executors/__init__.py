@@ -1,4 +1,4 @@
-"""Execution strategies for WorkCraft expert teams."""
+"""Execution strategies for Codata expert teams."""
 
 from app.expert.executors.base import ProcessExecutor, RunState, TaskResult
 from app.expert.executors.hierarchical import HierarchicalExecutor

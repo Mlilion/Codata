@@ -48,9 +48,9 @@ class TestResolveAndValidate:
 
 
 class TestResolveForWrite:
-    def test_relative_path_to_workcraft_written(self, tmp_path: Path):
+    def test_relative_path_to_codata_written(self, tmp_path: Path):
         result = resolve_for_write("output.txt", str(tmp_path))
-        expected = str((tmp_path / "workcraft_written" / "output.txt").resolve())
+        expected = str((tmp_path / "codata_written" / "output.txt").resolve())
         assert result == expected
 
     def test_absolute_within_workspace(self, tmp_path: Path):

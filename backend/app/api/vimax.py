@@ -93,7 +93,7 @@ async def resume_vimax_task(
                     "task_id": task_id,
                     "status": "running",
                     "stage": "resuming",
-                    "message": "Retrying ViMax task from WorkCraft.",
+                    "message": "Retrying ViMax task from Codata.",
                     "retrying": True,
                     "vimax_steps": [],
                     "vimax_artifacts": {},
@@ -109,7 +109,7 @@ async def resume_vimax_task(
                 "task_id": task_id,
                 "status": "running",
                 "stage": "resuming",
-                "message": "Retrying ViMax task from WorkCraft.",
+                "message": "Retrying ViMax task from Codata.",
                 "vimax_steps": [],
                 "vimax_artifacts": {},
             }
@@ -145,7 +145,7 @@ async def resume_vimax_task(
                     "task_id": task_id,
                     "status": "running",
                     "stage": "resuming",
-                    "message": "Retrying ViMax task from WorkCraft.",
+                    "message": "Retrying ViMax task from Codata.",
                 },
             },
         )
@@ -632,7 +632,7 @@ def _build_ctx(
     ctx = ToolContext(
         session_id=job.session_id,
         message_id=message_id,
-        agent=AgentInfo(name="workcraft", description="", mode="primary"),
+        agent=AgentInfo(name="codata", description="", mode="primary"),
         call_id=call_id,
         abort_event=job.abort_event,
     )
@@ -641,9 +641,9 @@ def _build_ctx(
         "provider_registry": provider_registry,
         "settings": settings,
     }
-    workcraft = runtime_status.get("workcraft_context") if isinstance(runtime_status.get("workcraft_context"), dict) else {}
-    ctx._model_id = str(tool_input.get("model") or workcraft.get("model_id") or "")  # type: ignore[attr-defined]
-    ctx._provider_id = str(tool_input.get("provider_id") or workcraft.get("provider_id") or "")  # type: ignore[attr-defined]
+    codata = runtime_status.get("codata_context") if isinstance(runtime_status.get("codata_context"), dict) else {}
+    ctx._model_id = str(tool_input.get("model") or codata.get("model_id") or "")  # type: ignore[attr-defined]
+    ctx._provider_id = str(tool_input.get("provider_id") or codata.get("provider_id") or "")  # type: ignore[attr-defined]
     ctx._publish_fn = lambda event, data: job.publish(SSEEvent(event, {"session_id": job.session_id, **data}))  # type: ignore[attr-defined]
     return ctx
 

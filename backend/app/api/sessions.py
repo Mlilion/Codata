@@ -454,7 +454,7 @@ async def get_session_files(
         deliverable_files.append(payload)
 
     # Backward-compatible fallback for older sessions that were never tracked.
-    output_dir = Path(session.directory).resolve() / "workcraft_written"
+    output_dir = Path(session.directory).resolve() / "codata_written"
     if output_dir.is_dir():
         for entry in sorted(output_dir.iterdir(), key=lambda e: e.stat().st_mtime):
             resolved = str(entry.resolve())

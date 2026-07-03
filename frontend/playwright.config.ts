@@ -1,12 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = Number(process.env.WORKCRAFT_UI_TEST_PORT ?? 3317);
+const PORT = Number(process.env.CODATA_UI_TEST_PORT ?? 3317);
 const baseURL = `http://127.0.0.1:${PORT}`;
 const headless =
-  process.env.WORKCRAFT_UI_HEADLESS !== undefined
-    ? process.env.WORKCRAFT_UI_HEADLESS === "true"
+  process.env.CODATA_UI_HEADLESS !== undefined
+    ? process.env.CODATA_UI_HEADLESS === "true"
     : Boolean(process.env.CI);
-const workers = Number(process.env.WORKCRAFT_UI_WORKERS ?? 2);
+const workers = Number(process.env.CODATA_UI_WORKERS ?? 2);
 
 export default defineConfig({
   testDir: "./tests/ui",

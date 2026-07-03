@@ -52,7 +52,7 @@ def resolve_bun_command() -> list[str]:
     npx = shutil.which("npx")
     if npx:
         return [npx, "-y", "bun"]
-    raise FileNotFoundError("Bun runtime not found. Install bun, or make npx available so WorkCraft can run npx -y bun.")
+    raise FileNotFoundError("Bun runtime not found. Install bun, or make npx available so Codata can run npx -y bun.")
 
 
 def workspace_dir(ctx: ToolContext) -> Path:
@@ -83,7 +83,7 @@ def baoyu_command_cwd(ctx: ToolContext, skill_name: str) -> Path:
 
 
 def output_base_dir(ctx: ToolContext) -> Path:
-    return workspace_dir(ctx) / "workcraft_written"
+    return workspace_dir(ctx) / "codata_written"
 
 
 def resolve_output_path(path_value: str, ctx: ToolContext, *, default_relative: str) -> str:
@@ -97,7 +97,7 @@ def resolve_input_path(path_value: str, ctx: ToolContext) -> str:
     raw_path = Path(path_value).expanduser()
     if ctx.workspace and not raw_path.is_absolute():
         workspace = workspace_dir(ctx)
-        written_candidate = (workspace / "workcraft_written" / raw_path).resolve()
+        written_candidate = (workspace / "codata_written" / raw_path).resolve()
         if written_candidate.exists():
             return str(written_candidate)
     try:

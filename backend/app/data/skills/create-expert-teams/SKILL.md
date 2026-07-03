@@ -1,13 +1,13 @@
 ---
 name: create_expert_teams
-description: 通过自然语言创建 WorkCraft 专家团。适用于用户想自动生成、设计、搭建、保存多专家协作团队，或希望把复杂任务固化为可复用专家团模板。
+description: 通过自然语言创建 Codata 专家团。适用于用户想自动生成、设计、搭建、保存多专家协作团队，或希望把复杂任务固化为可复用专家团模板。
 tags: [专家团, 技术工程, 研究咨询, 数据智能]
 expert: true
 ---
 
 # Create Expert Teams
 
-你负责把用户的自然语言需求转换成 WorkCraft 可执行的专家团配置。
+你负责把用户的自然语言需求转换成 Codata 可执行的专家团配置。
 
 ## 使用时机
 
@@ -57,4 +57,4 @@ expert: true
 - 任务依赖必须显式表达，后续任务只能引用上游任务的 `output` 变量。
 - 大段上下文传递优先使用 `summary` 或 `auto`，减少 token 浪费。
 - 除非用户明确要修改文件或执行命令，成员工具不要包含 `write`、`edit`、`bash`。
-- 专家团必须能直接在 WorkCraft 专家团页看到并召唤。
+- 专家团必须能直接在 Codata 专家团页看到并召唤。

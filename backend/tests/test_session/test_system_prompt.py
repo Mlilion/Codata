@@ -57,7 +57,7 @@ class TestSystemPrompt:
         build = ar.get("build")
         parts = build_system_prompt(build)
         # Agent base prompt is in cached section
-        assert "WorkCraft" in parts.cached or "tool" in parts.cached.lower()
+        assert "Codata" in parts.cached or "tool" in parts.cached.lower()
         # Environment info is in dynamic section
         assert "Working directory" in parts.dynamic
 
@@ -75,7 +75,7 @@ class TestSystemPrompt:
         assert "cache_control" not in blocks[1]
 
     def test_includes_skill_routing_when_skills_available(self, tmp_path: Path):
-        skills_dir = tmp_path / ".workcraft" / "skills" / "sheet-helper"
+        skills_dir = tmp_path / ".codata" / "skills" / "sheet-helper"
         skills_dir.mkdir(parents=True)
         (skills_dir / "SKILL.md").write_text(
             "---\nname: sheet-helper\ndescription: Helps with spreadsheet workflows.\n---\nUse for sheets.",

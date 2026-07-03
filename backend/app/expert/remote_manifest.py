@@ -63,7 +63,7 @@ class RemoteExpertTeamsManifest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     schema_version: str = REMOTE_MANIFEST_SCHEMA_VERSION
-    tenant_id: str = "workcraft"
+    tenant_id: str = "codata"
     account_id: str | None = None
     generated_at: str | None = None
     expires_at: str | None = None

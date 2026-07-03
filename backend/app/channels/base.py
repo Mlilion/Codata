@@ -1,7 +1,7 @@
 """Base channel interface for chat platforms.
 
 Ported from nanobot.channels.base (MIT license).
-Adapted for WorkCraft: removed loguru dependency, uses stdlib logging.
+Adapted for Codata: removed loguru dependency, uses stdlib logging.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ class BaseChannel(ABC):
     Abstract base class for chat channel implementations.
 
     Each channel (DingTalk, Feishu, Telegram, etc.) should implement this interface
-    to integrate with the WorkCraft message bus.
+    to integrate with the Codata message bus.
     """
 
     name: str = "base"

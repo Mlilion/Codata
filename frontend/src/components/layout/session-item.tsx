@@ -74,7 +74,7 @@ export const SessionItem = memo(function SessionItem({
   const liveBucket = useChatSession(session.id);
   const isLive = liveBucket.isGenerating || liveBucket.isCompacting;
   const hasDirectory = !!session.directory && session.directory !== ".";
-  const deeplink = `workcraft-oss://chat?sessionId=${encodeURIComponent(session.id)}`;
+  const deeplink = `codata-oss://chat?sessionId=${encodeURIComponent(session.id)}`;
   const pinLabel = session.is_pinned
     ? t('unpin', { defaultValue: 'Unpin' })
     : t('pin', { defaultValue: 'Pin' });

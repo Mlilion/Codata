@@ -1,14 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
-  mockWorkCraftApi,
-  seedWorkCraftStorage,
-  type WorkCraftMockOptions,
-  type WorkCraftMockState,
-} from "./fixtures/workcraft-api";
+  mockCodataApi,
+  seedCodataStorage,
+  type CodataMockOptions,
+  type CodataMockState,
+} from "./fixtures/codata-api";
 
-async function setupMockedApp(page: Page, options?: WorkCraftMockOptions): Promise<WorkCraftMockState> {
-  await seedWorkCraftStorage(page);
-  return mockWorkCraftApi(page, options);
+async function setupMockedApp(page: Page, options?: CodataMockOptions): Promise<CodataMockState> {
+  await seedCodataStorage(page);
+  return mockCodataApi(page, options);
 }
 
 async function expectNoAppCrash(page: Page) {
@@ -29,7 +29,7 @@ async function closeArtifactPanel(page: Page) {
   await panelButtons.last().click();
 }
 
-test.describe("WorkCraft Office artifact and error-state GUI workflows", () => {
+test.describe("Codata Office artifact and error-state GUI workflows", () => {
   test.describe.configure({ timeout: 75_000 });
 
   test("office artifact workflow: preview DOCX, XLSX, PDF, and PPTX from real binary files", async ({ page }) => {
@@ -39,7 +39,7 @@ test.describe("WorkCraft Office artifact and error-state GUI workflows", () => {
     await expect(page.getByText("Artifact showcase").first()).toBeVisible();
 
     await openArtifactFile(page, "office-brief.docx");
-    await expect(page.getByText("WorkCraft DOCX workflow")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("Codata DOCX workflow")).toBeVisible({ timeout: 20_000 });
     await closeArtifactPanel(page);
 
     await openArtifactFile(page, "office-matrix.xlsx");
@@ -77,7 +77,7 @@ test.describe("WorkCraft Office artifact and error-state GUI workflows", () => {
     const state = await setupMockedApp(page, { failUploads: ["broken-upload.txt"] });
 
     await page.goto("/c/new");
-    await expect(page.getByRole("heading", { name: /What should (WorkCraft help you do|we do in)/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /What should (Codata help you do|we do in)/i })).toBeVisible();
     await page.locator('input[type="file"]').setInputFiles({
       name: "broken-upload.txt",
       mimeType: "text/plain",

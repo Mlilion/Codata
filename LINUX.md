@@ -1,10 +1,10 @@
-# Linux Support for WorkCraft Desktop
+# Linux Support for Codata Desktop
 
-WorkCraft desktop app now includes full Linux support with native packages for major distributions.
+Codata desktop app now includes full Linux support with native packages for major distributions.
 
 ## Supported Distributions
 
-WorkCraft has been tested and is officially supported on:
+Codata has been tested and is officially supported on:
 
 - **Ubuntu** 22.04 LTS and later
 - **Fedora** 38 and later
@@ -21,7 +21,7 @@ Other distributions may work but are not officially tested.
 Download the `.deb` package and install:
 
 ```bash
-sudo dpkg -i workcraft_*.deb
+sudo dpkg -i codata_*.deb
 sudo apt-get install -f  # Install dependencies if needed
 ```
 
@@ -32,13 +32,13 @@ Or double-click the `.deb` file in your file manager to install via the Software
 Download the `.rpm` package and install:
 
 ```bash
-sudo dnf install workcraft-*.rpm
+sudo dnf install codata-*.rpm
 ```
 
 Or:
 
 ```bash
-sudo rpm -i workcraft-*.rpm
+sudo rpm -i codata-*.rpm
 ```
 
 ## System Requirements
@@ -62,7 +62,7 @@ sudo dnf install webkit2gtk4.1 libayatana-appindicator-gtk3 zenity
 
 ## Running from Source
 
-To build and run WorkCraft from source on Linux:
+To build and run Codata from source on Linux:
 
 ### 1. Install Build Dependencies
 
@@ -131,8 +131,8 @@ source $HOME/.cargo/env
 
 ```bash
 # Clone the repository
-git clone https://github.com/workcraft/workcraft.git
-cd workcraft
+git clone https://github.com/codata/codata.git
+cd codata
 
 # Install frontend dependencies
 cd frontend
@@ -147,7 +147,7 @@ cd backend
 python3.11 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt pyinstaller
-pyinstaller workcraft.spec --noconfirm
+pyinstaller codata.spec --noconfirm
 python3 scripts/download_node.py
 deactivate
 cd ..
@@ -169,7 +169,7 @@ All features available on Windows and macOS are supported on Linux:
 - ✅ System tray integration (using Ayatana indicators)
 - ✅ Native file dialogs (via zenity)
 - ✅ Auto-updates
-- ✅ Deep linking (workcraft:// protocol)
+- ✅ Deep linking (codata:// protocol)
 - ✅ Window state persistence
 - ✅ Keyboard shortcuts
 - ✅ Python backend with embedded Node.js runtime
@@ -186,7 +186,7 @@ All features available on Windows and macOS are supported on Linux:
 - If zenity is not available, file operations may not work correctly
 
 ### Wayland vs X11
-- WorkCraft supports both Wayland and X11
+- Codata supports both Wayland and X11
 - Some features (like window positioning) may behave differently under Wayland due to compositor restrictions
 - If you experience stability issues on Wayland, you can force X11 mode (see "Environment Overrides" below)
 
@@ -207,7 +207,7 @@ The app sets several environment variables by default to improve compatibility. 
 1. Check system dependencies are installed (see "Required System Packages" above)
 2. Run from terminal to see error messages:
    ```bash
-   workcraft  # If installed via .deb/.rpm
+   codata  # If installed via .deb/.rpm
    ```
 
 ### System tray icon not showing
@@ -235,12 +235,12 @@ The app sets several environment variables by default to improve compatibility. 
 
 **Debian/Ubuntu:**
 ```bash
-sudo apt-get remove workcraft
+sudo apt-get remove codata
 ```
 
 **Fedora:**
 ```bash
-sudo dnf remove workcraft
+sudo dnf remove codata
 ```
 
 
@@ -248,12 +248,12 @@ sudo dnf remove workcraft
 
 User data is stored in:
 ```
-~/.local/share/workcraft-desktop/
+~/.local/share/codata-desktop/
 ```
 
 Configuration files:
 ```
-~/.config/workcraft-desktop/
+~/.config/codata-desktop/
 ```
 
 ## Support

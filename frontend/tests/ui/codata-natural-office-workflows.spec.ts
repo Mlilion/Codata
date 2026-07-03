@@ -1,9 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
-  mockWorkCraftApi,
-  seedWorkCraftStorage,
-  type WorkCraftMockState,
-} from "./fixtures/workcraft-api";
+  mockCodataApi,
+  seedCodataStorage,
+  type CodataMockState,
+} from "./fixtures/codata-api";
 
 type UploadFixture = {
   name: string;
@@ -56,9 +56,9 @@ const files = {
   },
 } satisfies Record<string, UploadFixture>;
 
-async function setupMockedApp(page: Page): Promise<WorkCraftMockState> {
-  await seedWorkCraftStorage(page);
-  return mockWorkCraftApi(page);
+async function setupMockedApp(page: Page): Promise<CodataMockState> {
+  await seedCodataStorage(page);
+  return mockCodataApi(page);
 }
 
 function expectNaturalOfficePrompt(prompt: string) {
@@ -104,7 +104,7 @@ async function sendPrompt(page: Page, prompt: string) {
 
 async function startOfficeWorkflow(page: Page, uploadFixtures: UploadFixture[], prompt: string) {
   await page.goto("/c/new");
-  await expect(page.getByRole("heading", { name: /What should (WorkCraft help you do|we do in)/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /What should (Codata help you do|we do in)/i })).toBeVisible();
   await uploadFiles(page, uploadFixtures);
   await sendPrompt(page, prompt);
 }
@@ -113,7 +113,7 @@ function mainContent(page: Page) {
   return page.locator("#main-content");
 }
 
-test.describe("WorkCraft natural office GUI workflows", () => {
+test.describe("Codata natural office GUI workflows", () => {
   test.describe.configure({ timeout: 90_000 });
 
   test("memo workflow: uploaded customer notes become a VP-ready memo with owners and email copy", async ({ page }) => {

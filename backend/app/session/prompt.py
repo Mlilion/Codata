@@ -88,7 +88,7 @@ def _is_expert_team_creation_mode(request: PromptRequest) -> bool:
 
 def _expert_team_creation_instruction(text: str) -> str:
     return (
-        "[System: 当前会话处于 WorkCraft「AI 创建专家团」模式。\n"
+        "[System: 当前会话处于 Codata「AI 创建专家团」模式。\n"
         "请把用户需求转换成可执行专家团配置，并优先调用 create_expert_teams 工具生成草稿。\n"
         "如果用户明确要求直接保存，请在工具参数中设置 save=true；否则先生成草稿并展示关键设计。\n"
         "工具返回后，用中文概述专家成员、任务流程、依赖关系、token 消耗等级、告警和保存状态。\n\n"
@@ -328,7 +328,7 @@ class SessionPrompt:
         if self.provider.id == "ollama":
             try:
                 from app.api.config import _update_env_file
-                _update_env_file("WORKCRAFT_OLLAMA_LAST_MODEL", model_id.removeprefix("ollama/"))
+                _update_env_file("CODATA_OLLAMA_LAST_MODEL", model_id.removeprefix("ollama/"))
             except Exception:
                 pass
 
