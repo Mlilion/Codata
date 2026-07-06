@@ -155,6 +155,8 @@ class ExpertTeamRunner:
         self._attachment_file_parts: list[dict[str, Any]] | None = None
         self._allowed_file_paths: set[str] = set()
         self._resume_skip_task_ids: set[str] = set()
+        # Analysis-memory section injected into member prompts for data teams.
+        self._analysis_memory_section: str | None = None
         self.total_tokens: dict[str, int] = {
             "input": 0,
             "output": 0,
@@ -184,6 +186,8 @@ class ExpertTeamRunner:
                 await self._prepare_resume()
             else:
                 await self._run_preflight_interaction()
+
+            await self._load_analysis_memory()
 
             executor = self._executor_for_process()
             if executor is None:
@@ -3328,6 +3332,26 @@ class ExpertTeamRunner:
                 snapshot=snapshot or {},
             )
 
+    def _is_data_analysis_team(self) -> bool:
+        """Heuristic: a data-analysis team by category or tag."""
+        category = (self.team.category or "").strip()
+        tags = {str(t).strip().lower() for t in (self.team.tags or [])}
+        return category == "数据分析" or "数据分析" in tags or "data-analysis" in tags
+
+    async def _load_analysis_memory(self) -> None:
+        """Prefetch the user's analysis-memory section (data teams only)."""
+        if not self._is_data_analysis_team():
+            return
+        try:
+            from app.memory.analysis_memory_injection import build_analysis_memory_section
+
+            # Single-user open-source build: user_id None.
+            self._analysis_memory_section = await build_analysis_memory_section(
+                self.session_factory, None
+            )
+        except Exception:
+            logger.debug("Expert analysis-memory injection skipped", exc_info=True)
+
     def _build_system_prompt(self, member: ExpertMemberConfig) -> str:
         skills = sorted(set([*self.team.skills, *member.skills]))
         connectors = sorted(set([*self.team.connectors, *member.connectors]))
@@ -3348,6 +3372,8 @@ class ExpertTeamRunner:
             lines.append("Use these Codata skills when relevant: " + ", ".join(skills))
         if connectors:
             lines.append("The team may rely on these MCP connectors: " + ", ".join(connectors))
+        if self._analysis_memory_section:
+            lines.append(self._analysis_memory_section)
         lines.append("Work as one member of an expert team. Be concise, concrete, and hand off useful context to the next expert.")
         lines.append("Do not ask the user questions directly. Any user clarification is collected by the team coordinator before execution. If information is still missing, state the assumption you used.")
         if self._uses_concise_expert_output():

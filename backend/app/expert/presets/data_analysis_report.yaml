@@ -1,14 +1,14 @@
 team:
   id: data-analysis-report
-  name: 数据分析报告专家团
-  description: 读取 Excel/CSV 或业务数据材料，完成数据清洗、指标分析、异常识别和管理层报告交付。
+  name: 数据分析专家团
+  description: 连接数据平台(datasage),完成数据发现、SQL 查询、指标口径核对、归因洞察与可视化,交付带图表的分析报告。
   icon: bar-chart-2
-  category: 办公文档
-  tags: [数据分析, Excel, CSV, 经营分析, 报告]
-  version: "1.0"
+  category: 数据分析
+  tags: [数据分析, SQL, 指标, 归因, 可视化, datasage]
+  version: "2.0"
   process: workflow
   concurrency: 2
-  default_max_tool_rounds: 8
+  default_max_tool_rounds: 10
   interaction_mode: auto
   max_clarifying_questions: 4
   question_timeout_seconds: 300
@@ -19,8 +19,9 @@ team:
   coordinator_context_policy: summary
   coordinator_context_max_chars: 36000
   coordinator_prompt: |
-    你是数据分析报告专家团协调者。请把数据准备、指标洞察、业务建议和报告草稿整合成一份可交付报告。
-    最终内容必须区分事实、推断和建议；对缺失数据、样本偏差或口径不一致要明确说明。
+    你是数据分析专家团协调者。把数据发现、指标查询、归因洞察和可视化整合成一份可交付分析报告。
+    报告必须区分事实、推断和建议;对缺失数据、口径不一致、样本偏差要明确说明。
+    数据来自连接的 datasage 数据平台 —— 不要臆造数据;无法确认的字段/口径必须点明。
   finalization:
     mode: deliverable
     member: reporter
@@ -38,133 +39,139 @@ team:
       description: 本次分析要回答的核心业务问题。
       required: true
     - name: metric_focus
-      description: 重点关注的指标、维度或业务线；没有则留空。
+      description: 重点关注的指标、维度或业务线;没有则留空。
       required: false
       default: ""
     - name: reporting_period
-      description: 报告周期，例如本周、本月、Q2 或指定日期范围。
+      description: 报告周期,例如本周、本月、Q2 或指定日期范围。
       required: false
       default: ""
-  skills: [data-analysis, xlsx, charting, report]
+  skills: [data-analysis, charting, report]
   members:
-    - id: data_preparer
-      name: 数据准备
-      role: 数据整理与口径检查专家
-      goal: 读取附件和工作区数据，识别字段、口径、缺失值和可分析维度。
-      role_ref: specialized/data-consolidation-agent
-      tools: [read, glob, grep, search, code_execute, skill]
-      skills: [data-analysis, xlsx]
+    - id: data_explorer
+      name: 数据发现
+      role: SQL 与数据发现专家
+      goal: 用 datasage 发现相关表/指标,确认字段、口径、可用维度,产出可查询的数据地图。
+      role_ref: data/sql-query-expert
+      tools: [search, run_query, skill]
+      skills: [data-analysis]
       icon: database
-    - id: analyst
+    - id: metric_analyst
       name: 指标分析
-      role: 经营指标分析专家
-      goal: 基于数据准备结果完成趋势、对比、异常和驱动因素分析。
-      role_ref: support/support-analytics-reporter
-      tools: [read, code_execute, skill]
+      role: 指标口径与趋势分析专家
+      goal: 基于确认的口径,用 run_query 查询核心指标,做趋势/对比/异常分析。
+      role_ref: data/metric-caliber-expert
+      tools: [run_query, chart_spec, search, skill]
       skills: [data-analysis, charting]
       icon: bar-chart-2
-    - id: advisor
-      name: 业务建议
-      role: 业务洞察与行动建议专家
-      goal: 将分析结果转成可执行建议、风险提醒和待确认问题。
-      role_ref: finance/finance-financial-forecaster
-      tools: [read, skill]
-      skills: [report]
+    - id: attribution_analyst
+      name: 归因洞察
+      role: 归因与业务洞察专家
+      goal: 对指标变化做维度下钻和归因,找出驱动因素与风险,给出可执行建议。
+      role_ref: data/attribution-analyst
+      tools: [run_query, chart_spec, skill]
+      skills: [data-analysis]
       icon: lightbulb
     - id: reporter
-      name: 报告撰写
-      role: 数据报告撰写与交付专家
-      goal: 生成面向管理层或业务团队的结构化分析报告。
-      role_ref: specialized/report-distribution-agent
-      tools: [read, write, present_file, artifact, skill]
-      skills: [report]
+      name: 报告交付
+      role: 可视化与报告交付专家
+      goal: 用 chart_spec 出关键图表,汇总成面向管理层的结构化分析报告。
+      role_ref: data/visualization-expert
+      tools: [run_query, chart_spec, write, present_file, artifact, skill]
+      skills: [report, charting]
       icon: file-text
   tasks:
-    - id: prepare_data
-      name: 数据准备与口径检查
-      member: data_preparer
+    - id: discover_data
+      name: 数据发现与口径确认
+      member: data_explorer
       task: |
-        请读取用户提供的附件和工作区材料，整理本次数据分析的可用信息。
+        用 datasage 工具发现本次分析需要的数据。
 
-        用户需求：
+        用户需求:
         {{user_input}}
 
-        分析目标：
+        分析目标:
         {{analysis_goal}}
 
-        重点指标：
+        重点指标:
         {{metric_focus}}
 
-        报告周期：
+        报告周期:
         {{reporting_period}}
 
-        请输出：数据来源、字段说明、可用维度、缺失或异常数据、口径风险、建议采用的分析方法。
-      expected_output: 数据准备说明和口径检查结果。
-      output: data_profile
+        步骤:先用 search 找到相关表和已注册指标,确认字段与口径;
+        必要时用 run_query 试探性查询验证数据可用性。
+        输出:可用表/指标清单、字段与口径说明、可分析维度、缺失或风险项、建议的查询方向。
+        注意:不要臆造表名/列名 —— 一切以确认到的 schema 为准。
+      expected_output: 数据地图与口径确认结果。
+      output: data_map
       context_policy: explicit
       context_max_chars: 16000
-      timeout_seconds: 300
+      timeout_seconds: 360
       retry_count: 1
     - id: analyze_metrics
-      name: 指标趋势与异常分析
-      member: analyst
-      depends_on: [prepare_data]
-      context: [prepare_data]
+      name: 指标查询与趋势分析
+      member: metric_analyst
+      depends_on: [discover_data]
+      context: [discover_data]
       task: |
-        基于数据准备结果完成指标分析。
+        基于数据发现结果,用 run_query 查询核心指标并分析。
 
-        数据准备结果：
-        {{data_profile}}
+        数据地图:
+        {{data_map}}
 
-        请输出：核心指标变化、趋势、分组对比、异常点、可能原因、建议图表和需要谨慎解释的地方。
-      expected_output: 指标分析结果。
+        步骤:用 run_query 执行查询(优先用已注册指标的权威口径),对关键结果用 chart_spec 出图。
+        输出:核心指标现状与趋势、分组对比、异常点、以及需要谨慎解释的口径问题。
+      expected_output: 指标查询结果与趋势分析(含图表)。
       output: metric_insights
       context_policy: explicit
       context_max_chars: 20000
-      timeout_seconds: 420
+      timeout_seconds: 480
       retry_count: 1
-    - id: recommend_actions
-      name: 业务行动建议
-      member: advisor
-      depends_on: [prepare_data, analyze_metrics]
-      context: [prepare_data, analyze_metrics]
+    - id: attribute_and_recommend
+      name: 归因下钻与业务建议
+      member: attribution_analyst
+      depends_on: [discover_data, analyze_metrics]
+      context: [discover_data, analyze_metrics]
       task: |
-        将分析发现转化为业务建议。
+        对指标变化做归因下钻,转成业务建议。
 
-        数据准备：
-        {{data_profile}}
+        数据地图:
+        {{data_map}}
 
-        指标洞察：
+        指标洞察:
         {{metric_insights}}
 
-        请输出：建议优先级、行动项、责任角色建议、风险提醒、需要补充确认的问题。
-      expected_output: 业务建议和风险提醒。
-      output: business_recommendations
+        步骤:用 run_query 按关键维度下钻(找驱动因素),必要时 chart_spec 出对比图。
+        输出:归因结论(哪些维度/因素驱动了变化)、行动建议与优先级、风险提醒、待确认问题。
+      expected_output: 归因结论与业务建议。
+      output: attribution_insights
       context_policy: explicit
       context_max_chars: 22000
-      timeout_seconds: 300
+      timeout_seconds: 420
       retry_count: 1
     - id: write_report
       name: 生成分析报告
       member: reporter
-      depends_on: [prepare_data, analyze_metrics, recommend_actions]
-      context: [prepare_data, analyze_metrics, recommend_actions]
+      depends_on: [discover_data, analyze_metrics, attribute_and_recommend]
+      context: [discover_data, analyze_metrics, attribute_and_recommend]
       task: |
         生成最终数据分析报告。
 
-        数据准备：
-        {{data_profile}}
+        数据地图:
+        {{data_map}}
 
-        指标洞察：
+        指标洞察:
         {{metric_insights}}
 
-        业务建议：
-        {{business_recommendations}}
+        归因与建议:
+        {{attribution_insights}}
 
-        报告必须包含：摘要、数据口径、关键发现、异常与解释、建议行动、风险和待确认问题。
+        报告必须包含:摘要、数据口径与来源、关键发现(配关键图表)、异常与解释、
+        归因结论、建议行动、风险与待确认问题。区分事实/推断/建议。
       expected_output: 可交付的数据分析报告。
       output: final_report
       context_policy: explicit
       context_max_chars: 32000
-      timeout_seconds: 300
+      timeout_seconds: 360
       retry_count: 1
