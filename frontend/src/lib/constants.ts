@@ -353,6 +353,9 @@ export const API = {
     FROM_TEMPLATE: "/api/automations/from-template",
     LOOP_PRESETS: "/api/automations/loop-presets",
   },
+  ANALYSIS: {
+    RECOMMENDATIONS: "/api/analysis/recommendations",
+  },
   DASHBOARD: {
     // Dashboards (named collections)
     DASHBOARDS: "/api/dashboards",

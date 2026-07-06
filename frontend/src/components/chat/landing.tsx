@@ -21,6 +21,8 @@ import { useArtifactStore } from "@/stores/artifact-store";
 import { useActivityStore } from "@/stores/activity-store";
 import { useRightSidebarStore } from "@/stores/right-sidebar-store";
 import { useSettingsStore } from "@/stores/settings-store";
+import { useSidebarStore } from "@/stores/sidebar-store";
+import { useAnalysisRecommendations } from "@/hooks/use-analysis";
 
 const STARTER_ACTIONS = [
   { labelKey: "starterOrganizeBills", promptKey: "starterOrganizeBillsPrompt" },
@@ -48,6 +50,9 @@ export function Landing({ directoryParam = null, skillParam = null }: LandingPro
   const globalWorkspace = useSettingsStore((s) => s.workspaceDirectory);
   const workspaceName = workspaceBasename(globalWorkspace);
   const activeProvider = useSettingsStore((s) => s.activeProvider);
+  const isCodata = useSidebarStore((s) => s.appMode) === "codata";
+  const { data: recData } = useAnalysisRecommendations(isCodata);
+  const recommendations = recData?.recommendations ?? [];
 
   useEffect(() => {
     const state = useChatStore.getState();
@@ -200,34 +205,59 @@ export function Landing({ directoryParam = null, skillParam = null }: LandingPro
               selectedSkill={skillParam}
             />
 
-            <section className="mt-6">
-              <div className="mb-2 flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 text-[var(--text-tertiary)]" />
-                <h2 className="text-ui-caption font-semibold text-[var(--text-primary)]">
-                  {t("recommendedActions")}
-                </h2>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {STARTER_ACTIONS.map(({ labelKey, promptKey }) => (
-                  <button
-                    key={labelKey}
-                    type="button"
-                    onClick={() => useArtifactStore.getState().requestFix(t(promptKey))}
-                    className="group flex min-h-16 items-start justify-between gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3 text-left shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--border-heavy)] hover:bg-[var(--surface-secondary)]"
-                  >
-                    <span className="min-w-0">
-                      <span className="block text-ui-body font-medium text-[var(--text-primary)]">
-                        {t(labelKey)}
+            {isCodata ? (
+              // Codata mode: history-based analysis recommendations.
+              <section className="mt-6">
+                <div className="mb-2 flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-[var(--text-tertiary)]" />
+                  <h2 className="text-ui-caption font-semibold text-[var(--text-primary)]">
+                    基于你的分析历史
+                  </h2>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {recommendations.map((rec) => (
+                    <button
+                      key={rec}
+                      type="button"
+                      onClick={() => useArtifactStore.getState().requestFix(rec)}
+                      className="group flex min-h-12 items-center justify-between gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3 text-left shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--border-heavy)] hover:bg-[var(--surface-secondary)]"
+                    >
+                      <span className="min-w-0 text-ui-body text-[var(--text-primary)]">{rec}</span>
+                      <Sparkles className="h-4 w-4 shrink-0 text-[var(--text-tertiary)] transition-colors group-hover:text-[var(--brand-primary)]" />
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : (
+              <section className="mt-6">
+                <div className="mb-2 flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-[var(--text-tertiary)]" />
+                  <h2 className="text-ui-caption font-semibold text-[var(--text-primary)]">
+                    {t("recommendedActions")}
+                  </h2>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {STARTER_ACTIONS.map(({ labelKey, promptKey }) => (
+                    <button
+                      key={labelKey}
+                      type="button"
+                      onClick={() => useArtifactStore.getState().requestFix(t(promptKey))}
+                      className="group flex min-h-16 items-start justify-between gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3 text-left shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--border-heavy)] hover:bg-[var(--surface-secondary)]"
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-ui-body font-medium text-[var(--text-primary)]">
+                          {t(labelKey)}
+                        </span>
+                        <span className="mt-1 line-clamp-2 text-ui-caption text-[var(--text-secondary)]">
+                          {t(promptKey)}
+                        </span>
                       </span>
-                      <span className="mt-1 line-clamp-2 text-ui-caption text-[var(--text-secondary)]">
-                        {t(promptKey)}
-                      </span>
-                    </span>
-                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-tertiary)] transition-colors group-hover:text-[var(--brand-primary)]" />
-                  </button>
-                ))}
-              </div>
-            </section>
+                      <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-tertiary)] transition-colors group-hover:text-[var(--brand-primary)]" />
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
           </main>
         </div>
       </div>

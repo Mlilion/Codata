@@ -1552,6 +1552,12 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
 
     if (path === "/health") return fulfillJson(route, { status: "ok" });
 
+    if (path === "/api/analysis/recommendations" && method === "GET") {
+      return fulfillJson(route, {
+        recommendations: ["看看「DAU」最近的变化趋势", "按「渠道」拆解「DAU」"],
+      });
+    }
+
     // Dashboards (named collections) — in-memory CRUD.
     if (path === "/api/dashboards" && method === "GET") {
       const withCounts = state.dashboards.map((b) => ({
