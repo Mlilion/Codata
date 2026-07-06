@@ -21,13 +21,24 @@ const ReactGridLayout = WidthProvider(GridLayout);
 const COLS = 12;
 const ROW_HEIGHT = 40;
 const DEFAULT_W = 6; // half width
-const DEFAULT_H = 8; // ~320px tall
+const DEFAULT_H = 11; // ~440px tall — enough for header + chart title/legend/axis
+const MIN_W = 3;
+const MIN_H = 6; // ~240px — never collapse a chart below a readable size
 
 /** Build the rgl layout array: use each item's saved layout, else auto-place by index. */
 function buildLayout(items: DashboardItem[]): Layout[] {
   return items.map((item, i) => {
     if (item.layout) {
-      return { i: item.id, x: item.layout.x, y: item.layout.y, w: item.layout.w, h: item.layout.h };
+      return {
+        i: item.id,
+        x: item.layout.x,
+        y: item.layout.y,
+        // Clamp any previously-saved tiny sizes up to the readable minimum.
+        w: Math.max(item.layout.w, MIN_W),
+        h: Math.max(item.layout.h, MIN_H),
+        minW: MIN_W,
+        minH: MIN_H,
+      };
     }
     // Auto-place: two columns, in order.
     return {
@@ -36,8 +47,8 @@ function buildLayout(items: DashboardItem[]): Layout[] {
       y: Math.floor(i / 2) * DEFAULT_H,
       w: DEFAULT_W,
       h: DEFAULT_H,
-      minW: 3,
-      minH: 4,
+      minW: MIN_W,
+      minH: MIN_H,
     };
   });
 }

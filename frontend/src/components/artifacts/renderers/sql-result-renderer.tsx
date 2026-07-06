@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Code2, BarChart3, Table2, Settings2, Pin, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { format as formatSql, type SqlLanguage } from "sql-formatter";
 import type { Artifact, ChartSpec } from "@/types/artifact";
 import { cn } from "@/lib/utils";
 import { useCreateDashboardItem, useCreateDashboard, useDashboards } from "@/hooks/use-dashboard";
@@ -12,6 +13,17 @@ import { ChartRenderer } from "./chart-renderer";
 import { ChartConfigPanel, defaultChartSpec } from "./chart-config-panel";
 
 type TabId = "table" | "sql" | "chart";
+
+// sql-formatter dialects we recognise; StarRocks/Doris are MySQL-compatible.
+const FORMATTER_DIALECTS = new Set<SqlLanguage>([
+  "mysql", "mariadb", "postgresql", "sqlite", "bigquery", "snowflake",
+  "redshift", "spark", "hive", "trino", "tsql", "duckdb", "clickhouse",
+]);
+function sqlDialect(dialect?: string): SqlLanguage {
+  const d = (dialect ?? "").toLowerCase();
+  if (d === "starrocks" || d === "doris") return "mysql";
+  return FORMATTER_DIALECTS.has(d as SqlLanguage) ? (d as SqlLanguage) : "sql";
+}
 
 interface SqlResultRendererProps {
   artifact: Artifact;
@@ -27,7 +39,20 @@ interface SqlResultRendererProps {
  */
 export function SqlResultRenderer({ artifact, pinnable = true }: SqlResultRendererProps) {
   const { sqlResult, chartSpec } = artifact;
-  const sql = sqlResult?.sql ?? artifact.content ?? "";
+  const rawSql = sqlResult?.sql ?? artifact.content ?? "";
+  // Pretty-print the (usually single-line) SQL; fall back to raw on parse errors.
+  const sql = useMemo(() => {
+    const trimmed = rawSql.trim();
+    if (!trimmed) return "";
+    try {
+      return formatSql(trimmed, {
+        language: sqlDialect(sqlResult?.dialect),
+        keywordCase: "upper",
+      });
+    } catch {
+      return rawSql;
+    }
+  }, [rawSql, sqlResult?.dialect]);
   const createDashboardItem = useCreateDashboardItem();
   const createDashboard = useCreateDashboard();
   const { data: dashboards } = useDashboards();
