@@ -70,6 +70,7 @@ def build_system_prompt(
     workspace: str | None = None,
     fts_status: dict | None = None,
     workspace_memory_section: str | None = None,
+    analysis_memory_section: str | None = None,
     app_mode: str | None = None,
 ) -> SystemPromptParts:
     """Build the complete system prompt for an LLM call.
@@ -101,6 +102,10 @@ def build_system_prompt(
     # Workspace-scoped memory
     if workspace_memory_section:
         dynamic_parts.append(workspace_memory_section)
+
+    # User-scoped structured analysis memory (data agent)
+    if analysis_memory_section:
+        dynamic_parts.append(analysis_memory_section)
 
     skills_info = _skills_awareness_section()
     if skills_info:

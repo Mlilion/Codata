@@ -179,6 +179,7 @@ class SessionPrompt:
         self.workspace: str | None = None
         self.fts_status: dict[str, Any] | None = None
         self.workspace_memory_section: str | None = None
+        self.analysis_memory_section: str | None = None
         self.system_prompt_parts: SystemPromptParts | None = None
         self.merged_permissions: list = []
         self.request_permissions: list = []
@@ -445,12 +446,24 @@ class SessionPrompt:
             except Exception:
                 logger.debug("Workspace memory injection skipped", exc_info=True)
 
+        # --- Load structured analysis memory for the data agent ---
+        if self.agent.name == "data":
+            try:
+                from app.memory.analysis_memory_injection import build_analysis_memory_section
+
+                self.analysis_memory_section = await build_analysis_memory_section(
+                    self.session_factory, None  # single-user: user_id None
+                )
+            except Exception:
+                logger.debug("Analysis memory injection skipped", exc_info=True)
+
         self.system_prompt_parts = build_system_prompt(
             self.agent,
             directory=self.directory,
             workspace=self.workspace,
             fts_status=self.fts_status,
             workspace_memory_section=self.workspace_memory_section,
+            analysis_memory_section=self.analysis_memory_section,
             app_mode=self.request.mode,
         )
 
@@ -1068,6 +1081,27 @@ class SessionPrompt:
             except Exception:
                 logger.warning("Workspace memory queue submission failed", exc_info=True)
 
+        # Queue conversation for analysis-memory refresh (codata sessions only).
+        if not self.job.abort_event.is_set() and self.request.mode == "codata":
+            try:
+                from app.memory.analysis_memory_queue import get_analysis_memory_queue
+                from app.session.manager import get_message_history_for_llm as _get_hist
+
+                am_queue = get_analysis_memory_queue()
+                if am_queue is not None:
+                    async with self.session_factory() as db:
+                        async with db.begin():
+                            _msgs = await _get_hist(db, self.job.session_id)
+                    # Single-user open-source build: user_id stays None.
+                    am_queue.add(
+                        self.job.session_id,
+                        None,
+                        _msgs,
+                        model_id=self.model_id,
+                    )
+            except Exception:
+                logger.warning("Analysis memory queue submission failed", exc_info=True)
+
         # Publish DONE to unlock the frontend UI.
         self.job.publish(
             SSEEvent(
@@ -1104,6 +1138,7 @@ class SessionPrompt:
             workspace=self.workspace,
             fts_status=self.fts_status,
             workspace_memory_section=self.workspace_memory_section,
+            analysis_memory_section=self.analysis_memory_section,
             app_mode=self.request.mode,
         )
 

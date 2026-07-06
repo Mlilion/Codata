@@ -105,6 +105,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from app.models import vimax_task_run as _vimax_task_run_models  # noqa: F401 — registers ViMaxTaskRun
     from app.models import dashboard as _dashboard_models  # noqa: F401 — registers Dashboard
     from app.models import dashboard_item as _dashboard_item_models  # noqa: F401 — registers DashboardItem
+    from app.models import analysis_memory as _analysis_memory_models  # noqa: F401 — registers AnalysisMemory
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -416,6 +417,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
     set_workspace_memory_queue(ws_memory_queue)
     app.state.ws_memory_queue = ws_memory_queue
+
+    # Analysis memory queue (structured, user-scoped; codata sessions only)
+    from app.memory.analysis_memory_queue import (
+        AnalysisMemoryUpdateQueue,
+        set_analysis_memory_queue,
+    )
+
+    analysis_memory_queue = AnalysisMemoryUpdateQueue(
+        session_factory,
+        registry,
+        debounce_seconds=_mem_cfg.debounce_seconds,
+    )
+    set_analysis_memory_queue(analysis_memory_queue)
+    app.state.analysis_memory_queue = analysis_memory_queue
 
     yield
 
