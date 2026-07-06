@@ -94,6 +94,21 @@ class TestDashboardItems:
         assert r2.status_code == 200 and r2.json()["success"] is True
         assert (await app_client.get("/api/dashboard/items")).json() == []
 
+    async def test_layout_persist(self, app_client):
+        created = (
+            await app_client.post(
+                "/api/dashboard/items", json={"title": "a", "payload": SAMPLE_PAYLOAD}
+            )
+        ).json()
+        assert created["layout"] is None
+        resp = await app_client.post(
+            "/api/dashboard/layout",
+            json={"layouts": [{"id": created["id"], "x": 2, "y": 1, "w": 3, "h": 2}]},
+        )
+        assert resp.status_code == 200
+        listed = (await app_client.get("/api/dashboard/items")).json()
+        assert listed[0]["layout"] == {"x": 2, "y": 1, "w": 3, "h": 2}
+
     async def test_reorder(self, app_client):
         a = (
             await app_client.post(

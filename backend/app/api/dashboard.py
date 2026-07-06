@@ -18,6 +18,7 @@ from app.schemas.dashboard import (
     DashboardItemCreate,
     DashboardItemResponse,
     DashboardItemUpdate,
+    DashboardLayoutUpdate,
     DashboardReorder,
 )
 from app.utils.id import generate_ulid
@@ -95,6 +96,22 @@ async def reorder_dashboard_items(
         item = by_id.get(item_id)
         if item is not None:
             item.position = index
+    await db.flush()
+    return {"success": True}
+
+
+@router.post("/dashboard/layout")
+async def update_dashboard_layout(
+    body: DashboardLayoutUpdate,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Persist grid-canvas positions/sizes for a batch of items."""
+    result = await db.execute(select(DashboardItem))
+    by_id = {item.id: item for item in result.scalars().all()}
+    for entry in body.layouts:
+        item = by_id.get(entry.id)
+        if item is not None:
+            item.layout = {"x": entry.x, "y": entry.y, "w": entry.w, "h": entry.h}
     await db.flush()
     return {"success": True}
 

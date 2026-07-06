@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { API, queryKeys } from "@/lib/constants";
-import type { DashboardItem, DashboardItemCreate } from "@/types/dashboard";
+import type { DashboardItem, DashboardItemCreate, DashboardLayout } from "@/types/dashboard";
 
 export function useDashboardItems() {
   return useQuery({
@@ -32,6 +32,36 @@ export function useRenameDashboardItem() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
+  });
+}
+
+/** Persist grid-canvas positions/sizes. Optimistic so drags/resizes stick instantly. */
+export function useSaveDashboardLayout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (layouts: Array<{ id: string } & DashboardLayout>) =>
+      api.post(API.DASHBOARD.LAYOUT, { layouts }),
+    onMutate: async (layouts) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard.all });
+      const prev = queryClient.getQueryData<DashboardItem[]>(queryKeys.dashboard.all);
+      if (prev) {
+        const byId = new Map(layouts.map((l) => [l.id, l]));
+        queryClient.setQueryData<DashboardItem[]>(
+          queryKeys.dashboard.all,
+          prev.map((item) => {
+            const l = byId.get(item.id);
+            return l ? { ...item, layout: { x: l.x, y: l.y, w: l.w, h: l.h } } : item;
+          }),
+        );
+      }
+      return { prev };
+    },
+    onError: (_err, _layouts, context) => {
+      if (context?.prev) {
+        queryClient.setQueryData(queryKeys.dashboard.all, context.prev);
+      }
+    },
+    // No onSettled invalidate: refetching mid-drag would clobber local state.
   });
 }
 

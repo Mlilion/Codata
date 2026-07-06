@@ -28,3 +28,6 @@ class DashboardItem(Base, TimestampMixin):
     # Snapshot payload: {"chartSpec": {...}, "sqlResult": {...}} mirroring the
     # frontend Artifact's chartSpec + sqlResult shapes.
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    # Grid-canvas layout {"x": int, "y": int, "w": int, "h": int}; null until the
+    # user arranges the tile (falls back to auto-placement by position).
+    layout: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)

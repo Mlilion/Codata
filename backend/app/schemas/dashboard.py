@@ -23,6 +23,7 @@ class DashboardItemResponse(BaseModel):
     title: str
     position: int
     payload: dict[str, Any]
+    layout: dict[str, Any] | None = None
     time_created: datetime
 
     model_config = {"from_attributes": True}
@@ -30,3 +31,15 @@ class DashboardItemResponse(BaseModel):
 
 class DashboardReorder(BaseModel):
     ordered_ids: list[str]
+
+
+class LayoutEntry(BaseModel):
+    id: str
+    x: int
+    y: int
+    w: int
+    h: int
+
+
+class DashboardLayoutUpdate(BaseModel):
+    layouts: list[LayoutEntry]

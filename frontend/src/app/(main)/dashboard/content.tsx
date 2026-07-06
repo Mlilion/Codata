@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import GridLayout, { WidthProvider, type Layout } from "react-grid-layout";
 import { LayoutDashboard, Trash2, Check, X, Pencil, Loader2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -8,24 +9,40 @@ import {
   useDashboardItems,
   useDeleteDashboardItem,
   useRenameDashboardItem,
-  useReorderDashboardItems,
+  useSaveDashboardLayout,
 } from "@/hooks/use-dashboard";
 import { ChartRenderer } from "@/components/artifacts/renderers/chart-renderer";
 import type { DashboardItem } from "@/types/dashboard";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 
-function DashboardTile({
-  item,
-  dragHandlers,
-  dragging,
-}: {
-  item: DashboardItem;
-  dragHandlers: {
-    onDragStart: () => void;
-    onDragEnter: () => void;
-    onDragEnd: () => void;
-  };
-  dragging: boolean;
-}) {
+const ReactGridLayout = WidthProvider(GridLayout);
+
+const COLS = 12;
+const ROW_HEIGHT = 40;
+const DEFAULT_W = 6; // half width
+const DEFAULT_H = 8; // ~320px tall
+
+/** Build the rgl layout array: use each item's saved layout, else auto-place by index. */
+function buildLayout(items: DashboardItem[]): Layout[] {
+  return items.map((item, i) => {
+    if (item.layout) {
+      return { i: item.id, x: item.layout.x, y: item.layout.y, w: item.layout.w, h: item.layout.h };
+    }
+    // Auto-place: two columns, in order.
+    return {
+      i: item.id,
+      x: (i % 2) * DEFAULT_W,
+      y: Math.floor(i / 2) * DEFAULT_H,
+      w: DEFAULT_W,
+      h: DEFAULT_H,
+      minW: 3,
+      minH: 4,
+    };
+  });
+}
+
+function DashboardTile({ item }: { item: DashboardItem }) {
   const rename = useRenameDashboardItem();
   const del = useDeleteDashboardItem();
   const [editing, setEditing] = useState(false);
@@ -42,26 +59,17 @@ function DashboardTile({
   };
 
   return (
-    <div
-      draggable
-      onDragStart={dragHandlers.onDragStart}
-      onDragEnter={dragHandlers.onDragEnter}
-      onDragEnd={dragHandlers.onDragEnd}
-      onDragOver={(e) => e.preventDefault()}
-      className={cn(
-        "flex flex-col overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)]",
-        dragging && "opacity-40",
-      )}
-    >
-      {/* Tile header */}
-      <div className="flex items-center gap-2 border-b border-[var(--border-default)] px-3 py-2">
-        <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--text-tertiary)] active:cursor-grabbing" />
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)]">
+      {/* Tile header (drag handle) */}
+      <div className="tile-drag-handle flex cursor-grab items-center gap-2 border-b border-[var(--border-default)] px-3 py-2 active:cursor-grabbing">
+        <GripVertical className="h-3.5 w-3.5 shrink-0 text-[var(--text-tertiary)]" />
         {editing ? (
           <>
             <input
               autoFocus
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
+              onMouseDown={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
                 if (e.key === "Enter") commitRename();
                 if (e.key === "Escape") {
@@ -74,6 +82,7 @@ function DashboardTile({
             <button
               type="button"
               onClick={commitRename}
+              onMouseDown={(e) => e.stopPropagation()}
               className="flex h-6 w-6 items-center justify-center rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
             >
               <Check className="h-3.5 w-3.5" />
@@ -84,6 +93,7 @@ function DashboardTile({
                 setDraft(item.title);
                 setEditing(false);
               }}
+              onMouseDown={(e) => e.stopPropagation()}
               className="flex h-6 w-6 items-center justify-center rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
             >
               <X className="h-3.5 w-3.5" />
@@ -100,6 +110,7 @@ function DashboardTile({
                 setDraft(item.title);
                 setEditing(true);
               }}
+              onMouseDown={(e) => e.stopPropagation()}
               title="重命名"
               className="flex h-6 w-6 items-center justify-center rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
             >
@@ -107,9 +118,8 @@ function DashboardTile({
             </button>
             <button
               type="button"
-              onClick={() =>
-                del.mutate(item.id, { onError: () => toast.error("删除失败") })
-              }
+              onClick={() => del.mutate(item.id, { onError: () => toast.error("删除失败") })}
+              onMouseDown={(e) => e.stopPropagation()}
               title="删除"
               className="flex h-6 w-6 items-center justify-center rounded text-[var(--text-tertiary)] hover:text-[var(--color-destructive)]"
             >
@@ -118,8 +128,8 @@ function DashboardTile({
           </>
         )}
       </div>
-      {/* Chart */}
-      <div className="h-[300px] bg-[var(--surface-primary)]">
+      {/* Chart fills the rest of the tile */}
+      <div className="min-h-0 flex-1 bg-[var(--surface-primary)]">
         <ChartRenderer spec={item.payload.chartSpec} data={item.payload.sqlResult} />
       </div>
     </div>
@@ -128,38 +138,37 @@ function DashboardTile({
 
 export function DashboardContent() {
   const { data: items, isLoading, isError } = useDashboardItems();
-  const reorder = useReorderDashboardItems();
+  const saveLayout = useSaveDashboardLayout();
 
-  // Local ordering so drag feels instant; synced from server data.
-  const [order, setOrder] = useState<DashboardItem[]>([]);
-  const [dragId, setDragId] = useState<string | null>(null);
+  // Track layout locally so drag/resize is smooth; seed from server data.
+  const [layout, setLayout] = useState<Layout[]>([]);
+  // Guard: ignore rgl's initial onLayoutChange (fires on mount, not a user edit).
+  const mountedRef = useRef(false);
 
   useEffect(() => {
-    if (items) setOrder(items);
+    if (items) {
+      setLayout(buildLayout(items));
+      mountedRef.current = false;
+    }
   }, [items]);
 
-  const moveBefore = (draggedId: string, targetId: string) => {
-    if (draggedId === targetId) return;
-    setOrder((cur) => {
-      const from = cur.findIndex((i) => i.id === draggedId);
-      const to = cur.findIndex((i) => i.id === targetId);
-      if (from < 0 || to < 0) return cur;
-      const next = [...cur];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved);
-      return next;
-    });
+  const persist = (next: Layout[]) => {
+    saveLayout.mutate(
+      next.map((l) => ({ id: l.i, x: l.x, y: l.y, w: l.w, h: l.h })),
+    );
   };
 
-  const commitOrder = () => {
-    setDragId(null);
-    // Persist only if the order actually changed vs. server.
-    const serverIds = (items ?? []).map((i) => i.id).join(",");
-    const localIds = order.map((i) => i.id);
-    if (localIds.join(",") !== serverIds) {
-      reorder.mutate(localIds);
+  const handleLayoutChange = (next: Layout[]) => {
+    setLayout(next);
+    // Skip the mount-time call; only persist real user drags/resizes.
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
     }
+    persist(next);
   };
+
+  const gridItems = useMemo(() => items ?? [], [items]);
 
   if (isLoading) {
     return (
@@ -196,21 +205,22 @@ export function DashboardContent() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {order.map((item) => (
-        <DashboardTile
-          key={item.id}
-          item={item}
-          dragging={dragId === item.id}
-          dragHandlers={{
-            onDragStart: () => setDragId(item.id),
-            onDragEnter: () => {
-              if (dragId && dragId !== item.id) moveBefore(dragId, item.id);
-            },
-            onDragEnd: commitOrder,
-          }}
-        />
+    <ReactGridLayout
+      className="dashboard-grid"
+      layout={layout}
+      cols={COLS}
+      rowHeight={ROW_HEIGHT}
+      margin={[16, 16]}
+      isDraggable
+      isResizable
+      draggableHandle=".tile-drag-handle"
+      onLayoutChange={handleLayoutChange}
+    >
+      {gridItems.map((item) => (
+        <div key={item.id}>
+          <DashboardTile item={item} />
+        </div>
       ))}
-    </div>
+    </ReactGridLayout>
   );
 }

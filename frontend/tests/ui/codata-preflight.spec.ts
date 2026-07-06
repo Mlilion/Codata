@@ -165,10 +165,14 @@ test.describe("Codata UI preflight", () => {
     await created;
     await expect(page.getByText("已钉到看板")).toBeVisible();
 
-    // Open the dashboard page and assert the pinned tile renders (title = chart title).
+    // Open the dashboard page and assert the pinned tile renders on the grid
+    // canvas (title = chart title), with drag + resize affordances present.
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: "看板" })).toBeVisible();
     await expect(page.getByText("各渠道 DAU").first()).toBeVisible();
+    // react-grid-layout wraps each tile in .react-grid-item with a resize handle.
+    await expect(page.locator(".react-grid-item").first()).toBeVisible();
+    await expect(page.locator(".react-resizable-handle").first()).toBeVisible();
   });
 
   test("desktop new-chat path: switching from an active session clears stale generating state", async ({ page }) => {

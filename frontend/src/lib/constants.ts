@@ -358,6 +358,7 @@ export const API = {
     DETAIL: (id: string) => `/api/dashboard/items/${id}` as const,
     DELETE: (id: string) => `/api/dashboard/items/${id}` as const,
     REORDER: "/api/dashboard/reorder",
+    LAYOUT: "/api/dashboard/layout",
   },
   CHANNELS: {
     LIST: "/api/channels",
