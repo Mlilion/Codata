@@ -352,6 +352,13 @@ export const API = {
     FROM_TEMPLATE: "/api/automations/from-template",
     LOOP_PRESETS: "/api/automations/loop-presets",
   },
+  DASHBOARD: {
+    LIST: "/api/dashboard/items",
+    CREATE: "/api/dashboard/items",
+    DETAIL: (id: string) => `/api/dashboard/items/${id}` as const,
+    DELETE: (id: string) => `/api/dashboard/items/${id}` as const,
+    REORDER: "/api/dashboard/reorder",
+  },
   CHANNELS: {
     LIST: "/api/channels",
     ADD: "/api/channels/add",
@@ -415,6 +422,9 @@ export const queryKeys = {
     detail: (id: string) => ["automations", id] as const,
     runs: (id: string) => ["automations", id, "runs"] as const,
     templates: ["automations", "templates"] as const,
+  },
+  dashboard: {
+    all: ["dashboard", "items"] as const,
   },
   workspaceMemory: (workspace: string) =>
     ["workspaceMemory", workspace] as const,

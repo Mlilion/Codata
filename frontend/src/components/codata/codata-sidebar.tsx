@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Database, History, LayoutDashboard } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarHeader } from "@/components/layout/sidebar-header";
@@ -8,7 +10,9 @@ import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { SidebarFooter } from "@/components/layout/sidebar-footer";
 import { SidebarResizeHandle } from "@/components/layout/sidebar-resize-handle";
 import { useSidebarStore } from "@/stores/sidebar-store";
+import { useDashboardItems } from "@/hooks/use-dashboard";
 import { useIsMacOS } from "@/hooks/use-platform";
+import { cn } from "@/lib/utils";
 import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
 
 /**
@@ -20,10 +24,16 @@ import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
  * dashboards will be wired to datasage (list_databases / list_tables) in a
  * later phase.
  */
-const SECTIONS: { id: string; label: string; icon: typeof Database; hint: string }[] = [
+const SECTIONS: {
+  id: string;
+  label: string;
+  icon: typeof Database;
+  hint: string;
+  href?: string;
+}[] = [
   { id: "sources", label: "数据源", icon: Database, hint: "连接的数据库与表" },
   { id: "history", label: "历史查询", icon: History, hint: "最近的分析会话" },
-  { id: "dashboards", label: "看板", icon: LayoutDashboard, hint: "已保存的图表" },
+  { id: "dashboards", label: "看板", icon: LayoutDashboard, hint: "已保存的图表", href: "/dashboard" },
 ];
 
 export function CodataSidebar() {
@@ -31,6 +41,9 @@ export function CodataSidebar() {
   const width = useSidebarStore((s) => s.width);
   const isMac = useIsMacOS();
   const topOffset = IS_DESKTOP && !isMac ? TITLE_BAR_HEIGHT : 0;
+  const pathname = usePathname();
+  const { data: dashboardItems } = useDashboardItems();
+  const dashboardCount = dashboardItems?.length ?? 0;
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -47,6 +60,36 @@ export function CodataSidebar() {
         <div className="flex-1 overflow-y-auto px-3 py-2">
           {SECTIONS.map((section) => {
             const Icon = section.icon;
+            // Wired sections (with href) render as a clickable Link; the rest
+            // stay static scaffolding until their data source is connected.
+            if (section.href) {
+              const active = pathname === section.href;
+              return (
+                <Link
+                  key={section.id}
+                  href={section.href}
+                  className={cn(
+                    "mb-4 block rounded-lg px-2 py-1.5 transition-colors",
+                    active
+                      ? "bg-[var(--surface-secondary)]"
+                      : "hover:bg-[var(--surface-secondary)]",
+                  )}
+                >
+                  <div className="flex items-center gap-2 text-ui-body font-medium text-[var(--text-secondary)]">
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span>{section.label}</span>
+                    {dashboardCount > 0 && (
+                      <span className="ml-auto rounded-full bg-[var(--surface-tertiary)] px-1.5 text-ui-caption text-[var(--text-tertiary)]">
+                        {dashboardCount}
+                      </span>
+                    )}
+                  </div>
+                  <p className="pt-0.5 text-ui-caption text-[var(--text-tertiary)]">
+                    {section.hint}
+                  </p>
+                </Link>
+              );
+            }
             return (
               <div key={section.id} className="mb-4">
                 <div className="flex items-center gap-2 px-2 py-1.5 text-ui-body font-medium text-[var(--text-secondary)]">

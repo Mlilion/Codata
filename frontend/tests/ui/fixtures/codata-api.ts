@@ -63,6 +63,7 @@ export interface CodataMockState {
   channelAdds: unknown[];
   channelRemoves: unknown[];
   modelRefreshes: unknown[];
+  dashboardItems: Array<Record<string, unknown>>;
 }
 
 type AutomationMock = ReturnType<typeof createdAutomation>;
@@ -861,6 +862,13 @@ const dataMessagePage = {
                 ],
                 row_count: 3,
                 truncated: false,
+                // Carries a chart spec too, so the card is pinnable to the dashboard.
+                chart_spec: {
+                  chartType: "bar",
+                  x: { field: "channel" },
+                  y: [{ field: "dau" }],
+                  title: "各渠道 DAU",
+                },
               },
               title: "查询结果",
               time_start: "2026-04-21T11:02:00.000Z",
@@ -1482,6 +1490,7 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
     channelAdds: [],
     channelRemoves: [],
     modelRefreshes: [],
+    dashboardItems: [],
   };
   const configuredChannels = new Map<string, { status: string; type: string }>();
   let weixinQrPolls = 0;
@@ -1538,6 +1547,36 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
     }
 
     if (path === "/health") return fulfillJson(route, { status: "ok" });
+
+    // Dashboard items (pinned charts) — in-memory CRUD.
+    if (path === "/api/dashboard/items" && method === "GET") {
+      return fulfillJson(route, state.dashboardItems);
+    }
+    if (path === "/api/dashboard/items" && method === "POST") {
+      const body = (requestJson(request) ?? {}) as Record<string, unknown>;
+      const item = {
+        id: `dash-${state.dashboardItems.length + 1}`,
+        title: typeof body.title === "string" ? body.title : "",
+        position: state.dashboardItems.length + 1,
+        payload: body.payload ?? {},
+        time_created: "2026-04-21T11:00:00.000Z",
+      };
+      state.dashboardItems.push(item);
+      return fulfillJson(route, item);
+    }
+    if (path.startsWith("/api/dashboard/items/") && method === "DELETE") {
+      const id = decodeURIComponent(path.split("/").pop() ?? "");
+      state.dashboardItems = state.dashboardItems.filter((i) => i.id !== id);
+      return fulfillJson(route, { success: true });
+    }
+    if (path.startsWith("/api/dashboard/items/") && method === "PATCH") {
+      const id = decodeURIComponent(path.split("/").pop() ?? "");
+      const body = (requestJson(request) ?? {}) as Record<string, unknown>;
+      const item = state.dashboardItems.find((i) => i.id === id);
+      if (item && typeof body.title === "string") item.title = body.title;
+      return fulfillJson(route, item ?? {});
+    }
+
     if (path === "/api/models/refresh" && method === "POST") {
       state.modelRefreshes.push(requestJson(request));
       return fulfillJson(route, { refreshed: { openrouter: 1 } });

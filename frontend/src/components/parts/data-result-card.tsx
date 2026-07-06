@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Database, ChevronDown, ChevronRight, Maximize2, Loader2 } from "lucide-react";
+import { Database, ChevronDown, ChevronRight, Maximize2, Loader2, Pin } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useArtifactStore } from "@/stores/artifact-store";
 import {
@@ -9,6 +10,7 @@ import {
   codataJobFromMetadata,
   codataIndicatorsFromMetadata,
 } from "@/lib/codata-artifact";
+import { useCreateDashboardItem } from "@/hooks/use-dashboard";
 import { SqlResultRenderer } from "@/components/artifacts/renderers/sql-result-renderer";
 import { IndicatorListCard } from "./indicator-list-card";
 import type { ToolPart } from "@/types/message";
@@ -29,6 +31,7 @@ interface DataResultCardProps {
  */
 export function DataResultCard({ data, defaultOpen = false }: DataResultCardProps) {
   const openArtifact = useArtifactStore((s) => s.openArtifact);
+  const createDashboardItem = useCreateDashboardItem();
   const metadata = (data.state.metadata ?? null) as Record<string, unknown> | null;
   const title = (data.state.title as string | undefined) ?? undefined;
 
@@ -98,6 +101,19 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
       ? chartSpec.chartType
       : "SQL";
 
+  // A chart can be pinned to the dashboard only when we have both a spec and data.
+  const canPin = !!chartSpec && !!sqlResult;
+  const handlePin = () => {
+    if (!chartSpec || !sqlResult) return;
+    createDashboardItem.mutate(
+      { title: artifact.title, payload: { chartSpec, sqlResult } },
+      {
+        onSuccess: () => toast.success("已钉到看板"),
+        onError: () => toast.error("钉看板失败"),
+      },
+    );
+  };
+
   return (
     <div className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)]">
       {/* Header row — click to toggle */}
@@ -123,6 +139,25 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
             <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-tertiary)]" />
           )}
         </button>
+        {canPin && (
+          <button
+            type="button"
+            onClick={handlePin}
+            disabled={createDashboardItem.isPending}
+            title="钉到看板"
+            className={cn(
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+              "text-[var(--text-tertiary)] hover:bg-[var(--surface-tertiary)] hover:text-[var(--text-primary)]",
+              "transition-colors disabled:opacity-50",
+            )}
+          >
+            {createDashboardItem.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Pin className="h-3.5 w-3.5" />
+            )}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => openArtifact(artifact)}

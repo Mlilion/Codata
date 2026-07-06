@@ -124,10 +124,12 @@ test.describe("Codata UI preflight", () => {
     await expect(page.getByText("下面是近三天各渠道的活跃用户数。")).toBeVisible();
 
     // The inline data card shows its summary (3 行 · 2 列) and the newest card
-    // is expanded, so the result table + values are visible.
+    // is expanded with tabs. It carries a chart, so it defaults to the 图表 tab;
+    // the 结果 tab reveals the table values.
     await expect(page.getByText(/3 行 · 2 列/)).toBeVisible();
     await expect(page.getByRole("button", { name: /结果/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /SQL/ })).toBeVisible();
+    await page.getByRole("button", { name: /结果/ }).click();
     await expect(page.getByText("App").first()).toBeVisible();
     await expect(page.getByText("12,304").or(page.getByText("12304")).first()).toBeVisible();
 
@@ -141,6 +143,26 @@ test.describe("Codata UI preflight", () => {
     await expect(page.getByText("查询进行中")).toBeVisible();
     await expect(page.getByText(/job-async-1/)).toBeVisible();
     await expect(page.getByText(/预计 12s/)).toBeVisible();
+  });
+
+  test("desktop dashboard path: pin a chart, then view it on the dashboard page", async ({ page }) => {
+    await page.goto("/c/session-data");
+    await expect(page.getByText("下面是近三天各渠道的活跃用户数。")).toBeVisible();
+
+    // The chart-bearing result card exposes a "钉到看板" button; click it.
+    const pinBtn = page.getByRole("button", { name: "钉到看板" }).first();
+    await expect(pinBtn).toBeVisible();
+    const created = page.waitForResponse(
+      (res) => res.url().includes("/api/dashboard/items") && res.request().method() === "POST",
+    );
+    await pinBtn.click();
+    await created;
+    await expect(page.getByText("已钉到看板")).toBeVisible();
+
+    // Open the dashboard page and assert the pinned tile renders.
+    await page.goto("/dashboard");
+    await expect(page.getByRole("heading", { name: "看板" })).toBeVisible();
+    await expect(page.getByText("查询结果").first()).toBeVisible();
   });
 
   test("desktop new-chat path: switching from an active session clears stale generating state", async ({ page }) => {
