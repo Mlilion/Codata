@@ -289,6 +289,7 @@ export const API = {
   TOOLS: "/api/tools",
   SKILLS: {
     LIST: "/api/skills",
+    CREATE: "/api/skills",
     DETAIL: (name: string) => `/api/skills/${encodeURIComponent(name)}` as const,
     ENABLE: (name: string) => `/api/skills/${name}/enable` as const,
     DISABLE: (name: string) => `/api/skills/${name}/disable` as const,
