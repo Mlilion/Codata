@@ -2,7 +2,65 @@
 
 from __future__ import annotations
 
+import json
+from types import SimpleNamespace
+
 import pytest
+
+
+class _FakeTool:
+    def __init__(self, name: str):
+        self.name = name
+
+
+class _FakeContentItem:
+    def __init__(self, text: str):
+        self.type = "text"
+        self.text = text
+
+
+class _FakeCallResult:
+    def __init__(self, text: str, is_error: bool = False):
+        self.content = [_FakeContentItem(text)]
+        self.isError = is_error
+
+
+class _FakeClient:
+    """Minimal stand-in for McpClient exposing execute_sql."""
+
+    def __init__(self, rows, columns, *, connected=True, raise_err=False):
+        self.status = "connected" if connected else "failed"
+        self._rows = rows
+        self._columns = columns
+        self._raise = raise_err
+
+    def list_tools(self):
+        return [_FakeTool("execute_sql"), _FakeTool("list_tables")]
+
+    async def call_tool(self, name, args):
+        if self._raise:
+            raise RuntimeError("boom")
+        return _FakeCallResult(
+            json.dumps({
+                "mode": "sync",
+                "columns": self._columns,
+                "data": self._rows,
+                "row_count": len(self._rows),
+                "truncated": False,
+            })
+        )
+
+
+class _FakeManager:
+    def __init__(self, client):
+        self._clients = {"datasage": client} if client else {}
+
+
+def _install_manager(app_client, client):
+    """Attach a fake MCP manager to the app so _rerun_sql can find it."""
+    app_client.app.state.connector_registry = None
+    app_client.app.state.mcp_manager = _FakeManager(client)
+
 
 SAMPLE_PAYLOAD = {
     "chartSpec": {
@@ -217,3 +275,75 @@ class TestDashboards:
         assert len(after) == 1
         assert after[0]["id"] == other["id"]
         assert after[0]["is_default"] is True
+
+
+@pytest.mark.asyncio
+class TestDashboardRefresh:
+    async def _pin(self, app_client):
+        return (
+            await app_client.post(
+                "/api/dashboard/items", json={"title": "x", "payload": SAMPLE_PAYLOAD}
+            )
+        ).json()
+
+    async def test_refresh_updates_snapshot(self, app_client):
+        item = await self._pin(app_client)
+        assert item["refreshed_at"] is None
+
+        # Fake data source returns new rows for the same SQL.
+        _install_manager(
+            app_client,
+            _FakeClient(
+                rows=[["App", 20000], ["Web", 9000], ["H5", 5000]],
+                columns=["channel", "dau"],
+            ),
+        )
+        resp = await app_client.post(f"/api/dashboard/items/{item['id']}/refresh")
+        assert resp.status_code == 200
+        body = resp.json()
+        # Data updated, sql + chartSpec preserved, refreshed_at stamped.
+        assert body["payload"]["sqlResult"]["rows"] == [
+            ["App", 20000], ["Web", 9000], ["H5", 5000],
+        ]
+        assert body["payload"]["sqlResult"]["rowCount"] == 3
+        assert body["payload"]["sqlResult"]["sql"] == SAMPLE_PAYLOAD["sqlResult"]["sql"]
+        assert body["payload"]["chartSpec"]["chartType"] == "bar"
+        assert body["refreshed_at"] is not None
+
+        # Persisted.
+        listed = (await app_client.get("/api/dashboard/items")).json()
+        assert listed[0]["payload"]["sqlResult"]["rowCount"] == 3
+
+    async def test_refresh_no_datasource_keeps_snapshot(self, app_client):
+        item = await self._pin(app_client)
+        _install_manager(app_client, None)  # no connected execute_sql client
+        resp = await app_client.post(f"/api/dashboard/items/{item['id']}/refresh")
+        assert resp.status_code == 502
+        # Snapshot untouched.
+        listed = (await app_client.get("/api/dashboard/items")).json()
+        assert listed[0]["payload"]["sqlResult"]["rows"] == SAMPLE_PAYLOAD["sqlResult"]["rows"]
+        assert listed[0]["refreshed_at"] is None
+
+    async def test_refresh_query_error_keeps_snapshot(self, app_client):
+        item = await self._pin(app_client)
+        _install_manager(app_client, _FakeClient(rows=[], columns=[], raise_err=True))
+        resp = await app_client.post(f"/api/dashboard/items/{item['id']}/refresh")
+        assert resp.status_code == 502
+        listed = (await app_client.get("/api/dashboard/items")).json()
+        assert listed[0]["payload"]["sqlResult"]["rows"] == SAMPLE_PAYLOAD["sqlResult"]["rows"]
+
+    async def test_refresh_item_without_sql_400(self, app_client):
+        no_sql = {"chartSpec": SAMPLE_PAYLOAD["chartSpec"], "sqlResult": {"columns": [], "rows": []}}
+        item = (
+            await app_client.post(
+                "/api/dashboard/items", json={"title": "n", "payload": no_sql}
+            )
+        ).json()
+        _install_manager(app_client, _FakeClient(rows=[["a", 1]], columns=["k", "v"]))
+        resp = await app_client.post(f"/api/dashboard/items/{item['id']}/refresh")
+        assert resp.status_code == 400
+
+    async def test_refresh_missing_item_404(self, app_client):
+        _install_manager(app_client, _FakeClient(rows=[["a", 1]], columns=["k", "v"]))
+        resp = await app_client.post("/api/dashboard/items/nope/refresh")
+        assert resp.status_code == 404

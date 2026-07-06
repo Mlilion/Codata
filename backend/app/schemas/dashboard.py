@@ -52,6 +52,7 @@ class DashboardItemResponse(BaseModel):
     position: int
     payload: dict[str, Any]
     layout: dict[str, Any] | None = None
+    refreshed_at: datetime | None = None
     time_created: datetime
 
     model_config = {"from_attributes": True}

@@ -6,11 +6,14 @@ name a target. Each DashboardItem belongs to a dashboard (cascade delete).
 
 from __future__ import annotations
 
+import json
 import logging
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.dependencies import get_db
 from app.models.dashboard import Dashboard
@@ -55,6 +58,74 @@ async def _item_counts(db: AsyncSession) -> dict[str, int]:
         )
     )
     return {str(dash_id): count for dash_id, count in rows.all() if dash_id is not None}
+
+
+class RefreshError(Exception):
+    """Refresh could not complete; carries a user-facing reason."""
+
+
+def _get_mcp_manager(request: Request):
+    """Resolve the MCP manager off app.state (connector_registry first)."""
+    registry = getattr(request.app.state, "connector_registry", None)
+    if registry is not None and getattr(registry, "mcp_manager", None):
+        return registry.mcp_manager
+    return getattr(request.app.state, "mcp_manager", None)
+
+
+def _find_execute_sql_client(manager):
+    """Find a connected MCP client exposing an ``execute_sql`` tool (datasage).
+
+    Server name is not fixed, so we match by tool name — same principle as the
+    datasage result parser's suffix matching.
+    """
+    if manager is None:
+        return None
+    for client in getattr(manager, "_clients", {}).values():
+        if getattr(client, "status", None) != "connected":
+            continue
+        try:
+            tool_names = {t.name for t in client.list_tools()}
+        except Exception:
+            continue
+        if "execute_sql" in tool_names:
+            return client
+    return None
+
+
+async def _rerun_sql(request: Request, sql: str) -> dict:
+    """Re-run a stored SQL via datasage execute_sql; return fresh sql_result.
+
+    Raises RefreshError with a user-facing message on any failure (no data
+    source, async job, SQL error, non-tabular result).
+    """
+    from app.mcp.datasage_parser import _parse_execute_sql
+
+    manager = _get_mcp_manager(request)
+    client = _find_execute_sql_client(manager)
+    if client is None:
+        raise RefreshError("数据源未连接,无法刷新")
+
+    try:
+        result = await client.call_tool("execute_sql", {"sql": sql})
+    except Exception as e:  # noqa: BLE001
+        raise RefreshError(f"查询执行失败: {e}") from e
+
+    # Extract text content (mirrors McpToolWrapper).
+    text_parts = [item.text for item in result.content if getattr(item, "type", None) == "text"]
+    output = "\n".join(text_parts)
+    if getattr(result, "isError", False):
+        raise RefreshError(output or "查询返回错误")
+
+    try:
+        payload = json.loads(output.strip()) if output.strip() else None
+    except (json.JSONDecodeError, ValueError):
+        payload = None
+    parsed = _parse_execute_sql({"sql": sql}, payload) if isinstance(payload, dict) else None
+
+    if not parsed or parsed.get("codata_kind") != "sql_result":
+        # async job / non-tabular / unparseable
+        raise RefreshError("结果无法刷新(可能过大需异步查询,或结构已变化)")
+    return parsed
 
 
 # ------------------------------------------------------------------
@@ -239,6 +310,49 @@ async def reorder_dashboard_items(
             item.position = index
     await db.flush()
     return {"success": True}
+
+
+@router.post("/dashboard/items/{item_id}/refresh", response_model=DashboardItemResponse)
+async def refresh_dashboard_item(
+    item_id: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> DashboardItemResponse:
+    """Re-run the item's stored SQL and update its snapshot with fresh data.
+
+    On any failure the existing snapshot is left untouched (a 400/502 is
+    returned with a user-facing reason).
+    """
+    item = (
+        await db.execute(select(DashboardItem).where(DashboardItem.id == item_id))
+    ).scalar_one_or_none()
+    if item is None:
+        raise HTTPException(404, "Dashboard item not found")
+
+    payload = dict(item.payload or {})
+    sql_result = dict(payload.get("sqlResult") or {})
+    sql = sql_result.get("sql")
+    if not isinstance(sql, str) or not sql.strip():
+        raise HTTPException(400, "该图表没有可重跑的 SQL")
+
+    try:
+        fresh = await _rerun_sql(request, sql)
+    except RefreshError as e:
+        raise HTTPException(502, str(e)) from e
+
+    # Update only the data; keep sql + chartSpec as pinned.
+    sql_result["columns"] = fresh["columns"]
+    sql_result["rows"] = fresh["rows"]
+    sql_result["rowCount"] = fresh.get("row_count", len(fresh["rows"]))
+    sql_result["truncated"] = fresh.get("truncated", False)
+    payload["sqlResult"] = sql_result
+    item.payload = payload
+    flag_modified(item, "payload")  # JSON column: force update on in-place change
+    item.refreshed_at = datetime.now(timezone.utc)
+
+    await db.flush()
+    await db.refresh(item)
+    return DashboardItemResponse.model_validate(item)
 
 
 @router.post("/dashboard/layout")

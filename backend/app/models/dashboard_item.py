@@ -8,9 +8,10 @@ entity) — every pinned chart is an item ordered by ``position``.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -36,3 +37,8 @@ class DashboardItem(Base, TimestampMixin):
     # Grid-canvas layout {"x": int, "y": int, "w": int, "h": int}; null until the
     # user arranges the tile (falls back to auto-placement by position).
     layout: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # When the snapshot was last re-run against the data source. Null = never
+    # refreshed since pinning (frontend falls back to time_created).
+    refreshed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
