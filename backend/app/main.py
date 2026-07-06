@@ -103,6 +103,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Ensure all models are registered with Base.metadata before create_all
     from app.memory import workspace_memory_model as _ws_memory_models  # noqa: F401 — registers WorkspaceMemory
     from app.models import vimax_task_run as _vimax_task_run_models  # noqa: F401 — registers ViMaxTaskRun
+    from app.models import dashboard_item as _dashboard_item_models  # noqa: F401 — registers DashboardItem
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

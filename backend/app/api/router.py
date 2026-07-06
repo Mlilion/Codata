@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from app.api import agents as agents_api
 from app.api import artifacts as artifacts_api
 from app.api import automations as automations_api
+from app.api import dashboard as dashboard_api
 from app.api import workspace_memory as workspace_memory_api
 from app.api import channels as channels_api
 from app.api import ollama as ollama_api
@@ -50,6 +51,7 @@ api_router.include_router(connectors_api.router, tags=["connectors"])
 api_router.include_router(google_auth_api.router, tags=["google"])
 api_router.include_router(plugins_api.router, tags=["plugins"])
 api_router.include_router(automations_api.router, tags=["automations"])
+api_router.include_router(dashboard_api.router, tags=["dashboard"])
 api_router.include_router(ollama_api.router, tags=["ollama"])
 api_router.include_router(channels_api.router, tags=["channels"])
 api_router.include_router(workspace_memory_api.router, tags=["workspace-memory"])
