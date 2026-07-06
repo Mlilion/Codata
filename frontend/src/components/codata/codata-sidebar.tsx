@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Database, History, LayoutDashboard } from "lucide-react";
+import { Database, History, LayoutDashboard, Users } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarHeader } from "@/components/layout/sidebar-header";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
@@ -35,6 +35,7 @@ const SECTIONS: {
   { id: "sources", label: "数据源", icon: Database, hint: "连接的数据库与表" },
   { id: "history", label: "历史查询", icon: History, hint: "最近的分析会话" },
   { id: "dashboards", label: "看板", icon: LayoutDashboard, hint: "已保存的图表集合", href: "/dashboard" },
+  { id: "experts", label: "专家团", icon: Users, hint: "多步复杂分析交给数据分析专家团", href: "/experts" },
 ];
 
 export function CodataSidebar() {
@@ -81,15 +82,20 @@ export function CodataSidebar() {
                     <div className="flex items-center gap-2 text-ui-body font-medium text-[var(--text-secondary)]">
                       <Icon className="h-3.5 w-3.5 shrink-0" />
                       <span>{section.label}</span>
-                      {dashboardCount > 0 && (
+                      {section.id === "dashboards" && dashboardCount > 0 && (
                         <span className="ml-auto rounded-full bg-[var(--surface-tertiary)] px-1.5 text-ui-caption text-[var(--text-tertiary)]">
                           {dashboardCount}
                         </span>
                       )}
                     </div>
+                    {section.id !== "dashboards" && (
+                      <p className="pt-0.5 text-ui-caption text-[var(--text-tertiary)]">
+                        {section.hint}
+                      </p>
+                    )}
                   </Link>
-                  {/* Per-dashboard quick links */}
-                  {(dashboards ?? []).map((b) => {
+                  {/* Per-dashboard quick links (dashboards section only) */}
+                  {section.id === "dashboards" && (dashboards ?? []).map((b) => {
                     const boardHref = `/dashboard/${b.id}`;
                     const boardActive = pathname === boardHref;
                     return (

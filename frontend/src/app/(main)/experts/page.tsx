@@ -69,7 +69,7 @@ import type {
 import type { SessionResponse } from "@/types/session";
 import { useQueryClient } from "@tanstack/react-query";
 
-const CATEGORIES = ["全部", "内容创作", "技术工程", "办公文档", "研究咨询", "设计创意"];
+const CATEGORIES = ["全部", "数据分析", "内容创作", "技术工程", "办公文档", "研究咨询", "设计创意"];
 
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   code: Code2,

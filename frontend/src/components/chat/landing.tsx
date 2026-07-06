@@ -186,10 +186,12 @@ export function Landing({ directoryParam = null, skillParam = null }: LandingPro
                 <h1 className="text-ui-title-lg font-semibold text-[var(--text-primary)] sm:text-2xl">
                   {workspaceName
                     ? t('greetingInWorkspace', { workspace: workspaceName })
-                    : t('landingTitle')}
+                    : isCodata
+                      ? t('landingTitleCodata')
+                      : t('landingTitle')}
                 </h1>
                 <p className="mt-1 max-w-2xl text-ui-body leading-relaxed text-[var(--text-secondary)]">
-                  {t("landingSubtitle")}
+                  {isCodata ? t("landingSubtitleCodata") : t("landingSubtitle")}
                 </p>
               </div>
             </div>
@@ -200,7 +202,7 @@ export function Landing({ directoryParam = null, skillParam = null }: LandingPro
               onSend={sendMessage}
               onStop={stopGeneration}
               directory={globalWorkspace}
-              placeholder={t("landingPlaceholder")}
+              placeholder={isCodata ? t("landingPlaceholderCodata") : t("landingPlaceholder")}
               className="w-full"
               selectedSkill={skillParam}
             />
