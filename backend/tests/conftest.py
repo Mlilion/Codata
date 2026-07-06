@@ -15,6 +15,7 @@ from app.agent.agent import AgentRegistry
 from app.config import Settings
 from app.models.base import Base
 from app.models import vimax_task_run as _vimax_task_run_models  # noqa: F401 — registers ViMaxTaskRun
+from app.models import dashboard as _dashboard_models  # noqa: F401 — registers Dashboard
 from app.models import dashboard_item as _dashboard_item_models  # noqa: F401 — registers DashboardItem
 from app.provider.openrouter import OpenRouterProvider
 from app.provider.registry import ProviderRegistry

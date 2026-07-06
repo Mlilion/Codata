@@ -127,3 +127,93 @@ class TestDashboardItems:
         assert resp.status_code == 200
         listed = (await app_client.get("/api/dashboard/items")).json()
         assert [i["title"] for i in listed] == ["b", "a"]
+
+
+@pytest.mark.asyncio
+class TestDashboards:
+    async def test_list_creates_default(self, app_client):
+        resp = await app_client.get("/api/dashboards")
+        assert resp.status_code == 200
+        boards = resp.json()
+        assert len(boards) == 1
+        assert boards[0]["is_default"] is True
+        assert boards[0]["item_count"] == 0
+
+    async def test_pin_without_target_lands_in_default(self, app_client):
+        item = (
+            await app_client.post(
+                "/api/dashboard/items", json={"title": "x", "payload": SAMPLE_PAYLOAD}
+            )
+        ).json()
+        boards = (await app_client.get("/api/dashboards")).json()
+        default = next(b for b in boards if b["is_default"])
+        assert item["dashboard_id"] == default["id"]
+        assert default["item_count"] == 1
+
+    async def test_create_board_and_scoped_pin(self, app_client):
+        board = (
+            await app_client.post("/api/dashboards", json={"name": "营收"})
+        ).json()
+        assert board["is_default"] is False
+        assert board["name"] == "营收"
+
+        item = (
+            await app_client.post(
+                "/api/dashboard/items",
+                json={"title": "rev", "payload": SAMPLE_PAYLOAD, "dashboard_id": board["id"]},
+            )
+        ).json()
+        assert item["dashboard_id"] == board["id"]
+
+        # Scoped listing returns only that board's items.
+        scoped = (
+            await app_client.get(f"/api/dashboard/items?dashboard_id={board['id']}")
+        ).json()
+        assert [i["id"] for i in scoped] == [item["id"]]
+        # The default board has none.
+        boards = (await app_client.get("/api/dashboards")).json()
+        default = next(b for b in boards if b["is_default"])
+        default_items = (
+            await app_client.get(f"/api/dashboard/items?dashboard_id={default['id']}")
+        ).json()
+        assert default_items == []
+
+    async def test_rename_board(self, app_client):
+        board = (await app_client.post("/api/dashboards", json={"name": "old"})).json()
+        resp = await app_client.patch(
+            f"/api/dashboards/{board['id']}", json={"name": "new"}
+        )
+        assert resp.status_code == 200
+        assert resp.json()["name"] == "new"
+
+    async def test_delete_board_cascades_items(self, app_client):
+        board = (await app_client.post("/api/dashboards", json={"name": "temp"})).json()
+        await app_client.post(
+            "/api/dashboard/items",
+            json={"title": "x", "payload": SAMPLE_PAYLOAD, "dashboard_id": board["id"]},
+        )
+        resp = await app_client.delete(f"/api/dashboards/{board['id']}")
+        assert resp.status_code == 200
+        # Its items are gone.
+        scoped = (
+            await app_client.get(f"/api/dashboard/items?dashboard_id={board['id']}")
+        ).json()
+        assert scoped == []
+
+    async def test_cannot_delete_last_dashboard(self, app_client):
+        boards = (await app_client.get("/api/dashboards")).json()
+        assert len(boards) == 1
+        resp = await app_client.delete(f"/api/dashboards/{boards[0]['id']}")
+        assert resp.status_code == 400
+
+    async def test_delete_default_promotes_another(self, app_client):
+        boards = (await app_client.get("/api/dashboards")).json()
+        default_id = boards[0]["id"]
+        other = (await app_client.post("/api/dashboards", json={"name": "b2"})).json()
+        assert other["is_default"] is False
+        # Delete the default; the other should be promoted.
+        await app_client.delete(f"/api/dashboards/{default_id}")
+        after = (await app_client.get("/api/dashboards")).json()
+        assert len(after) == 1
+        assert after[0]["id"] == other["id"]
+        assert after[0]["is_default"] is True

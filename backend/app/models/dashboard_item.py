@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import Integer, String
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -22,6 +22,11 @@ class DashboardItem(Base, TimestampMixin):
     __tablename__ = "dashboard_item"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=generate_ulid)
+    # Owning dashboard. Nullable so _add_missing_columns can add it to the
+    # existing table; a startup backfill assigns orphans to the default board.
+    dashboard_id: Mapped[str | None] = mapped_column(
+        ForeignKey("dashboard.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     title: Mapped[str] = mapped_column(String, nullable=False, default="")
     # Ordering within the dashboard (ascending). New items get max+1.
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0, index=True)

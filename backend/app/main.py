@@ -103,12 +103,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Ensure all models are registered with Base.metadata before create_all
     from app.memory import workspace_memory_model as _ws_memory_models  # noqa: F401 — registers WorkspaceMemory
     from app.models import vimax_task_run as _vimax_task_run_models  # noqa: F401 — registers ViMaxTaskRun
+    from app.models import dashboard as _dashboard_models  # noqa: F401 — registers Dashboard
     from app.models import dashboard_item as _dashboard_item_models  # noqa: F401 — registers DashboardItem
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         # Add any missing columns to existing tables (lightweight auto-migration)
         await conn.run_sync(_add_missing_columns)
+
+    # Ensure a default dashboard exists and orphan items are assigned to it.
+    await _ensure_default_dashboard(session_factory)
 
     app.state.engine = engine
     app.state.session_factory = session_factory
@@ -567,6 +571,49 @@ def _add_missing_columns(connection) -> None:
             sql = f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {col_type}{default}'
             logger.info("Auto-migration: %s", sql)
             connection.execute(text(sql))
+
+
+async def _ensure_default_dashboard(session_factory) -> None:
+    """Guarantee one default Dashboard exists and adopt any orphan items.
+
+    Idempotent: safe to run on every startup. Migrates the pre-multi-dashboard
+    state (items with dashboard_id IS NULL) into a default "我的看板".
+    """
+    from sqlalchemy import select, update as sa_update
+    from app.models.dashboard import Dashboard
+    from app.models.dashboard_item import DashboardItem
+    from app.utils.id import generate_ulid
+
+    try:
+        async with session_factory() as db:
+            async with db.begin():
+                default = (
+                    await db.execute(
+                        select(Dashboard).where(Dashboard.is_default.is_(True))
+                    )
+                ).scalar_one_or_none()
+                if default is None:
+                    # Reuse an existing (non-default) board if present, else create one.
+                    default = (
+                        await db.execute(select(Dashboard).order_by(Dashboard.position.asc()))
+                    ).scalars().first()
+                    if default is None:
+                        default = Dashboard(
+                            id=generate_ulid(), name="我的看板", is_default=True, position=0
+                        )
+                        db.add(default)
+                        await db.flush()
+                    else:
+                        default.is_default = True
+
+                # Adopt orphan items (from the single-dashboard era).
+                await db.execute(
+                    sa_update(DashboardItem)
+                    .where(DashboardItem.dashboard_id.is_(None))
+                    .values(dashboard_id=default.id)
+                )
+    except Exception:
+        logger.warning("Default dashboard backfill skipped", exc_info=True)
 
 
 def _find_frontend_dir() -> Path | None:

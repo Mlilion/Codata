@@ -8,10 +8,37 @@ from typing import Any
 from pydantic import BaseModel
 
 
+# --- Dashboard (named collection) ---
+
+
+class DashboardCreate(BaseModel):
+    name: str
+
+
+class DashboardUpdate(BaseModel):
+    name: str | None = None
+
+
+class DashboardResponse(BaseModel):
+    id: str
+    name: str
+    is_default: bool
+    position: int
+    item_count: int = 0
+    time_created: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Dashboard items (pinned charts) ---
+
+
 class DashboardItemCreate(BaseModel):
     title: str = ""
     # Snapshot payload: {"chartSpec": {...}, "sqlResult": {...}}.
     payload: dict[str, Any]
+    # Target dashboard; null → the default dashboard.
+    dashboard_id: str | None = None
 
 
 class DashboardItemUpdate(BaseModel):
@@ -20,6 +47,7 @@ class DashboardItemUpdate(BaseModel):
 
 class DashboardItemResponse(BaseModel):
     id: str
+    dashboard_id: str | None = None
     title: str
     position: int
     payload: dict[str, Any]
