@@ -1,18 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { LayoutDashboard, Trash2, Check, X, Pencil, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LayoutDashboard, Trash2, Check, X, Pencil, Loader2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   useDashboardItems,
   useDeleteDashboardItem,
   useRenameDashboardItem,
+  useReorderDashboardItems,
 } from "@/hooks/use-dashboard";
 import { ChartRenderer } from "@/components/artifacts/renderers/chart-renderer";
 import type { DashboardItem } from "@/types/dashboard";
 
-function DashboardTile({ item }: { item: DashboardItem }) {
+function DashboardTile({
+  item,
+  dragHandlers,
+  dragging,
+}: {
+  item: DashboardItem;
+  dragHandlers: {
+    onDragStart: () => void;
+    onDragEnter: () => void;
+    onDragEnd: () => void;
+  };
+  dragging: boolean;
+}) {
   const rename = useRenameDashboardItem();
   const del = useDeleteDashboardItem();
   const [editing, setEditing] = useState(false);
@@ -29,9 +42,20 @@ function DashboardTile({ item }: { item: DashboardItem }) {
   };
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)]">
+    <div
+      draggable
+      onDragStart={dragHandlers.onDragStart}
+      onDragEnter={dragHandlers.onDragEnter}
+      onDragEnd={dragHandlers.onDragEnd}
+      onDragOver={(e) => e.preventDefault()}
+      className={cn(
+        "flex flex-col overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)]",
+        dragging && "opacity-40",
+      )}
+    >
       {/* Tile header */}
       <div className="flex items-center gap-2 border-b border-[var(--border-default)] px-3 py-2">
+        <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--text-tertiary)] active:cursor-grabbing" />
         {editing ? (
           <>
             <input
@@ -104,6 +128,38 @@ function DashboardTile({ item }: { item: DashboardItem }) {
 
 export function DashboardContent() {
   const { data: items, isLoading, isError } = useDashboardItems();
+  const reorder = useReorderDashboardItems();
+
+  // Local ordering so drag feels instant; synced from server data.
+  const [order, setOrder] = useState<DashboardItem[]>([]);
+  const [dragId, setDragId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (items) setOrder(items);
+  }, [items]);
+
+  const moveBefore = (draggedId: string, targetId: string) => {
+    if (draggedId === targetId) return;
+    setOrder((cur) => {
+      const from = cur.findIndex((i) => i.id === draggedId);
+      const to = cur.findIndex((i) => i.id === targetId);
+      if (from < 0 || to < 0) return cur;
+      const next = [...cur];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  };
+
+  const commitOrder = () => {
+    setDragId(null);
+    // Persist only if the order actually changed vs. server.
+    const serverIds = (items ?? []).map((i) => i.id).join(",");
+    const localIds = order.map((i) => i.id);
+    if (localIds.join(",") !== serverIds) {
+      reorder.mutate(localIds);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -141,8 +197,19 @@ export function DashboardContent() {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {items.map((item) => (
-        <DashboardTile key={item.id} item={item} />
+      {order.map((item) => (
+        <DashboardTile
+          key={item.id}
+          item={item}
+          dragging={dragId === item.id}
+          dragHandlers={{
+            onDragStart: () => setDragId(item.id),
+            onDragEnter: () => {
+              if (dragId && dragId !== item.id) moveBefore(dragId, item.id);
+            },
+            onDragEnd: commitOrder,
+          }}
+        />
       ))}
     </div>
   );

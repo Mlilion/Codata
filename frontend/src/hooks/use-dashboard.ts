@@ -35,6 +35,34 @@ export function useRenameDashboardItem() {
   });
 }
 
+export function useReorderDashboardItems() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      api.post(API.DASHBOARD.REORDER, { ordered_ids: orderedIds }),
+    onMutate: async (orderedIds: string[]) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard.all });
+      const prev = queryClient.getQueryData<DashboardItem[]>(queryKeys.dashboard.all);
+      if (prev) {
+        const byId = new Map(prev.map((i) => [i.id, i]));
+        const reordered = orderedIds
+          .map((id) => byId.get(id))
+          .filter((i): i is DashboardItem => !!i);
+        queryClient.setQueryData<DashboardItem[]>(queryKeys.dashboard.all, reordered);
+      }
+      return { prev };
+    },
+    onError: (_err, _ids, context) => {
+      if (context?.prev) {
+        queryClient.setQueryData(queryKeys.dashboard.all, context.prev);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+    },
+  });
+}
+
 export function useDeleteDashboardItem() {
   const queryClient = useQueryClient();
   return useMutation({

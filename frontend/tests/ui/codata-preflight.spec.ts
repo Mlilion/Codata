@@ -143,14 +143,20 @@ test.describe("Codata UI preflight", () => {
     await expect(page.getByText("查询进行中")).toBeVisible();
     await expect(page.getByText(/job-async-1/)).toBeVisible();
     await expect(page.getByText(/预计 12s/)).toBeVisible();
+
+    // Chart tab exposes an editor: opening 配置 reveals the chart-type control.
+    await page.getByRole("button", { name: /图表/ }).first().click();
+    await page.getByRole("button", { name: /配置/ }).first().click();
+    await expect(page.getByText("图表类型").first()).toBeVisible();
+    await expect(page.getByText("X 轴").first()).toBeVisible();
   });
 
   test("desktop dashboard path: pin a chart, then view it on the dashboard page", async ({ page }) => {
     await page.goto("/c/session-data");
     await expect(page.getByText("下面是近三天各渠道的活跃用户数。")).toBeVisible();
 
-    // The chart-bearing result card exposes a "钉到看板" button; click it.
-    const pinBtn = page.getByRole("button", { name: "钉到看板" }).first();
+    // The chart tab (default for a chart-bearing result) exposes a 钉看板 action.
+    const pinBtn = page.getByRole("button", { name: "钉看板" }).first();
     await expect(pinBtn).toBeVisible();
     const created = page.waitForResponse(
       (res) => res.url().includes("/api/dashboard/items") && res.request().method() === "POST",
@@ -159,10 +165,10 @@ test.describe("Codata UI preflight", () => {
     await created;
     await expect(page.getByText("已钉到看板")).toBeVisible();
 
-    // Open the dashboard page and assert the pinned tile renders.
+    // Open the dashboard page and assert the pinned tile renders (title = chart title).
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: "看板" })).toBeVisible();
-    await expect(page.getByText("查询结果").first()).toBeVisible();
+    await expect(page.getByText("各渠道 DAU").first()).toBeVisible();
   });
 
   test("desktop new-chat path: switching from an active session clears stale generating state", async ({ page }) => {
