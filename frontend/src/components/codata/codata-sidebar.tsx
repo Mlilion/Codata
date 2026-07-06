@@ -10,7 +10,7 @@ import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { SidebarFooter } from "@/components/layout/sidebar-footer";
 import { SidebarResizeHandle } from "@/components/layout/sidebar-resize-handle";
 import { useSidebarStore } from "@/stores/sidebar-store";
-import { useDashboardItems } from "@/hooks/use-dashboard";
+import { useDashboards } from "@/hooks/use-dashboard";
 import { useIsMacOS } from "@/hooks/use-platform";
 import { cn } from "@/lib/utils";
 import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
@@ -33,7 +33,7 @@ const SECTIONS: {
 }[] = [
   { id: "sources", label: "数据源", icon: Database, hint: "连接的数据库与表" },
   { id: "history", label: "历史查询", icon: History, hint: "最近的分析会话" },
-  { id: "dashboards", label: "看板", icon: LayoutDashboard, hint: "已保存的图表", href: "/dashboard" },
+  { id: "dashboards", label: "看板", icon: LayoutDashboard, hint: "已保存的图表集合", href: "/dashboard" },
 ];
 
 export function CodataSidebar() {
@@ -42,8 +42,8 @@ export function CodataSidebar() {
   const isMac = useIsMacOS();
   const topOffset = IS_DESKTOP && !isMac ? TITLE_BAR_HEIGHT : 0;
   const pathname = usePathname();
-  const { data: dashboardItems } = useDashboardItems();
-  const dashboardCount = dashboardItems?.length ?? 0;
+  const { data: dashboards } = useDashboards();
+  const dashboardCount = dashboards?.length ?? 0;
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -65,29 +65,46 @@ export function CodataSidebar() {
             if (section.href) {
               const active = pathname === section.href;
               return (
-                <Link
-                  key={section.id}
-                  href={section.href}
-                  className={cn(
-                    "mb-4 block rounded-lg px-2 py-1.5 transition-colors",
-                    active
-                      ? "bg-[var(--surface-secondary)]"
-                      : "hover:bg-[var(--surface-secondary)]",
-                  )}
-                >
-                  <div className="flex items-center gap-2 text-ui-body font-medium text-[var(--text-secondary)]">
-                    <Icon className="h-3.5 w-3.5 shrink-0" />
-                    <span>{section.label}</span>
-                    {dashboardCount > 0 && (
-                      <span className="ml-auto rounded-full bg-[var(--surface-tertiary)] px-1.5 text-ui-caption text-[var(--text-tertiary)]">
-                        {dashboardCount}
-                      </span>
+                <div key={section.id} className="mb-4">
+                  <Link
+                    href={section.href}
+                    className={cn(
+                      "block rounded-lg px-2 py-1.5 transition-colors",
+                      active
+                        ? "bg-[var(--surface-secondary)]"
+                        : "hover:bg-[var(--surface-secondary)]",
                     )}
-                  </div>
-                  <p className="pt-0.5 text-ui-caption text-[var(--text-tertiary)]">
-                    {section.hint}
-                  </p>
-                </Link>
+                  >
+                    <div className="flex items-center gap-2 text-ui-body font-medium text-[var(--text-secondary)]">
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{section.label}</span>
+                      {dashboardCount > 0 && (
+                        <span className="ml-auto rounded-full bg-[var(--surface-tertiary)] px-1.5 text-ui-caption text-[var(--text-tertiary)]">
+                          {dashboardCount}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                  {/* Per-dashboard quick links */}
+                  {(dashboards ?? []).map((b) => {
+                    const boardHref = `/dashboard/${b.id}`;
+                    const boardActive = pathname === boardHref;
+                    return (
+                      <Link
+                        key={b.id}
+                        href={boardHref}
+                        className={cn(
+                          "ml-5 mt-0.5 block truncate rounded-md px-2 py-1 text-ui-caption transition-colors",
+                          boardActive
+                            ? "bg-[var(--surface-secondary)] text-[var(--text-primary)]"
+                            : "text-[var(--text-tertiary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-secondary)]",
+                        )}
+                      >
+                        {b.name}
+                      </Link>
+                    );
+                  })}
+                </div>
               );
             }
             return (

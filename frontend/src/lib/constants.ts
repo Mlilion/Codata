@@ -353,7 +353,14 @@ export const API = {
     LOOP_PRESETS: "/api/automations/loop-presets",
   },
   DASHBOARD: {
-    LIST: "/api/dashboard/items",
+    // Dashboards (named collections)
+    DASHBOARDS: "/api/dashboards",
+    DASHBOARD_DETAIL: (id: string) => `/api/dashboards/${id}` as const,
+    // Items (pinned charts)
+    ITEMS: (dashboardId?: string) =>
+      dashboardId
+        ? (`/api/dashboard/items?dashboard_id=${encodeURIComponent(dashboardId)}` as const)
+        : ("/api/dashboard/items" as const),
     CREATE: "/api/dashboard/items",
     DETAIL: (id: string) => `/api/dashboard/items/${id}` as const,
     DELETE: (id: string) => `/api/dashboard/items/${id}` as const,
@@ -425,7 +432,11 @@ export const queryKeys = {
     templates: ["automations", "templates"] as const,
   },
   dashboard: {
-    all: ["dashboard", "items"] as const,
+    list: ["dashboard", "list"] as const,
+    items: (dashboardId?: string) =>
+      dashboardId
+        ? (["dashboard", "items", dashboardId] as const)
+        : (["dashboard", "items"] as const),
   },
   workspaceMemory: (workspace: string) =>
     ["workspaceMemory", workspace] as const,

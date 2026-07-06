@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Code2, BarChart3, Table2, Settings2, Pin, Loader2 } from "lucide-react";
+import { Code2, BarChart3, Table2, Settings2, Pin, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { Artifact, ChartSpec } from "@/types/artifact";
 import { cn } from "@/lib/utils";
-import { useCreateDashboardItem } from "@/hooks/use-dashboard";
+import { useCreateDashboardItem, useCreateDashboard, useDashboards } from "@/hooks/use-dashboard";
 import { CodeRenderer } from "./code-renderer";
 import { DataTable } from "./data-table";
 import { ChartRenderer } from "./chart-renderer";
@@ -29,6 +29,9 @@ export function SqlResultRenderer({ artifact, pinnable = true }: SqlResultRender
   const { sqlResult, chartSpec } = artifact;
   const sql = sqlResult?.sql ?? artifact.content ?? "";
   const createDashboardItem = useCreateDashboardItem();
+  const createDashboard = useCreateDashboard();
+  const { data: dashboards } = useDashboards();
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const hasTable = !!sqlResult && sqlResult.columns.length > 0;
   const hasSql = sql.trim().length > 0;
@@ -65,13 +68,37 @@ export function SqlResultRenderer({ artifact, pinnable = true }: SqlResultRender
   const activeTab = tabs.some((t) => t.id === active) ? active : tabs[0].id;
   const headers = sqlResult?.columns.map((c) => c.name) ?? [];
 
-  const handlePin = () => {
+  const pinTo = (dashboardId?: string, boardName?: string) => {
     if (!spec || !sqlResult) return;
+    setPickerOpen(false);
     createDashboardItem.mutate(
-      { title: spec.title || artifact.title || "查询结果", payload: { chartSpec: spec, sqlResult } },
       {
-        onSuccess: () => toast.success("已钉到看板"),
+        title: spec.title || artifact.title || "查询结果",
+        payload: { chartSpec: spec, sqlResult },
+        dashboard_id: dashboardId ?? null,
+      },
+      {
+        onSuccess: () => toast.success(boardName ? `已钉到「${boardName}」` : "已钉到看板"),
         onError: () => toast.error("钉看板失败"),
+      },
+    );
+  };
+
+  const handlePinClick = () => {
+    // One board (or unknown) → pin straight to default. Multiple → let the user choose.
+    if (!dashboards || dashboards.length <= 1) {
+      pinTo();
+    } else {
+      setPickerOpen((v) => !v);
+    }
+  };
+
+  const pinToNewBoard = () => {
+    createDashboard.mutate(
+      { name: spec?.title || artifact.title || "新看板" },
+      {
+        onSuccess: (board) => pinTo(board.id, board.name),
+        onError: () => toast.error("创建看板失败"),
       },
     );
   };
@@ -118,20 +145,53 @@ export function SqlResultRenderer({ artifact, pinnable = true }: SqlResultRender
               <span>配置</span>
             </button>
             {pinnable && (
-              <button
-                type="button"
-                onClick={handlePin}
-                disabled={createDashboardItem.isPending}
-                title="钉到看板"
-                className="inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-secondary)] disabled:opacity-50"
-              >
-                {createDashboardItem.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Pin className="h-3.5 w-3.5" />
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={handlePinClick}
+                  disabled={createDashboardItem.isPending}
+                  title="钉到看板"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-secondary)] disabled:opacity-50"
+                >
+                  {createDashboardItem.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Pin className="h-3.5 w-3.5" />
+                  )}
+                  <span>钉看板</span>
+                </button>
+                {pickerOpen && dashboards && (
+                  <>
+                    {/* click-away backdrop */}
+                    <div className="fixed inset-0 z-40" onClick={() => setPickerOpen(false)} />
+                    <div className="absolute right-0 top-9 z-50 min-w-[180px] overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] py-1 shadow-[var(--shadow-md)]">
+                      <div className="px-3 py-1 text-[11px] text-[var(--text-tertiary)]">选择看板</div>
+                      {dashboards.map((b) => (
+                        <button
+                          key={b.id}
+                          type="button"
+                          onClick={() => pinTo(b.id, b.name)}
+                          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
+                        >
+                          <span className="truncate">{b.name}</span>
+                          {b.is_default && (
+                            <span className="ml-auto text-[10px] text-[var(--text-tertiary)]">默认</span>
+                          )}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={pinToNewBoard}
+                        disabled={createDashboard.isPending}
+                        className="flex w-full items-center gap-2 border-t border-[var(--border-default)] px-3 py-1.5 text-left text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>新建看板并钉入</span>
+                      </button>
+                    </div>
+                  </>
                 )}
-                <span>钉看板</span>
-              </button>
+              </div>
             )}
           </div>
         )}

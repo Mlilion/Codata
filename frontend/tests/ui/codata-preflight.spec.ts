@@ -165,14 +165,32 @@ test.describe("Codata UI preflight", () => {
     await created;
     await expect(page.getByText("已钉到看板")).toBeVisible();
 
-    // Open the dashboard page and assert the pinned tile renders on the grid
-    // canvas (title = chart title), with drag + resize affordances present.
+    // The dashboard page is a list of named dashboards; open the default board.
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: "看板" })).toBeVisible();
+    await page.getByText("我的看板").first().click();
+    await expect(page).toHaveURL(/\/dashboard\/[^/]+$/, { timeout: 15_000 });
+
+    // Inside the board: the pinned tile renders on the grid canvas (title =
+    // chart title), with drag + resize affordances present.
     await expect(page.getByText("各渠道 DAU").first()).toBeVisible();
-    // react-grid-layout wraps each tile in .react-grid-item with a resize handle.
     await expect(page.locator(".react-grid-item").first()).toBeVisible();
     await expect(page.locator(".react-resizable-handle").first()).toBeVisible();
+  });
+
+  test("desktop dashboard path: create a named dashboard from the list page", async ({ page }) => {
+    await page.goto("/dashboard");
+    await expect(page.getByText("我的看板").first()).toBeVisible();
+    await page.getByRole("button", { name: /新建看板/ }).click();
+    await page.getByPlaceholder("看板名称").fill("营收看板");
+    const created = page.waitForResponse(
+      (res) => res.url().includes("/api/dashboards") && res.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "创建" }).click();
+    await created;
+    // Redirects into the new board's detail page.
+    await expect(page).toHaveURL(/\/dashboard\/[^/]+$/, { timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: "营收看板" })).toBeVisible();
   });
 
   test("desktop new-chat path: switching from an active session clears stale generating state", async ({ page }) => {

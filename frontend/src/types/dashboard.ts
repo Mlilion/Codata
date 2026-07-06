@@ -14,9 +14,24 @@ export interface DashboardLayout {
   h: number;
 }
 
-/** A chart pinned to the Codata dashboard (mirrors backend DashboardItemResponse). */
+/** A named dashboard — a collection of pinned charts. */
+export interface Dashboard {
+  id: string;
+  name: string;
+  is_default: boolean;
+  position: number;
+  item_count: number;
+  time_created: string;
+}
+
+export interface DashboardCreate {
+  name: string;
+}
+
+/** A chart pinned to a dashboard (mirrors backend DashboardItemResponse). */
 export interface DashboardItem {
   id: string;
+  dashboard_id?: string | null;
   title: string;
   position: number;
   payload: DashboardItemPayload;
@@ -27,4 +42,5 @@ export interface DashboardItem {
 export interface DashboardItemCreate {
   title: string;
   payload: DashboardItemPayload;
+  dashboard_id?: string | null;
 }

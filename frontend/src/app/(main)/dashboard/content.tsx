@@ -42,9 +42,9 @@ function buildLayout(items: DashboardItem[]): Layout[] {
   });
 }
 
-function DashboardTile({ item }: { item: DashboardItem }) {
-  const rename = useRenameDashboardItem();
-  const del = useDeleteDashboardItem();
+function DashboardTile({ item, dashboardId }: { item: DashboardItem; dashboardId: string }) {
+  const rename = useRenameDashboardItem(dashboardId);
+  const del = useDeleteDashboardItem(dashboardId);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.title);
 
@@ -136,9 +136,9 @@ function DashboardTile({ item }: { item: DashboardItem }) {
   );
 }
 
-export function DashboardContent() {
-  const { data: items, isLoading, isError } = useDashboardItems();
-  const saveLayout = useSaveDashboardLayout();
+export function DashboardContent({ dashboardId }: { dashboardId: string }) {
+  const { data: items, isLoading, isError } = useDashboardItems(dashboardId);
+  const saveLayout = useSaveDashboardLayout(dashboardId);
 
   // Track layout locally so drag/resize is smooth; seed from server data.
   const [layout, setLayout] = useState<Layout[]>([]);
@@ -218,7 +218,7 @@ export function DashboardContent() {
     >
       {gridItems.map((item) => (
         <div key={item.id}>
-          <DashboardTile item={item} />
+          <DashboardTile item={item} dashboardId={dashboardId} />
         </div>
       ))}
     </ReactGridLayout>
