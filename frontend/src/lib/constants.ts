@@ -222,7 +222,8 @@ export const API = {
   },
   SESSIONS: {
     BASE: "/api/sessions",
-    LIST: (limit = 50, offset = 0) => `/api/sessions?limit=${limit}&offset=${offset}`,
+    LIST: (limit = 50, offset = 0, appMode?: string) =>
+      `/api/sessions?limit=${limit}&offset=${offset}${appMode ? `&app_mode=${appMode}` : ""}`,
     SEARCH: (q: string, limit = 20, offset = 0) =>
       `/api/sessions/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`,
     DETAIL: (id: string) => `/api/sessions/${id}`,
@@ -396,6 +397,8 @@ export const API = {
 export const queryKeys = {
   sessions: {
     all: ["sessions"] as const,
+    list: (appMode?: string) =>
+      appMode ? (["sessions", "mode", appMode] as const) : (["sessions"] as const),
     detail: (id: string) => ["sessions", id] as const,
     search: (q: string) => ["sessions", "search", q] as const,
     todos: (id: string) => ["sessions", id, "todos"] as const,

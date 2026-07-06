@@ -116,6 +116,23 @@ test.describe("Codata UI preflight", () => {
     await expect(page.getByText("Invoice cleanup").first()).toBeVisible();
   });
 
+  test("codata history: 历史查询 lists codata sessions, isolated from chat", async ({ page }) => {
+    await page.goto("/c/session-alpha");
+    // Chat sidebar shows chat sessions but NOT the codata one.
+    await expect(page.getByText("Quarterly planning notes").first()).toBeVisible();
+    await expect(page.getByText("Data result showcase")).toHaveCount(0);
+
+    // Switch to Codata mode → the codata sidebar's 历史查询 lists codata sessions.
+    await page.getByRole("button", { name: "Codata" }).click();
+    await expect(page.getByText("历史查询")).toBeVisible();
+    const historyLink = page.getByRole("link", { name: "Data result showcase" });
+    await expect(historyLink).toBeVisible();
+
+    // Opening it stays on the codata session.
+    await historyLink.click();
+    await expect(page).toHaveURL(/\/c\/session-data$/, { timeout: 15_000 });
+  });
+
   test("desktop data path: datasage result renders as an inline data card with tabs", async ({ page }) => {
     await page.goto("/c/session-data");
 

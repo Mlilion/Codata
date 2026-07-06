@@ -29,6 +29,7 @@ interface SessionRecord {
   slug: null;
   directory: string | null;
   title: string;
+  app_mode?: string;
   version: number;
   summary_additions: number;
   summary_deletions: number;
@@ -163,6 +164,7 @@ const sessionData = {
   id: "session-data",
   directory: "/Users/alex/codata-demo",
   title: "Data result showcase",
+  app_mode: "codata",
   is_pinned: false,
   summary_additions: 0,
   summary_deletions: 0,
@@ -1752,7 +1754,14 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
       return fulfillJson(route, [{ session: getSession("session-alpha"), snippet: "quarterly plan and retention" }]);
     }
     if (path === "/api/sessions" && method === "GET") {
-      return fulfillJson(route, allSessions());
+      const mode = url.searchParams.get("app_mode");
+      let sessions = allSessions();
+      if (mode === "codata") {
+        sessions = sessions.filter((s) => s.app_mode === "codata");
+      } else if (mode === "chat") {
+        sessions = sessions.filter((s) => s.app_mode !== "codata");
+      }
+      return fulfillJson(route, sessions);
     }
     if (path === "/api/sessions" && method === "POST") return fulfillJson(route, createdSession);
     const sessionExportMatch = path.match(/^\/api\/sessions\/([^/]+)\/export-(pdf|md)$/);

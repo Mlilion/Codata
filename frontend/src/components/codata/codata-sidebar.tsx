@@ -11,6 +11,7 @@ import { SidebarFooter } from "@/components/layout/sidebar-footer";
 import { SidebarResizeHandle } from "@/components/layout/sidebar-resize-handle";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useDashboards } from "@/hooks/use-dashboard";
+import { useSessions } from "@/hooks/use-sessions";
 import { useIsMacOS } from "@/hooks/use-platform";
 import { cn } from "@/lib/utils";
 import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
@@ -44,6 +45,8 @@ export function CodataSidebar() {
   const pathname = usePathname();
   const { data: dashboards } = useDashboards();
   const dashboardCount = dashboards?.length ?? 0;
+  const { data: sessionPages } = useSessions("codata");
+  const codataSessions = (sessionPages?.pages.flat() ?? []).slice(0, 20);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -104,6 +107,41 @@ export function CodataSidebar() {
                       </Link>
                     );
                   })}
+                </div>
+              );
+            }
+            // History = the list of codata-mode sessions.
+            if (section.id === "history") {
+              return (
+                <div key={section.id} className="mb-4">
+                  <div className="flex items-center gap-2 px-2 py-1.5 text-ui-body font-medium text-[var(--text-secondary)]">
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span>{section.label}</span>
+                  </div>
+                  {codataSessions.length === 0 ? (
+                    <p className="px-2 pb-1 text-ui-caption text-[var(--text-tertiary)]">
+                      还没有分析会话
+                    </p>
+                  ) : (
+                    codataSessions.map((s) => {
+                      const href = `/c/${s.id}`;
+                      const active = pathname === href;
+                      return (
+                        <Link
+                          key={s.id}
+                          href={href}
+                          className={cn(
+                            "ml-5 mt-0.5 block truncate rounded-md px-2 py-1 text-ui-caption transition-colors",
+                            active
+                              ? "bg-[var(--surface-secondary)] text-[var(--text-primary)]"
+                              : "text-[var(--text-tertiary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-secondary)]",
+                          )}
+                        >
+                          {s.title || "未命名会话"}
+                        </Link>
+                      );
+                    })
+                  )}
                 </div>
               );
             }

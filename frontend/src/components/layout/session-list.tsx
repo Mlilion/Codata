@@ -42,7 +42,7 @@ export function SessionList() {
     isFetchingNextPage,
     refetch,
     fetchNextPage,
-  } = useSessions();
+  } = useSessions("chat");
   const deleteSession = useDeleteSession();
   const renameSession = useRenameSession();
   const pinSession = usePinSession();

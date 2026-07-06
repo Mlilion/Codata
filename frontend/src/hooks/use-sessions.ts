@@ -17,11 +17,11 @@ function useDebouncedValue(value: string, delay: number) {
   return debounced;
 }
 
-export function useSessions() {
+export function useSessions(appMode?: string) {
   return useInfiniteQuery({
-    queryKey: queryKeys.sessions.all,
+    queryKey: queryKeys.sessions.list(appMode),
     queryFn: ({ pageParam = 0 }) =>
-      api.get<SessionResponse[]>(API.SESSIONS.LIST(PAGE_SIZE, pageParam)),
+      api.get<SessionResponse[]>(API.SESSIONS.LIST(PAGE_SIZE, pageParam, appMode)),
     initialPageParam: 0,
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
@@ -61,89 +61,78 @@ export function useDeleteSession() {
   });
 }
 
+// Optimistic helpers that patch EVERY session-list cache (unscoped + per-mode
+// scoped, e.g. ["sessions","mode","chat"]) via a prefix match, so edits reflect
+// instantly regardless of which filtered list is on screen.
+type SessionPages = InfiniteData<SessionResponse[]>;
+type SessionsSnapshot = Array<[readonly unknown[], SessionPages | undefined]>;
+
+function mapAllSessionCaches(
+  qc: ReturnType<typeof useQueryClient>,
+  fn: (s: SessionResponse) => SessionResponse,
+): SessionsSnapshot {
+  const prev = qc.getQueriesData<SessionPages>({ queryKey: queryKeys.sessions.all });
+  qc.setQueriesData<SessionPages>({ queryKey: queryKeys.sessions.all }, (old) => {
+    if (!old?.pages) return old;
+    return { ...old, pages: old.pages.map((page) => page.map(fn)) };
+  });
+  return prev;
+}
+
+function restoreSessionCaches(
+  qc: ReturnType<typeof useQueryClient>,
+  snapshot?: SessionsSnapshot,
+) {
+  snapshot?.forEach(([key, data]) => qc.setQueryData(key, data));
+}
+
 export function useRenameSession() {
   const qc = useQueryClient();
-  type SessionPages = InfiniteData<SessionResponse[]>;
-  return useMutation<SessionResponse, unknown, { id: string; title: string }, { previous?: SessionPages }>({
+  return useMutation<SessionResponse, unknown, { id: string; title: string }, { previous?: SessionsSnapshot }>({
     mutationFn: ({ id, title }) =>
       api.patch<SessionResponse>(API.SESSIONS.DETAIL(id), { title }),
     onMutate: async ({ id, title }) => {
       await qc.cancelQueries({ queryKey: queryKeys.sessions.all });
-      const previous = qc.getQueryData<SessionPages>(queryKeys.sessions.all);
-      qc.setQueryData<SessionPages>(queryKeys.sessions.all, (old) => {
-        if (!old?.pages) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page) =>
-            page.map((s) => s.id === id ? { ...s, title } : s)
-          ),
-        };
-      });
+      const previous = mapAllSessionCaches(qc, (s) => (s.id === id ? { ...s, title } : s));
       return { previous };
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        qc.setQueryData<SessionPages>(queryKeys.sessions.all, context.previous);
-      }
-    },
+    onError: (_err, _vars, context) => restoreSessionCaches(qc, context?.previous),
     onSettled: () => qc.invalidateQueries({ queryKey: queryKeys.sessions.all }),
   });
 }
 
 export function usePinSession() {
   const qc = useQueryClient();
-  type SessionPages = InfiniteData<SessionResponse[]>;
-  return useMutation<SessionResponse, unknown, { id: string; is_pinned: boolean }, { previous?: SessionPages }>({
+  return useMutation<SessionResponse, unknown, { id: string; is_pinned: boolean }, { previous?: SessionsSnapshot }>({
     mutationFn: ({ id, is_pinned }) =>
       api.patch<SessionResponse>(API.SESSIONS.DETAIL(id), { is_pinned }),
     onMutate: async ({ id, is_pinned }) => {
       await qc.cancelQueries({ queryKey: queryKeys.sessions.all });
-      const previous = qc.getQueryData<SessionPages>(queryKeys.sessions.all);
-      qc.setQueryData<SessionPages>(queryKeys.sessions.all, (old) => {
-        if (!old?.pages) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page) =>
-            page.map((s) => s.id === id ? { ...s, is_pinned } : s)
-          ),
-        };
-      });
+      const previous = mapAllSessionCaches(qc, (s) => (s.id === id ? { ...s, is_pinned } : s));
       return { previous };
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        qc.setQueryData<SessionPages>(queryKeys.sessions.all, context.previous);
-      }
-    },
+    onError: (_err, _vars, context) => restoreSessionCaches(qc, context?.previous),
     onSettled: () => qc.invalidateQueries({ queryKey: queryKeys.sessions.all }),
   });
 }
 
 export function useArchiveSession() {
   const qc = useQueryClient();
-  type SessionPages = InfiniteData<SessionResponse[]>;
-  return useMutation<SessionResponse, unknown, { id: string }, { previous?: SessionPages }>({
+  return useMutation<SessionResponse, unknown, { id: string }, { previous?: SessionsSnapshot }>({
     mutationFn: ({ id }) =>
       api.patch<SessionResponse>(API.SESSIONS.DETAIL(id), {
         time_archived: new Date().toISOString(),
       }),
     onMutate: async ({ id }) => {
       await qc.cancelQueries({ queryKey: queryKeys.sessions.all });
-      const previous = qc.getQueryData<SessionPages>(queryKeys.sessions.all);
-      qc.setQueryData<SessionPages>(queryKeys.sessions.all, (old) => {
+      const previous = qc.getQueriesData<SessionPages>({ queryKey: queryKeys.sessions.all });
+      qc.setQueriesData<SessionPages>({ queryKey: queryKeys.sessions.all }, (old) => {
         if (!old?.pages) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page) => page.filter((s) => s.id !== id)),
-        };
+        return { ...old, pages: old.pages.map((page) => page.filter((s) => s.id !== id)) };
       });
       return { previous };
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        qc.setQueryData<SessionPages>(queryKeys.sessions.all, context.previous);
-      }
-    },
+    onError: (_err, _vars, context) => restoreSessionCaches(qc, context?.previous),
     onSettled: () => qc.invalidateQueries({ queryKey: queryKeys.sessions.all }),
   });
 }
