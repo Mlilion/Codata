@@ -344,6 +344,7 @@ class SessionPrompt:
                             db,
                             id=self.job.session_id,
                             directory=self.request.workspace or ".",
+                            app_mode="codata" if self.request.mode == "codata" else None,
                         )
                         self.is_first_turn = True
 

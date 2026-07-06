@@ -28,6 +28,7 @@ async def create_session(
     title: str | None = None,
     parent_id: str | None = None,
     slug: str | None = None,
+    app_mode: str | None = None,
 ) -> Session:
     """Create a new session."""
     session = Session(
@@ -37,6 +38,7 @@ async def create_session(
         slug=slug or "",
         directory=directory,
         title=title,
+        app_mode=app_mode,
     )
     return await create(db, session)
 
@@ -52,11 +54,22 @@ async def list_sessions(
     limit: int = 50,
     offset: int = 0,
     project_id: str | None = None,
+    app_mode: str | None = None,
 ) -> list[Session]:
-    """List sessions with optional project filter. Pinned sessions first."""
+    """List sessions with optional project/mode filter. Pinned sessions first.
+
+    app_mode: "codata" → only codata sessions; "chat" → chat sessions (incl.
+    legacy null-mode ones); None → no mode filter.
+    """
     stmt = select(Session).where(Session.parent_id.is_(None))
     if project_id:
         stmt = stmt.where(Session.project_id == project_id)
+    if app_mode == "codata":
+        stmt = stmt.where(Session.app_mode == "codata")
+    elif app_mode == "chat":
+        stmt = stmt.where(
+            (Session.app_mode.is_(None)) | (Session.app_mode != "codata")
+        )
     stmt = stmt.order_by(
         Session.is_pinned.desc(),
         Session.time_created.desc(),

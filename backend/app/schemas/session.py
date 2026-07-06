@@ -37,6 +37,7 @@ class SessionResponse(BaseModel):
     directory: str | None = None
     title: str | None = None
     version: str = "0.0.1"
+    app_mode: str | None = None
     summary_additions: int | None = None
     summary_deletions: int | None = None
     summary_files: int | None = None

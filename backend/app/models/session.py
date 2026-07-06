@@ -28,6 +28,10 @@ class Session(Base, TimestampMixin):
     directory: Mapped[str] = mapped_column(String, nullable=False, default=".")
     title: Mapped[str] = mapped_column(String, nullable=False, default="New Session")
     version: Mapped[str] = mapped_column(String, nullable=False, default="0.0.1")
+    # Product mode the session was created in ("codata" | null). Null = chat
+    # (covers all pre-existing sessions). Lets the two workspaces keep separate
+    # session histories.
+    app_mode: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
 
     # Summary stats (updated after each LLM step)
     summary_additions: Mapped[int | None] = mapped_column(Integer, nullable=True)

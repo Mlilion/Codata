@@ -284,9 +284,12 @@ async def list_sessions_endpoint(
     limit: int = 50,
     offset: int = 0,
     project_id: str | None = None,
+    app_mode: str | None = None,
 ) -> list[SessionResponse]:
-    """List sessions."""
-    sessions = await list_sessions(db, limit=limit, offset=offset, project_id=project_id)
+    """List sessions. app_mode filters by workspace (codata / chat)."""
+    sessions = await list_sessions(
+        db, limit=limit, offset=offset, project_id=project_id, app_mode=app_mode
+    )
     return await _session_responses_with_expert_slugs(db, sessions)
 
 
