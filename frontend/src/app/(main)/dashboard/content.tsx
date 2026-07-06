@@ -151,35 +151,29 @@ export function DashboardContent({ dashboardId }: { dashboardId: string }) {
   const { data: items, isLoading, isError } = useDashboardItems(dashboardId);
   const saveLayout = useSaveDashboardLayout(dashboardId);
 
-  // Track layout locally so drag/resize is smooth; seed from server data.
-  const [layout, setLayout] = useState<Layout[]>([]);
-  // Guard: ignore rgl's initial onLayoutChange (fires on mount, not a user edit).
+  // Per-tile sizes are declared via data-grid on each child (below), so rgl
+  // never falls back to its w1/h1 default. onLayoutChange only persists real
+  // user drags/resizes — guarded against the mount-time fire.
   const mountedRef = useRef(false);
-
   useEffect(() => {
-    if (items) {
-      setLayout(buildLayout(items));
-      mountedRef.current = false;
-    }
-  }, [items]);
-
-  const persist = (next: Layout[]) => {
-    saveLayout.mutate(
-      next.map((l) => ({ id: l.i, x: l.x, y: l.y, w: l.w, h: l.h })),
-    );
-  };
+    mountedRef.current = false;
+  }, [dashboardId, items]);
 
   const handleLayoutChange = (next: Layout[]) => {
-    setLayout(next);
-    // Skip the mount-time call; only persist real user drags/resizes.
     if (!mountedRef.current) {
       mountedRef.current = true;
       return;
     }
-    persist(next);
+    saveLayout.mutate(next.map((l) => ({ id: l.i, x: l.x, y: l.y, w: l.w, h: l.h })));
   };
 
   const gridItems = useMemo(() => items ?? [], [items]);
+  // Map item id → its declared grid box (saved layout or auto-placement).
+  const layoutById = useMemo(() => {
+    const map = new Map<string, Layout>();
+    for (const l of buildLayout(gridItems)) map.set(l.i, l);
+    return map;
+  }, [gridItems]);
 
   if (isLoading) {
     return (
@@ -218,7 +212,6 @@ export function DashboardContent({ dashboardId }: { dashboardId: string }) {
   return (
     <ReactGridLayout
       className="dashboard-grid"
-      layout={layout}
       cols={COLS}
       rowHeight={ROW_HEIGHT}
       margin={[16, 16]}
@@ -228,7 +221,7 @@ export function DashboardContent({ dashboardId }: { dashboardId: string }) {
       onLayoutChange={handleLayoutChange}
     >
       {gridItems.map((item) => (
-        <div key={item.id}>
+        <div key={item.id} data-grid={layoutById.get(item.id)}>
           <DashboardTile item={item} dashboardId={dashboardId} />
         </div>
       ))}
