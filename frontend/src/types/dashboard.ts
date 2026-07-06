@@ -36,6 +36,7 @@ export interface DashboardItem {
   position: number;
   payload: DashboardItemPayload;
   layout?: DashboardLayout | null;
+  refreshed_at?: string | null;
   time_created: string;
 }
 

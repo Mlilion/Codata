@@ -365,6 +365,7 @@ export const API = {
     CREATE: "/api/dashboard/items",
     DETAIL: (id: string) => `/api/dashboard/items/${id}` as const,
     DELETE: (id: string) => `/api/dashboard/items/${id}` as const,
+    REFRESH: (id: string) => `/api/dashboard/items/${id}/refresh` as const,
     REORDER: "/api/dashboard/reorder",
     LAYOUT: "/api/dashboard/layout",
   },

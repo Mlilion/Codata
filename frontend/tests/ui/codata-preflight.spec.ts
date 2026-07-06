@@ -193,6 +193,16 @@ test.describe("Codata UI preflight", () => {
     await expect(page.getByText("各渠道 DAU").first()).toBeVisible();
     await expect(page.locator(".react-grid-item").first()).toBeVisible();
     await expect(page.locator(".react-resizable-handle").first()).toBeVisible();
+
+    // Tile shows a freshness footer and a refresh button re-runs the SQL,
+    // updating the "数据截至" timestamp.
+    await expect(page.getByText(/数据截至/).first()).toBeVisible();
+    const refreshed = page.waitForResponse(
+      (res) => res.url().includes("/refresh") && res.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "刷新数据" }).first().click();
+    await refreshed;
+    await expect(page.getByText(/数据截至 2026-07-06/).first()).toBeVisible();
   });
 
   test("desktop dashboard path: create a named dashboard from the list page", async ({ page }) => {

@@ -80,6 +80,17 @@ export function useCreateDashboardItem() {
   });
 }
 
+export function useRefreshDashboardItem(dashboardId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<DashboardItem>(API.DASHBOARD.REFRESH(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.items(dashboardId) });
+    },
+  });
+}
+
 export function useRenameDashboardItem(dashboardId?: string) {
   const queryClient = useQueryClient();
   return useMutation({

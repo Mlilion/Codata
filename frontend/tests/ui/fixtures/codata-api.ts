@@ -1613,6 +1613,15 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
       state.dashboardItems.push(item);
       return fulfillJson(route, item);
     }
+    if (path.endsWith("/refresh") && method === "POST") {
+      const id = decodeURIComponent(path.split("/").slice(-2)[0] ?? "");
+      const item = state.dashboardItems.find((i) => i.id === id);
+      if (item) {
+        // Simulate fresh data + a new "as-of" timestamp.
+        item.refreshed_at = "2026-07-06T09:00:00.000Z";
+      }
+      return fulfillJson(route, item ?? {});
+    }
     if (path.startsWith("/api/dashboard/items/") && method === "DELETE") {
       const id = decodeURIComponent(path.split("/").pop() ?? "");
       state.dashboardItems = state.dashboardItems.filter((i) => i.id !== id);

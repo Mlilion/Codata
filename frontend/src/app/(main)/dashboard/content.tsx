@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import GridLayout, { WidthProvider, type Layout } from "react-grid-layout";
-import { LayoutDashboard, Trash2, Check, X, Pencil, Loader2, GripVertical } from "lucide-react";
+import { LayoutDashboard, Trash2, Check, X, Pencil, Loader2, GripVertical, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   useDashboardItems,
   useDeleteDashboardItem,
+  useRefreshDashboardItem,
   useRenameDashboardItem,
   useSaveDashboardLayout,
 } from "@/hooks/use-dashboard";
@@ -53,11 +54,26 @@ function buildLayout(items: DashboardItem[]): Layout[] {
   });
 }
 
+function formatStamp(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function DashboardTile({ item, dashboardId }: { item: DashboardItem; dashboardId: string }) {
   const rename = useRenameDashboardItem(dashboardId);
   const del = useDeleteDashboardItem(dashboardId);
+  const refresh = useRefreshDashboardItem(dashboardId);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.title);
+
+  const handleRefresh = () =>
+    refresh.mutate(item.id, {
+      onSuccess: () => toast.success("已刷新"),
+      onError: (e) => toast.error(e instanceof Error ? e.message : "刷新失败"),
+    });
 
   const commitRename = () => {
     const next = draft.trim();
@@ -117,6 +133,16 @@ function DashboardTile({ item, dashboardId }: { item: DashboardItem; dashboardId
             </span>
             <button
               type="button"
+              onClick={handleRefresh}
+              onMouseDown={(e) => e.stopPropagation()}
+              disabled={refresh.isPending}
+              title="刷新数据"
+              className="flex h-6 w-6 items-center justify-center rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] disabled:opacity-50"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", refresh.isPending && "animate-spin")} />
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 setDraft(item.title);
                 setEditing(true);
@@ -142,6 +168,10 @@ function DashboardTile({ item, dashboardId }: { item: DashboardItem; dashboardId
       {/* Chart fills the rest of the tile */}
       <div className="min-h-0 flex-1 bg-[var(--surface-primary)]">
         <ChartRenderer spec={item.payload.chartSpec} data={item.payload.sqlResult} />
+      </div>
+      {/* Freshness footer */}
+      <div className="shrink-0 border-t border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 text-[10px] text-[var(--text-tertiary)]">
+        数据截至 {formatStamp(item.refreshed_at ?? item.time_created)}
       </div>
     </div>
   );
