@@ -704,7 +704,9 @@ def _string_list(value: Any) -> list[str]:
 def _safe_tools(tools: list[str]) -> list[str]:
     allowed = {
         "read", "glob", "grep", "search", "web_search", "web_fetch", "skill", "code_execute",
-        "write", "edit", "bash", "artifact", "present_file", "vimax_generate_video", "baoyu_image_generate",
+        "write", "edit", "bash", "artifact", "present_file",
+        # Data-analysis tools so generated (custom) analysis teams can query + chart.
+        "run_query", "chart_spec", "tool_search",
     }
     return [tool for tool in tools if tool in allowed] or ["read", "skill"]
 
@@ -760,7 +762,6 @@ def _infer_deliverable_type(prompt: str, data: dict[str, Any]) -> str:
             ])
     text = "\n".join(text_parts).lower()
     rules = [
-        ("video", ("视频", "短片", "影片", "vimax", "video")),
         ("html", ("网页", "页面", "网站", "landing page", "html", "web page")),
         ("pdf", ("pdf", "白皮书", "正式报告", "可打印")),
         ("docx", ("word", "docx", "文档")),
@@ -821,9 +822,7 @@ def _default_deliverable_presentation(deliverable_type: str) -> str:
 
 def _default_deliverable_tools(deliverable_type: str, presentation: str) -> list[str]:
     tools: list[str] = []
-    if deliverable_type == "video":
-        tools.extend(["vimax_generate_video", "present_file"])
-    elif deliverable_type == "artifact" or presentation in {"artifact_panel", "both"}:
+    if deliverable_type == "artifact" or presentation in {"artifact_panel", "both"}:
         tools.append("artifact")
     if deliverable_type in {"markdown", "html", "pdf", "docx", "xlsx", "pptx", "code"} or presentation in {"file_preview", "both"}:
         tools.extend(["write", "present_file"])

@@ -70,16 +70,14 @@ from app.config import get_settings as _config_get_settings
 
 logger = logging.getLogger(__name__)
 
-LONG_RUNNING_TOOL_MIN_ROUNDS = {
-    "vimax_generate_video": 16,
-}
+LONG_RUNNING_TOOL_MIN_ROUNDS: dict[str, int] = {}
 
 _DELIVERABLE_FINALIZATION_MAX_ATTEMPTS = 3
 _FILE_TOOLS = frozenset({"read", "write", "edit"})
 _COORDINATOR_ID = "coordinator"
 _PREFLIGHT_TASK_ID = "preflight"
 _MAX_RETRY_DELAY_SECONDS = 30.0
-_DELIVERABLE_FILE_TOOLS = frozenset({"write", "edit", "present_file", "vimax_generate_video", "baoyu_image_generate"})
+_DELIVERABLE_FILE_TOOLS = frozenset({"write", "edit", "present_file"})
 _RAW_OUTPUT_PART_TYPE = "expert-raw-output"
 _DELIVERABLE_REQUEST_TERMS = (
     "交付",
@@ -2344,8 +2342,6 @@ class ExpertTeamRunner:
         required: list[str] = []
         deliverable_type = self._deliverable_type_value(deliverable)
         presentation = self._deliverable_presentation_value(deliverable)
-        if deliverable_type == ExpertDeliverableType.VIDEO.value:
-            required.extend(["vimax_generate_video", "present_file"])
         if deliverable_type == ExpertDeliverableType.ARTIFACT.value or presentation in {
             ExpertDeliverablePresentation.ARTIFACT_PANEL.value,
             ExpertDeliverablePresentation.BOTH.value,
@@ -2457,7 +2453,7 @@ class ExpertTeamRunner:
                 self._build_coordinator_prompt(),
                 "You are the expert team's final delivery specialist.",
                 "Your job is to create or present a concrete user-facing deliverable, not only summarize prior work.",
-                "You must call the appropriate tool before your final text: write+present_file for file deliverables, artifact for panel deliverables, or vimax_generate_video/present_file for video deliverables.",
+                "You must call the appropriate tool before your final text: write+present_file for file deliverables, artifact for panel deliverables.",
                 "A chat-only answer does not satisfy the deliverable contract.",
                 "If a required deliverable cannot be produced, fail clearly and explain the blocking reason.",
                 retry_instruction,
@@ -2591,7 +2587,6 @@ class ExpertTeamRunner:
                 "- Do not finish with only prose in the chat.",
                 "- If the deliverable is file-based, create the file and then call present_file with that file path.",
                 "- If the deliverable is an artifact-panel deliverable, call artifact with command=create or rewrite and complete content.",
-                "- If the deliverable is video, call vimax_generate_video or present an existing final video file returned by ViMax.",
                 "- Keep the final chat text brief and point to the created or presented deliverable.",
             ]
         )
@@ -3105,38 +3100,6 @@ class ExpertTeamRunner:
 
         if tool_id in {"write", "edit"}:
             return
-
-        if tool_id == "vimax_generate_video":
-            file_path = metadata.get("file_path")
-            if isinstance(file_path, str) and file_path.strip():
-                self._deliverable_outputs.append(
-                    {
-                        "kind": "video",
-                        "path": file_path,
-                        "title": str(metadata.get("title") or title or "video"),
-                        "tool": tool_id,
-                    }
-                )
-            return
-
-        if tool_id == "baoyu_image_generate":
-            generated_files = metadata.get("generated_files") if isinstance(metadata.get("generated_files"), list) else None
-            attachments = metadata.get("attachments") if isinstance(metadata.get("attachments"), list) else None
-            candidates = generated_files or attachments or []
-            for item in candidates:
-                if not isinstance(item, dict):
-                    continue
-                file_path = item.get("path")
-                if isinstance(file_path, str) and file_path.strip():
-                    self._deliverable_outputs.append(
-                        {
-                            "kind": "image",
-                            "path": file_path,
-                            "title": str(item.get("name") or title or "image"),
-                            "tool": tool_id,
-                        }
-                    )
-                    break
 
     async def _track_session_file(self, db: AsyncSession, file_path: str, tool_id: str) -> None:
         path = Path(file_path)

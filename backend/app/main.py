@@ -102,7 +102,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Ensure all models are registered with Base.metadata before create_all
     from app.memory import workspace_memory_model as _ws_memory_models  # noqa: F401 — registers WorkspaceMemory
-    from app.models import vimax_task_run as _vimax_task_run_models  # noqa: F401 — registers ViMaxTaskRun
     from app.models import dashboard as _dashboard_models  # noqa: F401 — registers Dashboard
     from app.models import dashboard_item as _dashboard_item_models  # noqa: F401 — registers DashboardItem
     from app.models import analysis_memory as _analysis_memory_models  # noqa: F401 — registers AnalysisMemory
@@ -491,8 +490,6 @@ def _register_builtin_tools(
     """Register all built-in tools."""
     from app.tool.builtin.apply_patch import ApplyPatchTool
     from app.tool.builtin.artifact import ArtifactTool
-    from app.tool.builtin.baoyu_image_generate import BaoyuImageGenerateTool
-    from app.tool.builtin.baoyu_publish import BaoyuPublishTool
     from app.tool.builtin.bash import BashTool
     from app.tool.builtin.chart_spec import ChartSpecTool
     from app.tool.builtin.run_query import RunQueryTool
@@ -510,7 +507,6 @@ def _register_builtin_tools(
     from app.tool.builtin.skill import SkillTool
     from app.tool.builtin.task import TaskTool
     from app.tool.builtin.todo import TodoTool
-    from app.tool.builtin.vimax_generate_video import ViMaxGenerateVideoTool
     from app.tool.builtin.web_fetch import WebFetchTool
     from app.tool.builtin.web_search import WebSearchTool
     from app.tool.builtin.write import WriteTool
@@ -521,8 +517,7 @@ def _register_builtin_tools(
         GlobTool, GrepTool, QuestionTool, TodoTool,
         TaskTool, WebFetchTool, WebSearchTool, InvalidTool,
         PlanTool, SubmitPlanTool, ArtifactTool, PresentFileTool,
-        CreateExpertTeamsTool, ViMaxGenerateVideoTool,
-        BaoyuImageGenerateTool, BaoyuPublishTool, ChartSpecTool,
+        CreateExpertTeamsTool, ChartSpecTool,
         RunQueryTool,
     ]:
         registry.register(tool_cls())

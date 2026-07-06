@@ -12,7 +12,6 @@ from app.tool.registry import ToolRegistry
 
 
 EXPECTED_PRESET_IDS = {
-    "video-production",
     "data-analysis-report",
     "meeting-notes-actions",
     "weekly-monthly-report",

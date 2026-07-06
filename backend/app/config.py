@@ -153,23 +153,6 @@ class Settings(BaseSettings):
     remote_expert_teams_cache_path: str = ""  # default: ~/.codata/remote-expert-teams/cache/manifest.json
     remote_expert_teams_fetch_interval_seconds: int = 60
 
-    # --- ViMax local video runtime ---
-    vimax_runtime_url: str = ""  # e.g. http://127.0.0.1:8765
-    vimax_config_path: str = ""  # default config path used by vimax_generate_video
-    vimax_google_api_key: str = ""  # optional override for image/video generation
-    vimax_yunwu_api_key: str = ""  # optional override for Yunwu-backed generators
-    vimax_media_api_key: str = ""  # optional generic media generator key override
-    vimax_media_base_url: str = ""  # optional generic media generator base URL override
-    vimax_media_preset: str = ""  # default ViMax media preset: gemini, doubao, dataeyes, or config
-    vimax_image_model: str = ""  # default image model for ViMax media presets
-    vimax_video_model: str = ""  # default video model when one value can drive all video modes
-    vimax_video_t2v_model: str = ""  # optional text-to-video model override
-    vimax_video_ff2v_model: str = ""  # optional first-frame-to-video model override
-    vimax_video_flf2v_model: str = ""  # optional first/last-frame-to-video model override
-    vimax_media_api_version: str = ""  # optional generic media generator API version override
-    vimax_image_api_version: str = ""  # optional image generator API version override
-    vimax_video_api_version: str = ""  # optional video generator API version override
-
     # --- Local session auth ---
     # Rotated every backend start, written 0600 so another local user on a
     # shared host cannot read it. The desktop shell (Tauri) reads this file
