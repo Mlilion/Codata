@@ -92,8 +92,10 @@ def build_system_prompt(
     # --- Dynamic sections (change each turn) ---
     dynamic_parts: list[str] = []
 
-    # Codata data-workspace mode guidance
-    if app_mode == "codata":
+    # Codata data-workspace mode guidance. The dedicated `data` agent already
+    # carries the full analysis prompt, so only inject this for other agents
+    # running in codata mode (avoids duplicating guidance).
+    if app_mode == "codata" and agent.name != "data":
         dynamic_parts.append(_codata_mode_section())
 
     # Workspace-scoped memory

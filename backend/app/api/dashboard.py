@@ -72,36 +72,17 @@ def _get_mcp_manager(request: Request):
     return getattr(request.app.state, "mcp_manager", None)
 
 
-def _find_execute_sql_client(manager):
-    """Find a connected MCP client exposing an ``execute_sql`` tool (datasage).
-
-    Server name is not fixed, so we match by tool name — same principle as the
-    datasage result parser's suffix matching.
-    """
-    if manager is None:
-        return None
-    for client in getattr(manager, "_clients", {}).values():
-        if getattr(client, "status", None) != "connected":
-            continue
-        try:
-            tool_names = {t.name for t in client.list_tools()}
-        except Exception:
-            continue
-        if "execute_sql" in tool_names:
-            return client
-    return None
-
-
 async def _rerun_sql(request: Request, sql: str) -> dict:
     """Re-run a stored SQL via datasage execute_sql; return fresh sql_result.
 
     Raises RefreshError with a user-facing message on any failure (no data
     source, async job, SQL error, non-tabular result).
     """
+    from app.mcp.datasage_client import extract_text, find_execute_sql_client
     from app.mcp.datasage_parser import _parse_execute_sql
 
     manager = _get_mcp_manager(request)
-    client = _find_execute_sql_client(manager)
+    client = find_execute_sql_client(manager)
     if client is None:
         raise RefreshError("数据源未连接,无法刷新")
 
@@ -110,9 +91,7 @@ async def _rerun_sql(request: Request, sql: str) -> dict:
     except Exception as e:  # noqa: BLE001
         raise RefreshError(f"查询执行失败: {e}") from e
 
-    # Extract text content (mirrors McpToolWrapper).
-    text_parts = [item.text for item in result.content if getattr(item, "type", None) == "text"]
-    output = "\n".join(text_parts)
+    output = extract_text(result)
     if getattr(result, "isError", False):
         raise RefreshError(output or "查询返回错误")
 

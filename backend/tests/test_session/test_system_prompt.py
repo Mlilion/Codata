@@ -43,6 +43,16 @@ class TestSystemPrompt:
         prompt = build_system_prompt(build, app_mode="expert_team_creation").as_plain_text()
         assert "Codata Data Workspace Mode" not in prompt
 
+    def test_data_agent_codata_mode_no_double_inject(self):
+        # The data agent carries its own analysis prompt, so the codata mode
+        # section must NOT be injected on top of it.
+        ar = AgentRegistry()
+        data = ar.get("data")
+        prompt = build_system_prompt(data, app_mode="codata").as_plain_text()
+        assert "Codata Data Workspace Mode" not in prompt
+        # But its own prompt (mentions run_query) is present.
+        assert "run_query" in prompt
+
     def test_plan_agent_prompt(self):
         ar = AgentRegistry()
         plan = ar.get("plan")

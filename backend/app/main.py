@@ -480,6 +480,7 @@ def _register_builtin_tools(
     from app.tool.builtin.baoyu_publish import BaoyuPublishTool
     from app.tool.builtin.bash import BashTool
     from app.tool.builtin.chart_spec import ChartSpecTool
+    from app.tool.builtin.run_query import RunQueryTool
     from app.tool.builtin.code_execute import CodeExecuteTool
     from app.tool.builtin.create_expert_teams import CreateExpertTeamsTool
     from app.tool.builtin.edit import EditTool
@@ -507,6 +508,7 @@ def _register_builtin_tools(
         PlanTool, SubmitPlanTool, ArtifactTool, PresentFileTool,
         CreateExpertTeamsTool, ViMaxGenerateVideoTool,
         BaoyuImageGenerateTool, BaoyuPublishTool, ChartSpecTool,
+        RunQueryTool,
     ]:
         registry.register(tool_cls())
 

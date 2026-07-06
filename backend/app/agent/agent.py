@@ -62,6 +62,30 @@ BUILTIN_AGENTS: dict[str, AgentInfo] = {
         ]),
         system_prompt=_load_prompt("plan"),
     ),
+    "data": AgentInfo(
+        name="data",
+        description="Data-analysis agent: query the data platform, chart results",
+        mode="primary",
+        tools=[],  # Empty = all tools (so datasage MCP tools stay discoverable);
+                   # dangerous builtins denied via permissions below.
+        permissions=Ruleset(rules=[
+            PermissionRule(action="allow", permission="*"),
+            # Read-only + analysis: no filesystem mutation or shell.
+            PermissionRule(action="deny", permission="write"),
+            PermissionRule(action="deny", permission="edit"),
+            PermissionRule(action="deny", permission="bash"),
+            PermissionRule(action="deny", permission="code_execute"),
+            PermissionRule(action="allow", permission="read"),
+            PermissionRule(action="allow", permission="glob"),
+            PermissionRule(action="allow", permission="grep"),
+            PermissionRule(action="allow", permission="search"),
+            PermissionRule(action="allow", permission="skill"),
+            PermissionRule(action="allow", permission="run_query"),
+            PermissionRule(action="allow", permission="chart_spec"),
+            PermissionRule(action="allow", permission="tool_search"),
+        ]),
+        system_prompt=_load_prompt("data"),
+    ),
     "explore": AgentInfo(
         name="explore",
         description="Fast search and exploration subagent",
