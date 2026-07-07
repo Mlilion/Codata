@@ -11,6 +11,7 @@ import { useArtifactStore } from "@/stores/artifact-store";
 import { useActivityStore } from "@/stores/activity-store";
 import { useWorkspaceStore, type WorkspaceTodo, type WorkspaceFile } from "@/stores/workspace-store";
 import { useRightSidebarStore } from "@/stores/right-sidebar-store";
+import { useSidebarStore } from "@/stores/sidebar-store";
 import { api } from "@/lib/api";
 import { API, queryKeys } from "@/lib/constants";
 import { ChatHeader } from "./chat-header";
@@ -74,6 +75,13 @@ export function ChatView({ sessionId }: ChatViewProps) {
     queryFn: () => api.get<SessionResponse>(API.SESSIONS.DETAIL(sessionId)),
     staleTime: 30_000,
   });
+  const setAppMode = useSidebarStore((s) => s.setAppMode);
+
+  useEffect(() => {
+    if (session?.app_mode === "codata") {
+      setAppMode("codata");
+    }
+  }, [session?.app_mode, setAppMode]);
 
   // Auto-fix sessions with default title — set to first user message
   const qc = useQueryClient();

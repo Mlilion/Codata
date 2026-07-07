@@ -174,23 +174,21 @@ export function AssistantMessage({ message, combinedParts, onRegenerate, isNew =
 
   return (
     <div
-      className="group flex gap-3"
+      className="group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] shadow-[0_10px_24px_-22px_rgba(15,23,42,0.6)]">
-        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--data-accent-soft)]">
-          <CodataLogo size={16} />
-        </span>
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="mb-2 flex items-center gap-2 text-[12px] font-medium text-[var(--text-secondary)]">
-          <span>Codata</span>
-          {activityData && (
-            <span className="text-[11px] font-normal text-[var(--text-quaternary)]">
-              已完成分析
+      <div className="data-agent-card overflow-hidden rounded-lg px-4 py-4">
+        <div className="mb-3 flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] shadow-[0_10px_24px_-22px_rgba(21,32,51,0.55)]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--data-accent-soft)]">
+              <CodataLogo size={16} />
             </span>
-          )}
+          </span>
+          <div className="min-w-0 flex items-baseline gap-2">
+            <span className="text-[14px] font-semibold text-[var(--text-primary)]">Codata Agent</span>
+            <span className="text-[12px] text-[var(--text-tertiary)]">9:41 AM</span>
+          </div>
         </div>
         <motion.div
           initial={isNew ? { opacity: 0, y: 6 } : false}

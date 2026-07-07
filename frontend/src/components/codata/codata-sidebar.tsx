@@ -14,7 +14,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarHeader } from "@/components/layout/sidebar-header";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { SidebarFooter } from "@/components/layout/sidebar-footer";
-import { CodataLogo } from "@/components/ui/codata-logo";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useDashboards } from "@/hooks/use-dashboard";
 import { useSessions } from "@/hooks/use-sessions";
@@ -128,15 +127,6 @@ export function CodataSidebar() {
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
       >
         <SidebarHeader />
-        <div className="px-3 pb-2">
-          <div className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-primary)]/65 px-2 py-2">
-            <CodataLogo size={26} className="rounded-md" />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-ui-body font-semibold text-[var(--text-primary)]">Codata</div>
-              <div className="truncate text-[10px] text-[var(--text-tertiary)]">数据智能体工作台</div>
-            </div>
-          </div>
-        </div>
         <SidebarNav />
         <div className="px-3 pb-2">
           <Link

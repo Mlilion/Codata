@@ -494,26 +494,20 @@ export default function ExpertsPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[var(--surface-chat)]">
-      {/* Header Section - Enhanced hierarchy */}
-      <div className="shrink-0 border-b border-[var(--border-subtle)] bg-[var(--surface-primary)]">
-        <div className="px-5 pb-3 pt-5 lg:px-7">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+      <div className="shrink-0 bg-[var(--surface-chat)]">
+        <div className="px-5 pb-4 pt-6 lg:px-7">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div className="min-w-0">
-              <div className="mb-3 flex items-center gap-3">
+              <div className="mb-1.5 flex items-center gap-3">
                 <Button variant="ghost" size="icon" className="h-9 w-9 lg:hidden" asChild>
                   <Link href="/c/new">
                     <ArrowLeft className="h-4.5 w-4.5" />
                   </Link>
                 </Button>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--surface-tertiary)]">
-                    <Users className="h-5 w-5 text-[var(--text-secondary)]" />
-                  </div>
-                  <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">专家团</h1>
-                </div>
+                <h1 className="text-[26px] font-semibold tracking-normal text-[var(--text-primary)]">专家团</h1>
               </div>
               <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-                配置多位专家、任务顺序和上下文传递，由协调者汇总最终结果
+                复用可配置的多专家分析流程
               </p>
             </div>
 
@@ -524,7 +518,7 @@ export default function ExpertsPage() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="搜索专家团或专家"
-                  className="h-10 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] pl-10 pr-3 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-heavy)]"
+                  className="h-10 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] pl-10 pr-3 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-tertiary)] focus:border-[var(--data-accent)]"
                 />
               </div>
               <Button
@@ -536,7 +530,7 @@ export default function ExpertsPage() {
                   setEditing({ team: createBlankTeam(), mode: "create" });
                 }}
                 variant="outline"
-                className="h-10 gap-1.5 border-[var(--data-accent)] bg-[var(--surface-primary)] font-semibold text-[var(--data-accent)] hover:bg-[var(--data-accent-soft)]"
+                className="h-10 gap-1.5 rounded-lg border-[var(--border-default)] bg-[var(--surface-primary)] px-5 font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-secondary)]"
                 title={canCreateExpertTeam ? undefined : "创建自己的专家团需要先在设置中选择模型提供商"}
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -571,7 +565,7 @@ export default function ExpertsPage() {
                   }
                 }}
                 disabled={createSession.isPending}
-                className="h-10 gap-1.5 border-0 bg-[var(--data-accent)] font-semibold text-white shadow-[0_10px_26px_-18px_rgba(14,165,233,0.9)] hover:bg-[var(--data-accent-strong)]"
+                className="h-10 gap-1.5 rounded-lg border-0 bg-[var(--text-primary)] px-5 font-semibold text-[var(--surface-primary)] shadow-none hover:opacity-90"
                 title={canCreateExpertTeam ? undefined : "AI 创建专家团需要先在设置中选择模型提供商"}
               >
                 {createSession.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
@@ -585,18 +579,18 @@ export default function ExpertsPage() {
 
       {/* Main Content */}
       <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--surface-chat)] px-5 pb-5 pt-0 lg:px-7 xl:overflow-hidden">
-        <div className="grid min-h-0 gap-5 xl:h-full xl:grid-cols-[minmax(0,1fr)_390px]">
-          <div className="min-h-0 pr-1 pt-2 xl:overflow-y-auto xl:scrollbar-auto">
-            <div className="mb-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="grid min-h-0 gap-6 xl:h-full xl:grid-cols-[minmax(0,1fr)_440px]">
+          <div className="min-h-0 pr-1 xl:overflow-y-auto xl:scrollbar-auto">
+            <div className="mb-5 flex gap-3 overflow-x-auto pb-1 scrollbar-none">
               {CATEGORIES.map((item) => (
                 <button
                   key={item}
                   type="button"
                   onClick={() => setCategory(item)}
                   className={cn(
-                    "h-9 shrink-0 rounded-lg border px-4 text-sm font-medium transition-colors cursor-pointer",
+                    "h-9 shrink-0 rounded-lg border px-5 text-sm font-medium transition-colors cursor-pointer",
                     category === item
-                      ? "border-[var(--data-accent)] bg-[var(--data-accent-soft)] text-[var(--data-accent)]"
+                      ? "border-[rgba(11,118,246,0.24)] bg-[var(--data-accent-soft)] text-[var(--data-accent)]"
                       : "border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--border-default)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]",
                   )}
                 >
@@ -740,42 +734,49 @@ function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; 
   const Icon = teamIcon(team.icon);
   const isRemote = team.origin === "remote";
   const comingSoon = isExpertTeamComingSoon(team);
+  const toneClass =
+    team.process === "hierarchical"
+      ? "border-amber-200 bg-amber-50 text-amber-600"
+      : team.process === "sequential"
+        ? "border-indigo-200 bg-indigo-50 text-indigo-600"
+        : team.category === "用户留存"
+          ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+          : team.category === "转化漏斗"
+            ? "border-cyan-200 bg-cyan-50 text-cyan-600"
+            : "border-[rgba(11,118,246,0.18)] bg-[var(--data-accent-soft)] text-[var(--data-accent)]";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "group relative flex min-h-[118px] w-full items-center gap-4 overflow-hidden rounded-lg border bg-[var(--surface-primary)] px-3.5 py-3 text-left transition-colors cursor-pointer hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]",
+        "group relative flex min-h-[128px] w-full items-center gap-5 overflow-hidden rounded-lg border bg-[var(--surface-primary)] px-5 py-4 text-left transition-colors cursor-pointer hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]",
         selected
-          ? "border-[var(--data-accent)] shadow-[0_18px_34px_-30px_rgba(14,165,233,0.85)]"
+          ? "border-[rgba(11,118,246,0.28)] bg-[rgba(11,118,246,0.035)] shadow-[0_14px_30px_-30px_rgba(11,118,246,0.5)]"
           : "border-[var(--border-default)]",
       )}
     >
-      {selected && <span className="absolute inset-y-0 left-0 w-1 rounded-r-full bg-[var(--data-accent)]" />}
       <div
         className={cn(
-          "flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border transition-colors",
-          selected
-            ? "border-[rgba(14,165,233,0.32)] bg-[var(--data-accent-soft)]"
-            : "border-[var(--border-subtle)] bg-[var(--surface-secondary)] group-hover:bg-[var(--sidebar-active)]",
+          "flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border shadow-[0_12px_24px_-24px_rgba(21,32,51,0.42)] transition-transform group-hover:scale-[1.02]",
+          toneClass,
         )}
       >
-        <Icon className={cn("h-8 w-8 transition-colors", selected ? "text-[var(--data-accent)]" : "text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]")} />
+        <Icon className="h-7 w-7" />
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="mb-1.5 flex min-w-0 flex-nowrap items-center gap-2">
-          <h2 className="truncate text-base font-semibold text-[var(--text-primary)]">{team.name}</h2>
-          <span className="shrink-0 rounded-full bg-[var(--data-accent-soft)] px-2.5 py-0.5 text-ui-2xs font-semibold text-[var(--data-accent)]">
+          <h2 className="truncate text-[17px] font-semibold leading-6 text-[var(--text-primary)]">{team.name}</h2>
+          <span className="shrink-0 rounded-md bg-[var(--data-accent-soft)] px-2 py-0.5 text-ui-2xs font-semibold text-[var(--data-accent)]">
             {teamOriginLabel(team)}
           </span>
           <span
             className={cn(
-              "shrink-0 rounded-full px-2.5 py-0.5 text-ui-2xs font-semibold",
+              "shrink-0 rounded-md px-2 py-0.5 text-ui-2xs font-semibold",
               team.process === "workflow"
-                ? "bg-[rgba(34,197,94,0.12)] text-[var(--color-success)]"
-                : "bg-[rgba(124,58,237,0.12)] text-[rgb(124,58,237)]",
+                ? "bg-[rgba(18,185,129,0.10)] text-[var(--color-success)]"
+                : "bg-[rgba(11,118,246,0.08)] text-[var(--data-accent)]",
             )}
             title={teamProcessDescription(team.process)}
           >
@@ -793,8 +794,8 @@ function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; 
             </span>
           )}
         </div>
-        <p className="mb-2.5 line-clamp-1 text-sm leading-5 text-[var(--text-secondary)]">{team.description}</p>
-        <div className="flex flex-wrap gap-1.5">
+        <p className="mb-3 line-clamp-1 text-sm leading-5 text-[var(--text-secondary)]">{team.description}</p>
+        <div className="flex flex-wrap gap-2">
           {team.tags.slice(0, 3).map((tag) => (
             <span key={tag} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-2 py-1 text-ui-2xs text-[var(--text-secondary)]">
               {tag}
@@ -805,8 +806,9 @@ function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; 
 
       <div className="hidden w-40 shrink-0 items-center justify-between md:flex">
         <div>
-          <div className="mb-3 text-sm text-[var(--text-secondary)]">
-            成员 <span className="ml-2 font-semibold text-[var(--text-primary)]">{team.member_count}</span>
+          <div className="mb-3 flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
+            <Users className="h-3.5 w-3.5" />
+            <span className="font-semibold text-[var(--text-primary)]">{team.member_count}</span>
           </div>
           <div className="flex -space-x-2">
             {team.members.slice(0, 4).map((member) => (
@@ -821,8 +823,9 @@ function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; 
           </div>
         </div>
         <div>
-          <div className="mb-3 text-sm text-[var(--text-secondary)]">
-            任务 <span className="ml-2 font-semibold text-[var(--text-primary)]">{team.task_count}</span>
+          <div className="mb-3 flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
+            <Layers className="h-3.5 w-3.5" />
+            <span className="font-semibold text-[var(--text-primary)]">{team.task_count}</span>
           </div>
           <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-secondary)]">
             <ChevronRight className="h-4 w-4 text-[var(--text-tertiary)] transition-transform group-hover:translate-x-0.5" />
@@ -920,16 +923,16 @@ function ExpertTeamDetailPanel({
           : "普通";
 
   return (
-    <aside className="min-h-0 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[0_18px_44px_-36px_rgba(15,23,42,0.28)] xl:h-[calc(100vh-180px)] xl:max-h-full">
+    <aside className="min-h-0 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[0_18px_44px_-36px_rgba(15,23,42,0.28)] xl:h-[calc(100vh-154px)] xl:max-h-full">
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
-        <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-primary)] px-4 py-4 2xl:px-5">
-          <div className="mb-4 flex items-start gap-3">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-[rgba(14,165,233,0.22)] bg-[var(--data-accent-soft)]">
-              <DetailIcon className="h-8 w-8 text-[var(--data-accent)]" />
+        <div className="bg-[var(--surface-primary)] px-6 pb-5 pt-6">
+          <div className="mb-5 flex items-start gap-4">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border border-[rgba(11,118,246,0.18)] bg-[var(--data-accent-soft)] text-[var(--data-accent)] shadow-[0_14px_30px_-28px_rgba(11,118,246,0.55)]">
+              <DetailIcon className="h-9 w-9" />
             </div>
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="mb-2 flex items-start justify-between gap-3">
-                <h2 className="min-w-0 text-lg font-semibold leading-6 text-[var(--text-primary)]">{team.name}</h2>
+                <h2 className="min-w-0 text-xl font-semibold leading-7 text-[var(--text-primary)]">{team.name}</h2>
                 <button
                   type="button"
                   onClick={onClose}
@@ -940,14 +943,14 @@ function ExpertTeamDetailPanel({
                 </button>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                <span className="rounded-full bg-[var(--data-accent-soft)] px-2.5 py-0.5 text-ui-2xs font-semibold text-[var(--data-accent)]">
+                <span className="rounded-md bg-[var(--data-accent-soft)] px-2.5 py-0.5 text-ui-2xs font-semibold text-[var(--data-accent)]">
                   {teamOriginLabel({ ...team, origin })}
                 </span>
-                <span className="rounded-full bg-[rgba(34,197,94,0.12)] px-2.5 py-0.5 text-ui-2xs font-semibold text-[var(--color-success)]">
+                <span className="rounded-md bg-[rgba(18,185,129,0.12)] px-2.5 py-0.5 text-ui-2xs font-semibold text-[var(--color-success)]">
                   {teamProcessLabel(detailProcess)}
                 </span>
                 {!editable && (
-                  <span className="rounded-full border border-[var(--border-subtle)] px-2.5 py-0.5 text-ui-2xs text-[var(--text-tertiary)]">
+                  <span className="rounded-md border border-[var(--border-subtle)] px-2.5 py-0.5 text-ui-2xs text-[var(--text-tertiary)]">
                     只读
                   </span>
                 )}
@@ -965,25 +968,22 @@ function ExpertTeamDetailPanel({
             ))}
           </div>
 
-          <div className="mt-5 border-t border-[var(--border-subtle)] pt-4">
-            <div className="grid grid-cols-[94px_1fr] gap-y-2 text-sm">
-              <span className="text-[var(--text-tertiary)]">协作流程</span>
-              <span className="font-medium text-[var(--text-primary)]">{processCaption}</span>
-              <span className="text-[var(--text-tertiary)]">成员数量</span>
-              <span className="font-medium text-[var(--text-primary)]">{detailMembers.length}</span>
-              <span className="text-[var(--text-tertiary)]">任务数量</span>
-              <span className="font-medium text-[var(--text-primary)]">{detailTasks.length || team.task_count}</span>
-              {isRemote && remoteVersion && (
-                <>
-                  <span className="text-[var(--text-tertiary)]">版本</span>
-                  <span className="font-medium text-[var(--text-primary)]">v{remoteVersion}{remoteChannel ? ` · ${remoteChannel}` : ""}</span>
-                </>
-              )}
-            </div>
+          <div className="mt-5 grid grid-cols-4 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]">
+            {[
+              ["协作流程", processCaption],
+              ["成员数量", String(detailMembers.length)],
+              ["任务数量", String(detailTasks.length || team.task_count)],
+              ["版本", isRemote && remoteVersion ? `v${remoteVersion}${remoteChannel ? ` · ${remoteChannel}` : ""}` : "v1.0"],
+            ].map(([label, value], index) => (
+              <div key={label} className={cn("px-3 py-3 text-center", index > 0 && "border-l border-[var(--border-subtle)]")}>
+                <div className="text-ui-2xs text-[var(--text-tertiary)]">{label}</div>
+                <div className="mt-1 truncate text-sm font-semibold text-[var(--text-primary)]">{value}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-[var(--surface-primary)] px-4 py-4 scrollbar-auto 2xl:px-5">
+        <div className="flex-1 overflow-y-auto border-t border-[var(--border-subtle)] bg-[var(--surface-primary)] px-6 py-5 scrollbar-auto">
           {isLoading && (
             <div className="mb-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-ui-2xs text-[var(--text-tertiary)]">
               正在加载专家团详情…
@@ -992,12 +992,12 @@ function ExpertTeamDetailPanel({
 
           <section className="border-b border-[var(--border-subtle)] pb-5">
             <div className="mb-3 text-sm font-semibold text-[var(--text-primary)]">协作流程</div>
-            <div className="space-y-3">
+            <div className="relative space-y-3 before:absolute before:left-3 before:top-4 before:bottom-4 before:w-px before:bg-[var(--border-subtle)]">
               {detailTasks.length > 0 ? detailTasks.map((task, index) => {
                 const member = detailMembers.find((item) => item.id === task.member);
                 return (
                   <div key={task.id} className="grid grid-cols-[26px_1fr] gap-3">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-ui-2xs font-semibold text-[var(--text-secondary)]">
+                    <span className="relative z-[1] flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(11,118,246,0.24)] bg-[var(--data-accent-soft)] text-ui-2xs font-semibold text-[var(--data-accent)]">
                       {index + 1}
                     </span>
                     <div className="min-w-0">
@@ -1016,11 +1016,11 @@ function ExpertTeamDetailPanel({
 
           <section className="pt-5">
             <div className="mb-3 text-sm font-semibold text-[var(--text-primary)]">专家成员</div>
-            <div className="space-y-4">
+            <div className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]">
               {detailMembers.map((member) => {
                 const summary = memberDisplaySummary(member);
                 return (
-                  <div key={member.id} className="flex gap-3">
+                  <div key={member.id} className="flex gap-3 border-b border-[var(--border-subtle)] px-3 py-2.5 last:border-b-0">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-secondary)]">
                       <Bot className="h-4 w-4 text-[var(--text-secondary)]" />
                     </div>
@@ -1037,14 +1037,14 @@ function ExpertTeamDetailPanel({
             </div>
           </section>
 
-          <div className="mt-5 rounded-lg border border-[rgba(14,165,233,0.22)] bg-[rgba(14,165,233,0.06)] px-3 py-3 text-ui-2xs leading-5 text-[var(--data-accent)]">
+          <div className="mt-5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-3 text-ui-2xs leading-5 text-[var(--text-secondary)]">
             {comingSoon
               ? "视频生成专家团正在准备中，本版本暂不开放使用。"
               : "专家团由多位专家协作完成复杂分析任务，协调者负责进度控制和结果汇总。"}
           </div>
         </div>
 
-        <div className="border-t border-[var(--border-subtle)] bg-[var(--surface-primary)] px-4 py-4 2xl:px-5">
+        <div className="border-t border-[var(--border-subtle)] bg-[var(--surface-primary)] px-6 py-4">
           <div className="flex items-center gap-2">
             {editable && detail && (
               <>
@@ -1059,7 +1059,7 @@ function ExpertTeamDetailPanel({
               </>
             )}
             {detail && !editable && !comingSoon && (
-              <Button variant="outline" size="sm" onClick={() => onCopy(cloneTeamForCustom(detail))} className="h-9 flex-1 gap-2 rounded-md font-medium">
+              <Button variant="outline" size="sm" onClick={() => onCopy(cloneTeamForCustom(detail))} className="h-11 flex-1 gap-2 rounded-lg border-[var(--border-default)] bg-[var(--surface-primary)] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]">
                 <Copy className="h-4 w-4" />
                 复制为自定义
               </Button>
@@ -1068,7 +1068,7 @@ function ExpertTeamDetailPanel({
               size="sm"
               onClick={start}
               disabled={comingSoon || createSession.isPending}
-              className="h-9 gap-2 rounded-md bg-[var(--data-accent)] font-semibold text-white hover:bg-[var(--data-accent-strong)]"
+              className="h-11 flex-1 gap-2 rounded-lg bg-[var(--text-primary)] font-semibold text-[var(--surface-primary)] shadow-none hover:opacity-90"
             >
               {createSession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
               {comingSoon ? "即将上线" : "召唤"}

@@ -246,15 +246,10 @@ function ThinkingGroup({ texts }: { texts: string[] }) {
   const isEmpty = thoughts.length === 0;
 
   return (
-    <div className="relative pl-7">
-      {/* Timeline dot */}
-      <div className="absolute left-0 top-0.5 flex items-center justify-center">
-        <CodataLogo size={14} className="text-[var(--text-secondary)]" />
+    <div className="relative pl-8">
+      <div className="absolute left-0 top-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--data-accent)]/25 bg-[var(--data-accent-soft)]">
+        <CodataLogo size={12} />
       </div>
-
-      <p className="text-[13px] font-semibold text-[var(--text-primary)]">
-        {t("thinking")}
-      </p>
 
       <div className="mt-1.5 space-y-1">
         {isEmpty ? (
@@ -608,65 +603,78 @@ export function ActivityPanelContent({ showClose = true }: { showClose?: boolean
   const isComplete = (hasTerminalStepFinish || !!activeData.hasVisibleOutput) && !hasRunningTools;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between h-12 px-4 shrink-0">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-[var(--text-primary)]">
-            {t("activity")}
-          </h2>
-          {durationLabel && (
-            <span className="text-[11px] text-[var(--text-tertiary)]">
-              · {durationLabel}
-            </span>
-          )}
+    <div className="flex h-full flex-col bg-[var(--surface-primary)]">
+      <div className="shrink-0 px-5 pb-4 pt-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold leading-6 text-[var(--text-primary)]">{t("activity")}</h2>
+            <p className="mt-0.5 text-sm text-[var(--text-tertiary)]">工具调用与推理过程</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {durationLabel && (
+              <span className="rounded-md bg-[var(--surface-secondary)] px-2 py-1 text-[11px] text-[var(--text-tertiary)]">
+                {durationLabel}
+              </span>
+            )}
+            {showClose && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={close}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
-        {showClose && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={close}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
       </div>
 
-      {/* Scrollable chain timeline */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-auto">
-        <div className="relative space-y-4">
-          {timelineItems.map((item, i) =>
-            item.kind === "thinking-group" ? (
-              <ThinkingGroup key={`thinking-${i}`} texts={item.texts} />
-            ) : (
-              <ToolCallRow key={`tool-${item.tool.call_id}-${i}`} tool={item.tool} />
-            ),
-          )}
+      <div className="flex-1 overflow-y-auto px-5 pb-5 scrollbar-auto">
+        {activeData.toolParts.length > 0 && (
+          <section className="border-t border-[var(--border-subtle)] pt-5">
+            <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">工具调用</h3>
+            <div className="space-y-3">
+              {activeData.toolParts.map((tool) => (
+                <ToolCallRow key={`summary-tool-${tool.call_id}`} tool={tool} />
+              ))}
+            </div>
+          </section>
+        )}
 
-          {isComplete ? (
-            <div className="relative pl-7">
-              <div className="absolute left-0 top-0.5 flex items-center justify-center">
-                <CheckCircle2 className="h-3.5 w-3.5 text-[var(--tool-completed)]" />
+        <section className="mt-6 border-t border-[var(--border-subtle)] pt-5">
+          <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">推理过程</h3>
+          <div className="relative space-y-4 before:absolute before:left-[9px] before:top-2 before:bottom-2 before:w-px before:bg-[var(--border-subtle)]">
+            {timelineItems
+              .filter((item) => item.kind === "thinking-group")
+              .map((item, i) => (
+                <ThinkingGroup key={`thinking-${i}`} texts={item.texts} />
+              ))}
+
+            {isComplete ? (
+              <div className="relative pl-8">
+                <div className="absolute left-0 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-success)] text-white">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                </div>
+                {durationLabel && (
+                  <p className="text-[11px] text-[var(--text-tertiary)]">
+                    {t("thoughtFor", { duration: durationLabel })}
+                  </p>
+                )}
+                <p className="text-[13px] font-medium text-[var(--text-secondary)]">{t("done")}</p>
               </div>
-              {durationLabel && (
-                <p className="text-[11px] text-[var(--text-tertiary)]">
-                  {t("thoughtFor", { duration: durationLabel })}
+            ) : (
+              <div className="relative pl-8">
+                <div className="absolute left-0 top-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)]">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--text-tertiary)]" />
+                </div>
+                <p className="text-[13px] font-medium text-[var(--text-secondary)]">
+                  {hasRunningTools ? t("stageWorkingWithTools") : t("stageFinalizing")}
                 </p>
-              )}
-              <p className="text-[13px] font-medium text-[var(--text-secondary)]">{t("done")}</p>
-            </div>
-          ) : (
-            <div className="relative pl-7">
-              <div className="absolute left-0 top-0.5 flex items-center justify-center">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--text-tertiary)]" />
               </div>
-              <p className="text-[13px] font-medium text-[var(--text-secondary)]">
-                {hasRunningTools ? t("stageWorkingWithTools") : t("stageFinalizing")}
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </section>
 
         {/* Metrics */}
         {hasMetrics && (

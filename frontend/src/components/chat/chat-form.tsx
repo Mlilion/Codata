@@ -604,7 +604,7 @@ export function ChatForm({
     ? t("noModelPlaceholder")
     : expertCreationMode
       ? "描述要创建的专家团场景、成员职责、任务流程和最终交付物"
-      : placeholder ?? (hasWorkspace ? "Ask Codata to query, chart, explain, or pin results..." : "Ask Codata to query, chart, explain, or pin results...");
+    : placeholder ?? (hasWorkspace ? "Ask Codata to query, chart, explain, or create an artifact..." : "Ask Codata to query, chart, explain, or create an artifact...");
   const accessibilityLabel = isLanding
     ? hasWorkspace ? t("placeholder") + t("placeholderMention") : t("placeholder")
     : undefined;
@@ -617,7 +617,7 @@ export function ChatForm({
             "relative border transition-all duration-200",
             isLanding
               ? "rounded-[28px] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[0_18px_50px_-38px_rgba(26,28,31,0.45)] focus-within:border-[var(--border-heavy)] focus-within:shadow-[0_24px_70px_-44px_rgba(26,28,31,0.55)]"
-              : "data-agent-panel rounded-xl border-[var(--border-default)] focus-within:border-[var(--border-heavy)] focus-within:shadow-[var(--shadow-md)]",
+              : "data-agent-panel rounded-lg border-[var(--border-default)] focus-within:border-[var(--border-heavy)] focus-within:shadow-[var(--shadow-md)]",
             isDragOver && "ring-1 ring-[var(--border-heavy)]",
           )}
           onDragOver={(e) => {
@@ -647,7 +647,7 @@ export function ChatForm({
           {/* Inner panel — lighter pill holding textarea + action bar.
               Fully rounded so the bottom corners curve inward, letting the
               darker outer frame the pill on all sides. */}
-          <div className={cn(isLanding ? "rounded-[28px] bg-transparent" : "rounded-xl bg-[var(--surface-primary)]")}>
+          <div className={cn(isLanding ? "rounded-[28px] bg-transparent" : "rounded-lg bg-[var(--surface-primary)]")}>
           {/* Top section: file chips + textarea */}
           <div className={cn(isLanding ? "px-5 pt-6 pb-3 sm:px-7" : "px-4 pt-3 pb-2")}>
             {/* Skill and file chips */}
