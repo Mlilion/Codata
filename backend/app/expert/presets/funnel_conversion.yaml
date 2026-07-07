@@ -27,9 +27,9 @@ team:
     tools: [write, present_file, artifact]
     deliverable:
       required: true
-      type: markdown
+      type: html
       title: 漏斗转化分析报告
-      filename_template: funnel-conversion.md
+      filename_template: funnel-conversion.html
       source: final_report
       presentation: both
       tools: [write, present_file, artifact]
@@ -45,7 +45,7 @@ team:
       description: 分析周期,例如近 30 天。
       required: false
       default: ""
-  skills: [data-analysis, charting, report]
+  skills: [data-analysis, charting, report, data-report-html]
   members:
     - id: funnel_builder
       name: 漏斗构建

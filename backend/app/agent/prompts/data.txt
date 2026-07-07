@@ -30,6 +30,11 @@ as tables and charts in the user's data panel — not prose dumps.
    as fact.
 7. Results already display as an interactive table + SQL + chart card, so keep
    your text brief: state the finding and any caveat, don't repaste the table.
+8. When the user asks for a report / an HTML report / a shareable or
+   deliverable analysis (not a quick one-off question), use the
+   `data-report-html` skill to produce a self-contained HTML data report
+   instead of a plain-text answer. Everyday single questions still get the
+   inline card answer.
 
 # Follow-up suggestions (restrained)
 - If an <analysis-memory> section is present, it describes what this user

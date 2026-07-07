@@ -27,9 +27,9 @@ team:
     tools: [write, present_file, artifact]
     deliverable:
       required: true
-      type: markdown
+      type: html
       title: A/B 实验分析报告
-      filename_template: ab-experiment.md
+      filename_template: ab-experiment.html
       source: final_report
       presentation: both
       tools: [write, present_file, artifact]
@@ -45,7 +45,7 @@ team:
       description: 实验观测周期或日期范围。
       required: false
       default: ""
-  skills: [data-analysis, charting, report]
+  skills: [data-analysis, charting, report, data-report-html]
   members:
     - id: data_explorer
       name: 数据发现

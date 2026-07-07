@@ -28,9 +28,9 @@ team:
     tools: [write, present_file, artifact]
     deliverable:
       required: true
-      type: markdown
+      type: html
       title: 数据分析报告
-      filename_template: data-analysis-report.md
+      filename_template: data-analysis-report.html
       source: final_report
       presentation: both
       tools: [write, present_file, artifact]
@@ -46,7 +46,7 @@ team:
       description: 报告周期,例如本周、本月、Q2 或指定日期范围。
       required: false
       default: ""
-  skills: [data-analysis, charting, report]
+  skills: [data-analysis, charting, report, data-report-html]
   members:
     - id: data_explorer
       name: 数据发现
