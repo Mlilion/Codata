@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ChevronDown,
   Loader2,
-  Users,
   Bot,
   CircleSlash,
   AlertCircle,
@@ -289,6 +288,21 @@ function ExpertStatusIcon({ status }: { status: ExpertStatus }) {
   return <Bot className="h-4 w-4 text-[var(--text-tertiary)]" />;
 }
 
+function ExpertStepIcon({ step }: { step: ExpertProgressItem }) {
+  return (
+    <span
+      className={cn(
+        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-[var(--surface-primary)]",
+        step.status === "completed" && "border-[rgba(18,185,129,0.22)] bg-[rgba(18,185,129,0.08)]",
+        step.status === "running" && "border-[rgba(11,118,246,0.24)] bg-[var(--data-accent-soft)]",
+        step.status === "failed" && "border-[rgba(239,68,68,0.24)] bg-[rgba(239,68,68,0.08)]",
+      )}
+    >
+      <ExpertStatusIcon status={step.status} />
+    </span>
+  );
+}
+
 function expertStatusLabel(status: ExpertStatus, taskName?: string): string {
   if (status === "running" && taskName === "资料预检") return "等待补充";
   switch (status) {
@@ -317,11 +331,11 @@ export function ExpertProgressPanel({
   const steps = useMemo(() => buildExpertProgress(data.parts ?? []), [data.parts]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const process = steps.find((step) => step.process)?.process;
-  const skills = uniqueStrings(steps.flatMap((step) => step.skills));
   const tools = uniqueStrings([
     ...steps.flatMap((step) => step.tools),
     ...(data.toolParts?.map((tool) => tool.tool) ?? []),
   ]);
+  const visibleTools = tools.slice(0, 6);
   const completed = steps.filter((step) => step.status === "completed").length;
   const failed = steps.filter((step) => step.status === "failed").length;
   const skipped = steps.filter((step) => step.status === "skipped").length;
@@ -336,13 +350,13 @@ export function ExpertProgressPanel({
       : total > 0
         ? "协作已完成"
         : "等待专家团开始";
+  const defaultExpandedKey = running?.key ?? steps[steps.length - 1]?.key;
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-12 shrink-0 items-center justify-between px-4">
+    <div className="flex h-full flex-col bg-[var(--surface-primary)]">
+      <div className="flex h-14 shrink-0 items-center justify-between px-4">
         <div className="flex min-w-0 items-center gap-2">
-          <Users className="h-4 w-4 shrink-0 text-[var(--brand-primary)]" />
-          <h2 className="truncate text-sm font-semibold text-[var(--text-primary)]">专家团进度</h2>
+          <h2 className="truncate text-lg font-semibold leading-6 text-[var(--text-primary)]">专家团进度</h2>
         </div>
         {showClose && (
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
@@ -351,39 +365,53 @@ export function ExpertProgressPanel({
         )}
       </div>
 
-      <div className="border-y border-[var(--border-subtle)] px-4 py-3">
-        <div className="mb-2 flex items-start justify-between gap-2 text-xs">
-          <div className="min-w-0">
-            <div className="text-[var(--text-secondary)]">{runningLabel}</div>
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              <span className="rounded-md bg-[var(--brand-primary)]/10 px-1.5 py-0.5 text-ui-3xs font-medium text-[var(--brand-primary)]">
-                {processLabel(process)}
-              </span>
-              <span className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-tertiary)]">
-                {processDescription(process)}
-              </span>
+      <div className="border-y border-[var(--border-subtle)] px-4 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-[var(--text-secondary)]">
+              {running ? (
+                <>
+                  当前：<span className="font-semibold text-[var(--data-accent)]">{running.memberName}</span>
+                </>
+              ) : (
+                runningLabel
+              )}
+            </div>
+            <div className="mt-1 text-ui-2xs leading-5 text-[var(--text-tertiary)]">
+              {processDescription(process)}
             </div>
           </div>
-          <span className="font-mono text-[var(--text-tertiary)]">{finished}/{total}</span>
+          <span className="shrink-0 rounded-md bg-[rgba(18,185,129,0.12)] px-2 py-1 text-ui-3xs font-semibold text-[var(--color-success)]">
+            {processLabel(process)}
+          </span>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-tertiary)]">
+        <div className="mt-4 flex items-center gap-3">
+          <span className="font-mono text-sm text-[var(--text-secondary)]">{finished}/{total}</span>
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--surface-tertiary)]">
+            <div
+              className="h-full rounded-full bg-[var(--data-accent)] transition-[width] duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+        <div className="hidden h-1.5 overflow-hidden rounded-full bg-[var(--surface-tertiary)]">
           <div
-            className="h-full rounded-full bg-[var(--brand-primary)] transition-[width] duration-300"
+            className="h-full rounded-full bg-[var(--data-accent)] transition-[width] duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
-        {(skills.length > 0 || tools.length > 0) && (
+        {visibleTools.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {skills.slice(0, 8).map((skill) => (
-              <span key={`skill-${skill}`} className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-secondary)]">
-                skill · {skill}
-              </span>
-            ))}
-            {tools.slice(0, 10).map((tool) => (
-              <span key={`tool-${tool}`} className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-tertiary)]">
+            {visibleTools.map((tool) => (
+              <span key={`tool-${tool}`} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2 py-1 text-ui-3xs text-[var(--text-secondary)]">
                 {tool}
               </span>
             ))}
+            {tools.length > visibleTools.length && (
+              <span className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2 py-1 text-ui-3xs text-[var(--text-tertiary)]">
+                +{tools.length - visibleTools.length}
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -394,8 +422,8 @@ export function ExpertProgressPanel({
             <ExpertProgressCard
               key={step.key}
               step={step}
-              collapsed={collapsed[step.key] ?? step.status === "completed"}
-              onToggle={() => setCollapsed((prev) => ({ ...prev, [step.key]: !(prev[step.key] ?? step.status === "completed") }))}
+              collapsed={collapsed[step.key] ?? step.key !== defaultExpandedKey}
+              onToggle={() => setCollapsed((prev) => ({ ...prev, [step.key]: !(prev[step.key] ?? step.key !== defaultExpandedKey) }))}
             />
           ))}
 
@@ -422,26 +450,34 @@ function ExpertProgressCard({
   return (
     <div
       className={cn(
-        "rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)]",
+        "overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]",
+        step.status === "running" && "border-[rgba(11,118,246,0.45)] shadow-[inset_3px_0_0_var(--data-accent)]",
         step.delegatedBy && "ml-4 border-[var(--border-subtle)]",
       )}
     >
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-start gap-3 px-3 py-3 text-left"
+        className={cn(
+          "flex w-full items-start gap-3 px-3 py-3 text-left transition-colors",
+          step.status === "running" ? "bg-[rgba(11,118,246,0.035)]" : "hover:bg-[var(--surface-secondary)]",
+        )}
       >
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-primary)]">
-          <ExpertStatusIcon status={step.status} />
-        </div>
+        <ExpertStepIcon step={step} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <div className="truncate text-sm font-medium text-[var(--text-primary)]">
-                {step.memberName}
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <span className="truncate text-sm font-semibold text-[var(--text-primary)]">
+                  {step.memberName}
+                </span>
+                <span className="text-ui-2xs text-[var(--text-tertiary)]">/</span>
+                <span className="truncate text-ui-2xs font-medium text-[var(--text-secondary)]">
+                  {step.memberRole}
+                </span>
               </div>
-              <div className="mt-0.5 truncate text-ui-2xs text-[var(--text-tertiary)]">
-                {step.memberRole}
+              <div className="mt-0.5 truncate text-ui-2xs text-[var(--text-secondary)]">
+                第 {step.step} 步 · {step.taskName}
               </div>
               {(step.manager || step.delegatedBy) && (
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -461,9 +497,9 @@ function ExpertProgressCard({
             <div className="flex shrink-0 items-center gap-1.5">
               <span
                 className={cn(
-                  "rounded-md px-1.5 py-0.5 text-ui-3xs",
+                  "rounded-md px-1.5 py-0.5 text-ui-3xs font-medium",
                   step.status === "completed" && "bg-[var(--color-success)]/10 text-[var(--color-success)]",
-                  step.status === "running" && "bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]",
+                  step.status === "running" && "bg-[var(--data-accent-soft)] text-[var(--data-accent)]",
                   step.status === "failed" && "bg-[var(--color-destructive)]/10 text-[var(--color-destructive)]",
                   step.status === "skipped" && "bg-[var(--surface-tertiary)] text-[var(--text-tertiary)]",
                   step.status === "pending" && "bg-[var(--surface-tertiary)] text-[var(--text-tertiary)]",
@@ -479,10 +515,6 @@ function ExpertProgressCard({
               />
             </div>
           </div>
-
-          <div className="mt-2 text-xs text-[var(--text-secondary)]">
-            第 {step.step} 步 · {step.taskName}
-          </div>
         </div>
       </button>
 
@@ -495,53 +527,19 @@ function ExpertProgressCard({
             transition={{ duration: 0.18, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="px-3 pb-3 pl-14">
-              {(step.dependsOn.length > 0 || step.output || step.reason) && (
-                <div className="flex flex-wrap gap-1.5 text-ui-3xs text-[var(--text-tertiary)]">
-                  {step.dependsOn.length > 0 && <span>依赖 {step.dependsOn.join(", ")}</span>}
-                  {step.output && <span>输出 {step.output}</span>}
-                  {step.reason && <span>{step.reason}</span>}
-                </div>
-              )}
-              {(step.skills.length > 0 || step.tools.length > 0) && (
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {step.skills.slice(0, 4).map((skill) => (
-                    <span
-                      key={`${step.key}-skill-${skill}`}
-                      className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-secondary)]"
-                    >
-                      skill · {skill}
-                    </span>
-                  ))}
-                  {step.tools.slice(0, 6).map((tool) => (
-                    <span
-                      key={`${step.key}-tool-${tool}`}
-                      className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-tertiary)]"
-                    >
-                      {tool}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {step.resultPreview ? (
-                <div className="mt-3 max-h-32 overflow-y-auto rounded-md border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-2 text-ui-2xs leading-5 text-[var(--text-secondary)] scrollbar-auto">
-                  {step.resultPreview}
-                </div>
-              ) : (
-                <div className="mt-2 text-ui-2xs text-[var(--text-tertiary)]">
-                  {step.status === "running" && step.taskName === "资料预检" ? "正在等待用户补充信息..." : step.status === "running" ? "正在处理..." : "暂无结果"}
-                </div>
-              )}
-
-              {step.toolParts.length > 0 && (
-                <div className="mt-3 space-y-2 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2.5 py-2">
+            <div className="space-y-2 border-t border-[var(--border-subtle)] bg-[rgba(11,118,246,0.02)] px-3 pb-3 pl-14 pt-3">
+              <div className="text-ui-3xs font-semibold text-[var(--text-tertiary)]">工具调用</div>
+              {step.toolParts.length > 0 ? (
+                <div className="space-y-2 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2.5 py-2">
                   {step.toolParts.map((tool) => (
                     <ToolCallRow key={`${step.key}-tool-call-${tool.call_id}`} tool={tool} />
                   ))}
                 </div>
+              ) : (
+                <div className="rounded-md border border-dashed border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2.5 py-2 text-ui-2xs text-[var(--text-tertiary)]">
+                  {step.status === "running" ? "等待工具调用..." : "暂无工具调用"}
+                </div>
               )}
-
             </div>
           </motion.div>
         )}

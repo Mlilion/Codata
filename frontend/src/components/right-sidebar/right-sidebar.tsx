@@ -139,8 +139,8 @@ function RightSidebarHeader() {
   );
   return (
     <div className="shrink-0 border-b border-[var(--border-subtle)] bg-[var(--surface-primary)]/94 backdrop-blur-sm">
-      <div className="flex h-14 items-center gap-2 px-3">
-        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-none">
+      <div className="flex h-14 items-stretch gap-2 px-3">
+        <div className="flex min-w-0 flex-1 items-stretch gap-1 overflow-x-auto scrollbar-none">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const selected = activeTab === tab.id;
@@ -151,17 +151,17 @@ function RightSidebarHeader() {
                 disabled={tab.disabled}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-3 text-xs font-medium transition-colors",
+                  "relative inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-2.5 text-xs font-medium transition-colors",
                   selected
-                    ? "border-[rgba(11,118,246,0.16)] bg-[var(--data-accent-soft)] text-[var(--data-accent)]"
-                    : "text-[var(--text-tertiary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-secondary)]",
-                  tab.disabled && "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-[var(--text-tertiary)]",
+                    ? "border-[var(--data-accent)] text-[var(--data-accent)]"
+                    : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]",
+                  tab.disabled && "cursor-not-allowed opacity-35 hover:text-[var(--text-tertiary)]",
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
                 <span>{t(tab.labelKey)}</span>
                 {!!tab.badge && (
-                  <span className="ml-0.5 rounded-full bg-[var(--surface-primary)] px-1.5 py-0.5 text-[10px] leading-none text-[var(--text-tertiary)]">
+                  <span className="ml-0.5 rounded-full bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-[10px] leading-none text-[var(--text-tertiary)]">
                     {tab.badge}
                   </span>
                 )}
@@ -169,7 +169,7 @@ function RightSidebarHeader() {
             );
           })}
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={closeCurrentTab}>
+        <Button variant="ghost" size="icon" className="my-auto h-8 w-8 shrink-0" onClick={closeCurrentTab}>
           <PanelRightClose className="h-4 w-4" />
         </Button>
       </div>

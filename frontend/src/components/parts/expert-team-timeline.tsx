@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { AlertCircle, Bot, CheckCircle2, ChevronDown, CircleSlash, Loader2, Users } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { AlertCircle, Bot, CheckCircle2, ChevronDown, CircleSlash, Loader2 } from "lucide-react";
 import type { PartData, StepStartPart, ToolPart } from "@/types/message";
 import { TextPart } from "@/components/parts/text-part";
 import { FileArtifactCard } from "@/components/parts/file-artifact-card";
@@ -58,6 +58,12 @@ function compactPreview(value: string, limit = 700): string {
   return `${cleaned.slice(0, limit).trimEnd()}...`;
 }
 
+function readablePreview(value: string, limit = 360): string {
+  const cleaned = value.replace(/\n{3,}/g, "\n\n").trim();
+  if (cleaned.length <= limit) return cleaned;
+  return `${cleaned.slice(0, limit).trimEnd()}...`;
+}
+
 function textPartPreview(parts: Array<PartData & { type: "text" }>): string {
   const text = parts.map((part) => part.text).join("").trim();
   if (!text) return "";
@@ -71,11 +77,41 @@ function processLabel(process?: string): string {
   return "普通";
 }
 
-function processDescription(process?: string): string {
-  if (process === "hierarchical") return "总控专家先拆解任务，再动态委派给合适成员";
-  if (process === "workflow") return "按依赖图执行，支持并发步骤";
-  if (process === "sequential") return "按任务顺序逐步执行";
-  return "按普通专家团流程执行";
+function StatusIcon({
+  status,
+  running,
+}: {
+  status: ExpertStep["status"];
+  running: boolean;
+}) {
+  if (running) return <Loader2 className="h-4 w-4 animate-spin text-[var(--data-accent)]" />;
+  if (status === "failed") return <AlertCircle className="h-4 w-4 text-[var(--color-destructive)]" />;
+  if (status === "skipped") return <CircleSlash className="h-4 w-4 text-[var(--text-tertiary)]" />;
+  if (status === "completed") return <CheckCircle2 className="h-4 w-4 text-[var(--color-success)]" />;
+  return <Bot className="h-4 w-4 text-[var(--text-tertiary)]" />;
+}
+
+function Chip({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex min-h-6 items-center rounded-md border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-2 text-ui-3xs text-[var(--text-secondary)]">
+      {children}
+    </span>
+  );
+}
+
+function CompactChipList({ values, limit = 2 }: { values: string[]; limit?: number }) {
+  const visible = values.slice(0, limit);
+  const hidden = values.length - visible.length;
+  if (values.length === 0) return null;
+
+  return (
+    <>
+      {visible.map((value) => (
+        <Chip key={`chip-${value}`}>{value}</Chip>
+      ))}
+      {hidden > 0 && <Chip>+{hidden}</Chip>}
+    </>
+  );
 }
 
 function isExpertStep(part: PartData): part is StepStartPart {
@@ -157,11 +193,11 @@ export function ExpertTeamTimeline({
   const steps = buildSteps(parts);
   if (steps.length === 0) return null;
   const process = steps.find((step) => step.process)?.process;
-  const skills = uniqueStrings(steps.flatMap((step) => step.skills));
-  const tools = uniqueStrings([
-    ...steps.flatMap((step) => step.tools),
-    ...parts.filter((part): part is ToolPart => part.type === "tool").map((part) => part.tool),
-  ]);
+  const finishedCount = steps.filter((step, index) => {
+    const isLast = index === steps.length - 1;
+    const running = !!isStreaming && step.status === "running" && isLast;
+    return !running && (step.status === "completed" || step.status === "skipped" || step.status === "failed");
+  }).length;
 
   const toggleAll = () => {
     const next = !allExpanded;
@@ -177,193 +213,136 @@ export function ExpertTeamTimeline({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-2.5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
-            <Users className="h-4 w-4 shrink-0" />
-            <span>专家团协作流程</span>
-          </div>
-          <span className="inline-flex items-center rounded-md bg-[var(--brand-primary)]/10 px-2 py-0.5 text-ui-3xs font-medium text-[var(--brand-primary)]">
-            {processLabel(process)}
-          </span>
-        </div>
-        <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-ui-3xs text-[var(--text-tertiary)]">
-            {processDescription(process)}
-          </div>
-          <button
-            type="button"
-            onClick={toggleAll}
-            className="inline-flex min-h-8 items-center justify-center rounded-md border border-[var(--border-subtle)] px-2.5 text-ui-3xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
-          >
-            {allExpanded ? "全部收起" : "全部展开"}
-          </button>
-        </div>
-        {(skills.length > 0 || tools.length > 0) && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {skills.slice(0, 8).map((skill) => (
-              <span key={`skill-${skill}`} className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-secondary)]">
-                skill · {skill}
+    <div className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]">
+      <div className="border-b border-[var(--border-subtle)] px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h3 className="truncate text-sm font-semibold leading-6 text-[var(--text-primary)]">专家团协作记录</h3>
+              <span className="inline-flex min-h-6 items-center rounded-md bg-[rgba(18,185,129,0.12)] px-2 text-ui-3xs font-semibold text-[var(--color-success)]">
+                {processLabel(process)}
               </span>
-            ))}
-            {tools.slice(0, 10).map((tool) => (
-              <span key={`tool-${tool}`} className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-tertiary)]">
-                {tool}
-              </span>
-            ))}
+              <span className="font-mono text-ui-3xs text-[var(--text-tertiary)]">{finishedCount}/{steps.length}</span>
+            </div>
+            <div className="mt-1 truncate text-ui-3xs text-[var(--text-tertiary)]">
+              详细输出保留在消息区，进度与工具调用由右侧面板持续跟踪
+            </div>
           </div>
-        )}
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleAll}
+              className="inline-flex h-8 items-center justify-center rounded-md border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2.5 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+            >
+              {allExpanded ? "收起" : "展开"}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="relative">
+        <div className="absolute bottom-4 left-[24px] top-4 w-px bg-[var(--border-subtle)]" />
         {steps.map((step, index) => {
           const isLast = index === steps.length - 1;
-          const running = isStreaming && step.status === "running" && isLast;
+          const running = !!isStreaming && step.status === "running" && isLast;
           const textParts = step.parts.filter((part): part is PartData & { type: "text" } => part.type === "text");
           const toolParts = step.parts.filter((part): part is ToolPart => part.type === "tool");
           const fileParts = step.parts.filter(
             (part): part is PartData & { type: "file" } => part.type === "file",
           );
-          const summary = compactPreview(step.handoff || step.resultPreview || textPartPreview(textParts), 900);
+          const fullSummary = compactPreview(step.handoff || step.resultPreview || textPartPreview(textParts), 900);
+          const summary = readablePreview(fullSummary);
           const hasDetails = textParts.length > 0 || toolParts.length > 0;
-          const detailsOpen = expandedSteps[step.key] ?? (running || step.status === "failed");
+          const detailsOpen = expandedSteps[step.key] ?? (running || step.status === "failed" || (!isStreaming && isLast));
           const toolTimeline = buildToolTimeline(toolParts);
+          const rowTools = uniqueStrings([...step.tools, ...toolParts.map((tool) => tool.tool)]);
 
           return (
             <div
               key={step.key}
               className={cn(
-                "rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]",
-                step.delegatedBy && "ml-5 border-[var(--border-subtle)]",
+                "relative border-b border-[var(--border-subtle)] last:border-b-0",
+                running && "bg-[rgba(11,118,246,0.045)] shadow-[inset_3px_0_0_var(--data-accent)]",
               )}
             >
-              <div className="flex items-start gap-3 border-b border-[var(--border-subtle)] px-3 py-2.5">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-tertiary)]">
-                  {running ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-[var(--text-secondary)]" />
-                  ) : step.status === "failed" ? (
-                    <AlertCircle className="h-4 w-4 text-[var(--color-destructive)]" />
-                  ) : step.status === "skipped" ? (
-                    <CircleSlash className="h-4 w-4 text-[var(--text-tertiary)]" />
-                  ) : step.status === "completed" ? (
-                    <CheckCircle2 className="h-4 w-4 text-[var(--tool-completed)]" />
-                  ) : (
-                    <Bot className="h-4 w-4 text-[var(--text-secondary)]" />
-                  )}
+              <div className="grid grid-cols-[42px_minmax(0,1fr)_minmax(170px,0.42fr)_64px] gap-3 px-4 py-3.5">
+                <div className="relative z-[1] flex items-start justify-center">
+                  <span className={cn(
+                    "flex h-6 w-6 items-center justify-center rounded-full border bg-[var(--surface-primary)]",
+                    step.status === "completed" && !running && "border-[rgba(18,185,129,0.28)]",
+                    running && "border-[rgba(11,118,246,0.34)]",
+                    step.status === "failed" && "border-[rgba(239,68,68,0.28)]",
+                    step.status === "skipped" && "border-[var(--border-default)]",
+                  )}>
+                    <StatusIcon status={step.status} running={running} />
+                  </span>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="text-sm font-semibold text-[var(--text-primary)]">
-                      {step.memberName}
-                    </span>
-                    <span className="text-ui-2xs text-[var(--text-tertiary)]">
-                      {step.memberRole}
-                    </span>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-baseline gap-3">
+                    <span className="shrink-0 text-xs font-semibold tabular-nums text-[var(--text-primary)]">{index + 1}</span>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-[var(--text-primary)]">
+                        {step.memberName} · {step.taskName}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-1.5 ml-6 flex min-w-0 flex-wrap items-center gap-1.5">
                     {step.manager && (
-                      <span className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-secondary)]">
+                      <span className="rounded-md bg-[var(--surface-secondary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-secondary)]">
                         总控专家
                       </span>
                     )}
                     {step.delegatedBy && (
-                      <span className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-tertiary)]">
+                      <span className="rounded-md bg-[var(--surface-secondary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-tertiary)]">
                         委派任务{step.delegationIndex ? ` #${step.delegationIndex}` : ""}
                       </span>
                     )}
+                    <span className="text-ui-3xs text-[var(--text-tertiary)]">{step.memberRole}</span>
                   </div>
-                  <div className="mt-0.5 text-ui-2xs text-[var(--text-secondary)]">
-                    第 {step.step} 步 · {step.taskName}
-                  </div>
-                  {(step.dependsOn.length > 0 || step.output || step.reason) && (
-                    <div className="mt-1 flex flex-wrap gap-1.5 text-ui-3xs text-[var(--text-tertiary)]">
-                      {step.dependsOn.length > 0 && <span>依赖 {step.dependsOn.join(", ")}</span>}
-                      {step.output && <span>输出 {step.output}</span>}
-                      {step.reason && <span>{step.reason}</span>}
+                  <div className="mt-2 ml-6">
+                    <div className="mb-1 text-ui-3xs font-medium text-[var(--text-tertiary)]">结果摘要</div>
+                    <div className="line-clamp-4 whitespace-pre-wrap text-ui-2xs leading-5 text-[var(--text-secondary)]">
+                      {summary || (running ? "正在处理..." : "该专家未产生摘要")}
                     </div>
-                  )}
-                  {(step.skills.length > 0 || step.tools.length > 0) && (
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {step.skills.slice(0, 4).map((skill) => (
-                        <span key={`${step.key}-skill-${skill}`} className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-secondary)]">
-                          skill · {skill}
-                        </span>
-                      ))}
-                      {step.tools.slice(0, 6).map((tool) => (
-                        <span key={`${step.key}-tool-${tool}`} className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-tertiary)]">
-                          {tool}
-                        </span>
-                      ))}
+                  </div>
+                </div>
+                <div className="min-w-0 space-y-1.5 text-ui-3xs text-[var(--text-tertiary)]">
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="shrink-0">依赖</span>
+                    {step.dependsOn.length > 0 ? <CompactChipList values={step.dependsOn} limit={1} /> : <span>-</span>}
+                  </div>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="shrink-0">输出</span>
+                    {step.output ? <Chip>{step.output}</Chip> : <span>-</span>}
+                  </div>
+                  {rowTools.length > 0 && (
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span className="shrink-0">工具</span>
+                      <CompactChipList values={rowTools} limit={2} />
                     </div>
                   )}
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  {hasDetails && (
-                    <button
-                      type="button"
-                      onClick={() => toggleStep(step.key)}
-                      className="inline-flex min-h-8 items-center gap-1 rounded-md border border-[var(--border-subtle)] px-2 text-ui-3xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
-                      aria-expanded={detailsOpen}
-                    >
-                      详情
-                      <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", detailsOpen && "rotate-180")} />
-                    </button>
-                  )}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => hasDetails && toggleStep(step.key)}
+                    disabled={!hasDetails}
+                    className={cn(
+                      "inline-flex h-8 items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]",
+                      !hasDetails && "cursor-default opacity-60 hover:bg-[var(--surface-primary)] hover:text-[var(--text-secondary)]",
+                    )}
+                    aria-expanded={hasDetails ? detailsOpen : undefined}
+                  >
+                    详情
+                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", detailsOpen && "rotate-180")} />
+                  </button>
                 </div>
               </div>
 
-              <div className="space-y-3 px-3 py-3">
-                {summary ? (
-                  <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2">
-                    <div className="mb-1 text-ui-3xs font-medium text-[var(--text-tertiary)]">
-                      {step.handoff ? "交接摘要" : "输出摘要"}
-                    </div>
-                    <div className="line-clamp-6 whitespace-pre-wrap text-ui-2xs leading-5 text-[var(--text-secondary)]">
-                      {summary}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-[var(--text-tertiary)]">
-                    {running ? "正在处理..." : "该专家未产生摘要"}
-                  </div>
-                )}
-
-                {toolParts.length > 0 && (
+              {hasDetails && detailsOpen && (
+                <div className="mx-4 mb-3 ml-[58px] grid gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-3 lg:grid-cols-2">
                   <div className="space-y-2">
-                    <div className="flex flex-wrap gap-1.5">
-                      {toolParts.map((tool) => (
-                        <span
-                          key={tool.call_id}
-                          className={cn(
-                            "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-ui-3xs",
-                            tool.state.status === "completed"
-                              ? "border-[var(--border-subtle)] bg-[var(--surface-secondary)] text-[var(--text-tertiary)]"
-                              : "border-[var(--border-default)] bg-[var(--surface-tertiary)] text-[var(--text-secondary)]",
-                          )}
-                        >
-                          {tool.tool}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {fileParts.length > 0 && (
-                  <div className="grid gap-1.5 sm:grid-cols-2">
-                    {fileParts.map((file) => (
-                      <FileArtifactCard
-                        key={file.file_id}
-                        filePath={file.path}
-                        title={file.name}
-                        cardId={`expert-file-${file.file_id}`}
-                        compact={fileParts.length > 1}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {hasDetails && detailsOpen && (
-                  <div className="space-y-3 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-3">
-                    <div className="text-ui-3xs font-medium text-[var(--text-tertiary)]">完整过程</div>
+                    <div className="text-ui-3xs font-semibold text-[var(--text-tertiary)]">工具调用</div>
                     {toolTimeline.length > 0 && (
                       <div className="space-y-2">
                         {toolTimeline.map((tool) => (
@@ -371,6 +350,27 @@ export function ExpertTeamTimeline({
                         ))}
                       </div>
                     )}
+                    {toolTimeline.length === 0 && (
+                      <div className="text-xs text-[var(--text-tertiary)]">暂无工具调用</div>
+                    )}
+                    {fileParts.length > 0 && (
+                      <div className="grid gap-1.5 pt-1">
+                        {fileParts.map((file) => (
+                          <FileArtifactCard
+                            key={file.file_id}
+                            filePath={file.path}
+                            title={file.name}
+                            cardId={`expert-file-${file.file_id}`}
+                            compact={fileParts.length > 1}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-ui-3xs font-semibold text-[var(--text-tertiary)]">
+                      {running ? "输出预览（流式）" : step.handoff ? "交接摘要" : "输出预览"}
+                    </div>
                     {textParts.length > 0 ? (
                       textParts.map((part, partIndex) => (
                         <TextPart
@@ -379,12 +379,16 @@ export function ExpertTeamTimeline({
                           isStreaming={running && partIndex === textParts.length - 1}
                         />
                       ))
+                    ) : fullSummary ? (
+                      <div className="max-h-44 overflow-y-auto rounded-md border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-2 text-ui-2xs leading-5 text-[var(--text-secondary)] scrollbar-auto">
+                        {fullSummary}
+                      </div>
                     ) : (
-                      <div className="text-xs text-[var(--text-tertiary)]">没有完整文本输出</div>
+                      <div className="text-xs text-[var(--text-tertiary)]">暂无完整文本输出</div>
                     )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           );
         })}
