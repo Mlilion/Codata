@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, memo } from "react";
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { ArrowRight, AtSign, Check, ChevronDown, Plus, Sparkles, Square, Users, X } from "lucide-react";
@@ -268,7 +268,7 @@ function detectMention(
   return { active: true, query, startIndex: atIndex };
 }
 
-export function ChatForm({
+function ChatFormInner({
   isGenerating,
   isCompacting = false,
   onSend,
@@ -978,3 +978,5 @@ function AgentToggle({ landing = false }: { landing?: boolean }) {
     </Popover>
   );
 }
+
+export const ChatForm = memo(ChatFormInner);
