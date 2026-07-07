@@ -114,6 +114,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Ensure a default dashboard exists and orphan items are assigned to it.
     await _ensure_default_dashboard(session_factory)
 
+    # Tag legacy expert-team sessions as codata so they leave chat history.
+    await _backfill_expert_session_mode(session_factory)
+
     app.state.engine = engine
     app.state.session_factory = session_factory
 
@@ -626,6 +629,33 @@ async def _ensure_default_dashboard(session_factory) -> None:
                 )
     except Exception:
         logger.warning("Default dashboard backfill skipped", exc_info=True)
+
+
+async def _backfill_expert_session_mode(session_factory) -> None:
+    """Tag existing expert-team sessions with app_mode="codata".
+
+    Idempotent: safe on every startup. Expert teams are a Codata capability, so
+    their sessions (slug "expert-team:*") belong in the Codata 历史查询 list, not
+    plain chat history. New runs set this in ExpertTeamRunner._prepare_session;
+    this migrates sessions created before that fix.
+    """
+    from sqlalchemy import update as sa_update
+    from app.models.session import Session
+
+    try:
+        async with session_factory() as db:
+            async with db.begin():
+                await db.execute(
+                    sa_update(Session)
+                    .where(Session.slug.like("expert-team:%"))
+                    .where(
+                        (Session.app_mode.is_(None))
+                        | (Session.app_mode != "codata")
+                    )
+                    .values(app_mode="codata")
+                )
+    except Exception:
+        logger.warning("Expert-team session mode backfill skipped", exc_info=True)
 
 
 def _find_frontend_dir() -> Path | None:

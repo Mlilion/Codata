@@ -8,7 +8,7 @@ import pytest
 
 from app.schemas.agent import AgentInfo
 from app.tool.builtin import run_query as run_query_mod
-from app.tool.builtin.run_query import RunQueryTool
+from app.tool.builtin.run_query import RunQueryTool, _format_rows_preview
 from app.tool.context import ToolContext
 
 
@@ -133,6 +133,46 @@ class TestRunQuery:
         ctx.abort_event.set()  # already aborted
         r = await RunQueryTool().execute({"sql": "SELECT big"}, ctx)
         assert not r.success and "中止" in r.error
+
+    async def test_sync_result_feeds_rows_to_output(self, monkeypatch):
+        client = _FakeClient({
+            "execute_sql": [_sync_result([["App", 10], ["Web", 20]], ["channel", "dau"])],
+        })
+        _install(monkeypatch, client)
+        r = await RunQueryTool().execute({"sql": "SELECT channel, dau FROM t"}, _ctx())
+        assert r.success
+        # metadata 形状不变
+        assert r.metadata["rows"] == [["App", 10], ["Web", 20]]
+        # output 现在含可读的数据预览，模型能看到实际值
+        assert "channel" in r.output and "dau" in r.output
+        assert "App" in r.output and "10" in r.output
+        assert "2 行" in r.output
+        assert "{'name'" not in r.output and '{"name"' not in r.output
+
+    async def test_empty_result_output(self, monkeypatch):
+        client = _FakeClient({"execute_sql": [_sync_result([], ["channel", "dau"])]})
+        _install(monkeypatch, client)
+        r = await RunQueryTool().execute({"sql": "SELECT channel, dau FROM t WHERE 1=0"}, _ctx())
+        assert r.success
+        assert "无数据行匹配" in r.output
+
+
+def test_format_rows_preview_caps_rows():
+    cols = ["a"]
+    rows = [[i] for i in range(120)]
+    out = _format_rows_preview(cols, rows, row_count=120)
+    # 只预览前 50 行 + 标注总数
+    assert out.count("\n") < 60
+    assert "120" in out  # 总行数标注
+    assert "前 50 行" in out
+
+
+def test_format_rows_preview_truncates_wide_cell():
+    cols = ["blob"]
+    rows = [["x" * 500]]
+    out = _format_rows_preview(cols, rows, row_count=1)
+    assert "…" in out
+    assert "x" * 500 not in out
 
 
 async def _no_sleep(_seconds):

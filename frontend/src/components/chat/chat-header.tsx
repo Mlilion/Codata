@@ -2,7 +2,16 @@
 
 import { useState, useCallback } from "react";
 import { useTranslation } from 'react-i18next';
-import { Share2, Loader2, PanelRightClose, PanelRightOpen } from "lucide-react";
+import {
+  ChevronRight,
+  Circle,
+  Database,
+  Folder,
+  Loader2,
+  PanelRightClose,
+  PanelRightOpen,
+  Share2,
+} from "lucide-react";
 import { HeaderModelDropdown } from "@/components/selectors/header-model-dropdown";
 import { ContextIndicator } from "@/components/chat/context-indicator";
 import { SessionStats } from "@/components/chat/session-stats";
@@ -20,6 +29,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { API, IS_DESKTOP } from "@/lib/constants";
 import { isRemoteMode } from "@/lib/remote-connection";
+import { cn } from "@/lib/utils";
 
 interface ChatHeaderProps {
   sessionId?: string;
@@ -29,6 +39,7 @@ interface ChatHeaderProps {
 export function ChatHeader({ sessionId, showModelSelector = true }: ChatHeaderProps) {
   const { t } = useTranslation('chat');
   const isCollapsed = useSidebarStore((s) => s.isCollapsed);
+  const appMode = useSidebarStore((s) => s.appMode);
   const { messages } = useMessages(sessionId);
   const isMac = useIsMacOS();
   const remote = isRemoteMode();
@@ -126,15 +137,39 @@ export function ChatHeader({ sessionId, showModelSelector = true }: ChatHeaderPr
   return (
     <TooltipProvider delayDuration={200}>
       <header
-        className="relative z-10 flex h-13 items-center gap-1 pr-3 backdrop-blur-sm"
+        className={cn(
+          "relative z-10 flex h-13 items-center gap-2 border-b border-[var(--border-subtle)] pr-3 backdrop-blur-sm",
+          appMode === "codata"
+            ? "bg-[var(--surface-chat)]/82"
+            : "bg-[var(--surface-chat)]/70",
+        )}
         style={{ paddingLeft: leftPad }}
       >
         {/* Sidebar toggle + new chat live in the global WindowTopIcons bar
             (desktop non-remote) so they stay at the window's left edge across
             sidebar states. */}
 
+        {appMode === "codata" && (
+          <div className="flex min-w-0 shrink items-center gap-1.5 pr-1 text-ui-caption">
+            <span className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 font-medium text-[var(--text-secondary)]">
+              <Database className="h-3.5 w-3.5 text-[var(--data-accent)]" />
+              Data Agent
+            </span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[var(--text-quaternary)]" />
+            <span className="hidden max-w-[220px] truncate text-[var(--text-primary)] md:block">
+              Analysis workspace
+            </span>
+          </div>
+        )}
+
         <div className="flex items-center gap-2 min-w-0 shrink-0">
           {showModelSelector && <HeaderModelDropdown />}
+          {appMode === "codata" && (
+            <span className="hidden h-8 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 text-ui-caption text-[var(--text-tertiary)] xl:inline-flex">
+              <Folder className="h-3.5 w-3.5" />
+              workspace
+            </span>
+          )}
           <SessionStats sessionId={sessionId} />
         </div>
 
@@ -199,6 +234,12 @@ export function ChatHeader({ sessionId, showModelSelector = true }: ChatHeaderPr
 
         {/* Context usage indicator — desktop only */}
         {!remote && sessionId && <ContextIndicator sessionId={sessionId} />}
+        {appMode === "codata" && (
+          <span className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 py-1 text-[11px] font-medium text-[var(--text-tertiary)] lg:inline-flex">
+            <Circle className="h-2 w-2 fill-[var(--color-success)] text-[var(--color-success)]" />
+            warehouse
+          </span>
+        )}
       </header>
     </TooltipProvider>
   );

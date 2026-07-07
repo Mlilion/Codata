@@ -13,8 +13,8 @@ export function WorkspacePanelContent() {
 
   return (
     <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 scrollbar-auto">
-      <div className="mb-4 flex items-start gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-primary)] text-[var(--text-secondary)] shadow-[var(--shadow-sm)]">
+      <div className="mb-4 flex items-start gap-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--data-accent)] shadow-[var(--shadow-sm)]">
           <FolderKanban className="h-[18px] w-[18px]" />
         </div>
         <div className="min-w-0">

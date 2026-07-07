@@ -7,9 +7,10 @@ import { toast } from "sonner";
 import { FileChip } from "@/components/chat/file-chip";
 import { FileMentionPopup } from "@/components/chat/file-mention-popup";
 import { uploadFile, browseFiles, attachByPath, ingestFiles } from "@/lib/upload";
+import { useSidebarStore } from "@/stores/sidebar-store";
 import type { FileSearchResult } from "@/lib/upload";
 import type { FileAttachment } from "@/types/chat";
-import { extractTextFromPartResponses } from "@/lib/utils";
+import { cn, extractTextFromPartResponses } from "@/lib/utils";
 import type { MessageResponse, FilePart as FilePartType } from "@/types/message";
 
 /**
@@ -51,6 +52,7 @@ export function UserMessage({ message, isNew = true, onEditAndResend, isGenerati
   const [uploading, setUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isCodata = useSidebarStore((s) => s.appMode) === "codata";
 
   // @mention state
   const [mentionActive, setMentionActive] = useState(false);
@@ -321,24 +323,53 @@ export function UserMessage({ message, isNew = true, onEditAndResend, isGenerati
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="max-w-[85%] sm:max-w-[70%] rounded-2xl bg-[var(--user-bubble-bg)] px-4 py-2.5 shadow-[var(--shadow-sm)] border border-[var(--border-default)]">
-        {text && (
-          <div className="text-[13px] text-[var(--text-primary)] whitespace-pre-wrap break-words leading-relaxed">
-            {text}
-          </div>
+      <div
+        className={cn(
+          isCodata
+            ? "max-w-[820px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3 shadow-[0_10px_26px_-24px_rgba(15,23,42,0.55)]"
+            : "max-w-[85%] rounded-2xl border border-[var(--border-default)] bg-[var(--user-bubble-bg)] px-4 py-2.5 shadow-[var(--shadow-sm)] sm:max-w-[70%]",
         )}
-        {fileParts.length > 0 && (
-          <div className={`flex flex-wrap gap-1.5 ${text ? "mt-2" : ""}`}>
-            {fileParts.map((fp) => (
-              <FileChip key={fp.file_id} file={fp} />
-            ))}
-          </div>
+      >
+        {isCodata ? (
+          <>
+            {text && (
+              <div className="whitespace-pre-wrap break-words text-[14px] leading-6 text-[var(--text-primary)]">
+                {text}
+              </div>
+            )}
+            {fileParts.length > 0 && (
+              <div className={`flex flex-wrap gap-1.5 ${text ? "mt-3" : ""}`}>
+                {fileParts.map((fp) => (
+                  <FileChip key={fp.file_id} file={fp} />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {text && (
+              <div className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-[var(--text-primary)]">
+                {text}
+              </div>
+            )}
+            {fileParts.length > 0 && (
+              <div className={`flex flex-wrap gap-1.5 ${text ? "mt-2" : ""}`}>
+                {fileParts.map((fp) => (
+                  <FileChip key={fp.file_id} file={fp} />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Action icons — always in DOM to avoid layout shift, opacity-only toggle */}
       <div
-        className={`flex items-center gap-0.5 mt-1 mr-1 transition-opacity duration-150 ${hovered ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={cn(
+          "mt-1 flex items-center gap-0.5 transition-opacity duration-150",
+          isCodata ? "self-end pr-1" : "mr-1",
+          hovered ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
       >
         {text && (
           <button

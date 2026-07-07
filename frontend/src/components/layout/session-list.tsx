@@ -20,7 +20,7 @@ import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { ProjectsToolbar } from "./projects-toolbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { Check, ChevronRight, Copy, FolderClosed, FolderOpen, Loader2, MessageSquare, PlugZap, SearchX, Sparkles, SquarePen, Zap } from "lucide-react";
+import { BarChart3, Check, ChevronRight, Copy, FolderClosed, FolderOpen, Loader2, MessageSquare, PlugZap, SearchX, Sparkles, SquarePen, Zap } from "lucide-react";
 import { getChatRoute } from "@/lib/routes";
 import { cn, groupSessionsByDate, groupSessionsByWorkspace } from "@/lib/utils";
 import type { SessionResponse } from "@/types/session";
@@ -615,8 +615,37 @@ export function SessionList() {
 }
 
 function SidebarQuickNav() {
+  const appMode = useSidebarStore((s) => s.appMode);
+  const setAppMode = useSidebarStore((s) => s.setAppMode);
+
   return (
     <div className="space-y-1 px-3 pb-2">
+      <div className="mb-2 flex items-center gap-1 rounded-xl bg-[var(--surface-secondary)] p-1">
+        {[
+          { id: "chat" as const, label: "Chat", icon: MessageSquare },
+          { id: "codata" as const, label: "Codata", icon: BarChart3 },
+        ].map((mode) => {
+          const Icon = mode.icon;
+          const selected = appMode === mode.id;
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => setAppMode(mode.id)}
+              aria-pressed={selected}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-ui-body font-medium transition-colors",
+                selected
+                  ? "bg-[var(--surface-primary)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]"
+                  : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]",
+              )}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" />
+              <span>{mode.label}</span>
+            </button>
+          );
+        })}
+      </div>
       <Link
         href="/skills"
         className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-ui-body text-[var(--text-secondary)] transition-colors hover:bg-[var(--sidebar-hover)] hover:text-[var(--text-primary)]"

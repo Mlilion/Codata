@@ -86,9 +86,9 @@ function DashboardTile({ item, dashboardId }: { item: DashboardItem; dashboardId
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)]">
+    <div className="data-agent-card flex h-full flex-col overflow-hidden rounded-lg">
       {/* Tile header (drag handle) */}
-      <div className="tile-drag-handle flex cursor-grab items-center gap-2 border-b border-[var(--border-default)] px-3 py-2 active:cursor-grabbing">
+      <div className="tile-drag-handle flex cursor-grab items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--surface-secondary)]/70 px-3 py-2 active:cursor-grabbing">
         <GripVertical className="h-3.5 w-3.5 shrink-0 text-[var(--text-tertiary)]" />
         {editing ? (
           <>
@@ -128,7 +128,7 @@ function DashboardTile({ item, dashboardId }: { item: DashboardItem; dashboardId
           </>
         ) : (
           <>
-            <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--text-primary)]">
+            <span className="min-w-0 flex-1 truncate text-ui-body font-semibold text-[var(--text-primary)]">
               {item.title || "未命名图表"}
             </span>
             <button
@@ -170,7 +170,7 @@ function DashboardTile({ item, dashboardId }: { item: DashboardItem; dashboardId
         <ChartRenderer spec={item.payload.chartSpec} data={item.payload.sqlResult} />
       </div>
       {/* Freshness footer */}
-      <div className="shrink-0 border-t border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 text-[10px] text-[var(--text-tertiary)]">
+      <div className="shrink-0 border-t border-[var(--border-subtle)] bg-[var(--surface-secondary)]/45 px-3 py-1 text-[10px] text-[var(--text-tertiary)]">
         数据截至 {formatStamp(item.refreshed_at ?? item.time_created)}
       </div>
     </div>
@@ -226,7 +226,7 @@ export function DashboardContent({ dashboardId }: { dashboardId: string }) {
     return (
       <div
         className={cn(
-          "flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed",
+          "flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed",
           "border-[var(--border-default)] bg-[var(--surface-secondary)] py-16 text-center",
         )}
       >
