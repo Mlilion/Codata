@@ -249,7 +249,7 @@ export function Landing({ directoryParam = null, skillParam = null }: LandingPro
                     </h2>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {recommendations.map((rec) => (
+                    {recommendations.slice(0, 3).map((rec) => (
                       <button
                         key={rec}
                         type="button"
