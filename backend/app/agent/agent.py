@@ -82,6 +82,7 @@ BUILTIN_AGENTS: dict[str, AgentInfo] = {
             PermissionRule(action="allow", permission="skill"),
             PermissionRule(action="allow", permission="run_query"),
             PermissionRule(action="allow", permission="chart_spec"),
+            PermissionRule(action="allow", permission="build_report"),
             PermissionRule(action="allow", permission="tool_search"),
         ]),
         system_prompt=_load_prompt("data"),

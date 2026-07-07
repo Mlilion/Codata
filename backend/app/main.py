@@ -496,6 +496,7 @@ def _register_builtin_tools(
     from app.tool.builtin.bash import BashTool
     from app.tool.builtin.chart_spec import ChartSpecTool
     from app.tool.builtin.run_query import RunQueryTool
+    from app.tool.builtin.build_report import BuildReportTool
     from app.tool.builtin.code_execute import CodeExecuteTool
     from app.tool.builtin.create_expert_teams import CreateExpertTeamsTool
     from app.tool.builtin.edit import EditTool
@@ -521,7 +522,7 @@ def _register_builtin_tools(
         TaskTool, WebFetchTool, WebSearchTool, InvalidTool,
         PlanTool, SubmitPlanTool, ArtifactTool, PresentFileTool,
         CreateExpertTeamsTool, ChartSpecTool,
-        RunQueryTool,
+        RunQueryTool, BuildReportTool,
     ]:
         registry.register(tool_cls())
 
