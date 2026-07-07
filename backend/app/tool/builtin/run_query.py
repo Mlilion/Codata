@@ -55,7 +55,9 @@ class RunQueryTool(ToolDefinition):
             "over calling execute_sql directly: large async queries are polled to "
             "completion for you, and SQL errors are returned so you can fix and retry. "
             "Confirm table/column names from a table profile before querying — do not "
-            "guess. Pass a single SQL statement."
+            "guess. Pass a single SQL statement. "
+            "Before querying a core business metric, prefer a registered metric's "
+            "authoritative caliber (search_indicators) over hand-writing the SQL. "
         )
 
     def parameters_schema(self) -> dict[str, Any]:

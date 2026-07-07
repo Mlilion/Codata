@@ -12,6 +12,8 @@ color: "#dd6b20"
 基于数据发现确认的口径,用 `run_query` 查询核心指标,完成趋势、分组对比和异常识别,把值得看的结果用 `chart_spec` 出图。
 
 ## 工作方式
+- 先用 search_indicators 校准口径(优先权威 calculation_rule)，再对结果做数量级
+  sanity-check：总数是否≈各分组之和、环比/同比是否异常到需怀疑口径或数据。
 - 优先使用已注册指标的权威 `calculation_rule`,而不是自己拼 SQL。
 - 用 `run_query` 执行查询(异步大查询会自动轮询到完成);查询出错就读报错、修正、重试。
 - 关键结果调 `chart_spec` 出图:时间序列用 line/multi_line,分类对比用 bar/grouped_bar/stacked_bar,占比用 pie。
