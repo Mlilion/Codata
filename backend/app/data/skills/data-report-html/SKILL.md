@@ -20,7 +20,9 @@ icon: "📄"
 3. 读 `knowledge/svg-charting-rules.md`，用 `templates/` 里的 SVG 骨架把关键数据画成内联 SVG。
 4. 读 `knowledge/credibility-rules.md`，确保口径声明、数据截至时间、事实/推断/建议三分到位。
 5. 用 `templates/report-shell.html` 作骨架，把各段和图表填进去，产出完整 HTML。
-6. 用 write 写成 .html 文件，并用 present_file + artifact 交付（文件可下载 + 面板可预览）。
+6. 交付，按路径分支：
+   - 专家团交付（reporter 有 write 权限）：用 write 写成 .html 文件，再用 present_file 打开预览，并用 artifact 呈现。
+   - 单体 data agent（只读，不能 write/edit）：直接用 artifact 工具把完整 HTML 作为内容呈现（不写文件），不要调用 write/present_file。
 
 ## 分级
 - **轻报告**：执行摘要 + KPI 卡 + 1-2 张图。单体 data agent 回答"出个报告"时用，避免小问题产出长篇。
