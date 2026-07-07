@@ -134,7 +134,9 @@ class ConnectorRegistry:
         """
         existing = self._connectors.get(id)
         if existing is not None and not (
-            existing.source == "builtin" and not existing.url
+            existing.type == "remote"
+            and existing.source == "builtin"
+            and not existing.url
         ):
             raise ValueError(f"Connector '{id}' already exists")
 

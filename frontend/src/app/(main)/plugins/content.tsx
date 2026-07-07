@@ -239,9 +239,14 @@ function ConnectorRow({
 
   const qc = useQueryClient();
 
-  // A seed connector (builtin, no URL yet) can't do OAuth discovery — the user
-  // must supply their own MCP endpoint first. Route these into the add form.
-  const needsUrl = !connector.url && connector.status !== "connected";
+  // A remote seed connector (builtin, no URL yet) can't do OAuth discovery — the
+  // user must supply their own MCP endpoint first. Route these into the add form.
+  // Local builtins (google-workspace, ms365, pubmed) connect by command, not URL,
+  // so they must NOT be routed here despite also having an empty url.
+  const needsUrl =
+    connector.type === "remote" &&
+    !connector.url &&
+    connector.status !== "connected";
 
   const handleConnect = async () => {
     let result: { success: boolean; auth_url?: string; state?: string; error?: string };

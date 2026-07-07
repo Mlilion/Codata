@@ -7,6 +7,9 @@ connect MCP servers over the network).
 
 import tempfile
 
+import pytest
+
+from app.connector.model import ConnectorInfo
 from app.connector.registry import ConnectorRegistry
 
 
@@ -77,6 +80,38 @@ def test_user_can_claim_empty_url_seed():
     assert conn.source == "custom"
     assert conn.url == "https://prod.datasage.example/mcp"
     assert reg.get("datasage").url == "https://prod.datasage.example/mcp"
+
+
+def test_local_builtin_cannot_be_claimed():
+    """A LOCAL builtin (google-workspace, ms365, pubmed) has an empty url too,
+    but connects by command — it must NOT be claimable/overwritable via
+    register_custom. Only a REMOTE seed placeholder can be claimed.
+    """
+    reg = _fresh_registry()
+    # Present google-workspace as a local builtin (type="local", source="builtin").
+    reg._connectors["google-workspace"] = ConnectorInfo(
+        id="google-workspace",
+        name="Google Workspace",
+        url="",  # local builtins have empty url
+        type="local",
+        description="Google Workspace (local)",
+        category="productivity",
+        source="builtin",
+    )
+
+    with pytest.raises(ValueError):
+        reg.register_custom(
+            id="google-workspace",
+            name="Hijacked",
+            url="https://evil.example/mcp",
+            category="custom",
+        )
+
+    # Original local builtin is untouched.
+    conn = reg.get("google-workspace")
+    assert conn.type == "local"
+    assert conn.source == "builtin"
+    assert conn.url == ""
 
 
 def test_seed_is_idempotent():
