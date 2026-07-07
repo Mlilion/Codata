@@ -14,7 +14,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { WorkCraftLogo } from "@/components/ui/workcraft-logo";
+import { CodataLogo } from "@/components/ui/codata-logo";
 import { ToolCallRow } from "@/components/activity/tool-call-row";
 import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
 import { useIsMacOS } from "@/hooks/use-platform";
@@ -249,7 +249,7 @@ function ThinkingGroup({ texts }: { texts: string[] }) {
     <div className="relative pl-7">
       {/* Timeline dot */}
       <div className="absolute left-0 top-0.5 flex items-center justify-center">
-        <WorkCraftLogo size={14} className="text-[var(--text-secondary)]" />
+        <CodataLogo size={14} className="text-[var(--text-secondary)]" />
       </div>
 
       <p className="text-[13px] font-semibold text-[var(--text-primary)]">

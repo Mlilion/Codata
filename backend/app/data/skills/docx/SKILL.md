@@ -352,7 +352,7 @@ style.element.rPr.rFonts.set(qn('w:eastAsia'), 'Microsoft YaHei')
 
 ## 5. Dependencies
 
-Core (included with WorkCraft):
+Core (included with Codata):
 - `python-docx` — read, create, basic editing
 
 No additional optional dependencies required for most tasks.

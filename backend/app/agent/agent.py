@@ -62,6 +62,30 @@ BUILTIN_AGENTS: dict[str, AgentInfo] = {
         ]),
         system_prompt=_load_prompt("plan"),
     ),
+    "data": AgentInfo(
+        name="data",
+        description="Data-analysis agent: query the data platform, chart results",
+        mode="primary",
+        tools=[],  # Empty = all tools (so datasage MCP tools stay discoverable);
+                   # dangerous builtins denied via permissions below.
+        permissions=Ruleset(rules=[
+            PermissionRule(action="allow", permission="*"),
+            # Read-only + analysis: no filesystem mutation or shell.
+            PermissionRule(action="deny", permission="write"),
+            PermissionRule(action="deny", permission="edit"),
+            PermissionRule(action="deny", permission="bash"),
+            PermissionRule(action="deny", permission="code_execute"),
+            PermissionRule(action="allow", permission="read"),
+            PermissionRule(action="allow", permission="glob"),
+            PermissionRule(action="allow", permission="grep"),
+            PermissionRule(action="allow", permission="search"),
+            PermissionRule(action="allow", permission="skill"),
+            PermissionRule(action="allow", permission="run_query"),
+            PermissionRule(action="allow", permission="chart_spec"),
+            PermissionRule(action="allow", permission="tool_search"),
+        ]),
+        system_prompt=_load_prompt("data"),
+    ),
     "explore": AgentInfo(
         name="explore",
         description="Fast search and exploration subagent",
@@ -169,11 +193,11 @@ class AgentRegistry:
         settings_agents: dict[str, Any] | None = None,
         project_dir: str = ".",
     ) -> None:
-        """Load custom agents from settings YAML and .workcraft/agents/*.md files.
+        """Load custom agents from settings YAML and .codata/agents/*.md files.
 
         Sources (later overrides earlier):
         1. settings.agents dict from YAML config
-        2. .workcraft/agents/*.md Markdown files in the project directory
+        2. .codata/agents/*.md Markdown files in the project directory
         """
         # 1. Load from settings.agents dict
         if settings_agents:
@@ -185,9 +209,9 @@ class AgentRegistry:
                 except Exception:
                     logger.exception("Failed to load custom agent '%s' from config", name)
 
-        # 2. Discover .workcraft/agents/*.md files
+        # 2. Discover .codata/agents/*.md files
         for agents_dir in [
-            Path(project_dir) / ".workcraft" / "agents",
+            Path(project_dir) / ".codata" / "agents",
             Path(project_dir) / ".agents",
         ]:
             if not agents_dir.is_dir():

@@ -1,7 +1,7 @@
 """Slow Ollama manager integration test.
 
 Run explicitly with:
-WORKCRAFT_RUN_OLLAMA_E2E=1 pytest tests/test_ollama/test_manager_e2e.py -q
+CODATA_RUN_OLLAMA_E2E=1 pytest tests/test_ollama/test_manager_e2e.py -q
 """
 
 from __future__ import annotations
@@ -19,8 +19,8 @@ from app.ollama.manager import OllamaManager
 
 
 pytestmark = pytest.mark.skipif(
-    os.environ.get("WORKCRAFT_RUN_OLLAMA_E2E") != "1",
-    reason="set WORKCRAFT_RUN_OLLAMA_E2E=1 to download Ollama and a small Qwen model",
+    os.environ.get("CODATA_RUN_OLLAMA_E2E") != "1",
+    reason="set CODATA_RUN_OLLAMA_E2E=1 to download Ollama and a small Qwen model",
 )
 
 _MODEL = "qwen2.5:0.5b"
@@ -72,7 +72,7 @@ async def _chat_once(base_url: str, model: str) -> str:
             json={
                 "model": model,
                 "stream": False,
-                "messages": [{"role": "user", "content": "Reply with exactly: WorkCraft Ollama OK"}],
+                "messages": [{"role": "user", "content": "Reply with exactly: Codata Ollama OK"}],
                 "options": {"temperature": 0},
             },
         )
@@ -92,7 +92,7 @@ async def test_install_chat_and_uninstall_with_small_qwen_model(tmp_path, monkey
 
         await _pull_model(base_url, _MODEL)
         reply = await _chat_once(base_url, _MODEL)
-        assert "WorkCraft" in reply
+        assert "Codata" in reply
         assert "OK" in reply
 
         result = await mgr.uninstall(delete_models=True)

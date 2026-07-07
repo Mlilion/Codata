@@ -88,7 +88,7 @@ export const useExpertSessionStore = create<ExpertSessionStore>()(
       },
     }),
     {
-      name: "workcraft-expert-sessions",
+      name: "codata-expert-sessions",
     },
   ),
 );

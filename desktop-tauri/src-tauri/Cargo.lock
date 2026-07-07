@@ -528,6 +528,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "codata"
+version = "1.1.12"
+dependencies = [
+ "env_logger",
+ "log",
+ "portpicker",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-deep-link",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-process",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-updater",
+ "tauri-plugin-window-state",
+ "tokio",
+ "url",
+ "window-vibrancy",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6081,30 +6105,6 @@ dependencies = [
  "serde_json",
  "unicode-xid",
  "wasmparser",
-]
-
-[[package]]
-name = "workcraft"
-version = "1.1.5"
-dependencies = [
- "env_logger",
- "log",
- "portpicker",
- "reqwest 0.12.28",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-deep-link",
- "tauri-plugin-dialog",
- "tauri-plugin-opener",
- "tauri-plugin-process",
- "tauri-plugin-single-instance",
- "tauri-plugin-updater",
- "tauri-plugin-window-state",
- "tokio",
- "url",
- "window-vibrancy",
 ]
 
 [[package]]

@@ -61,7 +61,7 @@ export const useRightSidebarStore = create<RightSidebarStore>()(
       },
     }),
     {
-      name: "workcraft-right-sidebar",
+      name: "codata-right-sidebar",
       partialize: (s) => ({
         lastTab: s.lastTab,
         width: s.width,

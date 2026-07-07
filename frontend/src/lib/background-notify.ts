@@ -1,6 +1,6 @@
 "use client";
 
-export const NAVIGATE_TO_SESSION_EVENT = "workcraft:navigate-to-session";
+export const NAVIGATE_TO_SESSION_EVENT = "codata:navigate-to-session";
 
 export interface NavigateToSessionDetail {
   sessionId: string;
@@ -37,7 +37,7 @@ export async function notifyBackgroundFinish({
   try {
     const notification = new Notification(title, {
       body,
-      tag: `workcraft-${kind}-${sessionId}`,
+      tag: `codata-${kind}-${sessionId}`,
     });
     notification.onclick = () => {
       try {

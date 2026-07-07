@@ -1,8 +1,8 @@
 [English](README.md)
 
-# WorkCraft 前端
+# Codata 前端
 
-Next.js 15 前端，为 WorkCraft 后端提供专业级 Chat UI，参考 LibreChat 的 UX 架构设计。
+Next.js 15 前端，为 Codata 后端提供专业级 Chat UI，参考 LibreChat 的 UX 架构设计。
 
 ## 快速开始
 

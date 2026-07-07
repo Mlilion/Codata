@@ -88,7 +88,7 @@ def _is_expert_team_creation_mode(request: PromptRequest) -> bool:
 
 def _expert_team_creation_instruction(text: str) -> str:
     return (
-        "[System: 当前会话处于 WorkCraft「AI 创建专家团」模式。\n"
+        "[System: 当前会话处于 Codata「AI 创建专家团」模式。\n"
         "请把用户需求转换成可执行专家团配置，并优先调用 create_expert_teams 工具生成草稿。\n"
         "如果用户明确要求直接保存，请在工具参数中设置 save=true；否则先生成草稿并展示关键设计。\n"
         "工具返回后，用中文概述专家成员、任务流程、依赖关系、token 消耗等级、告警和保存状态。\n\n"
@@ -179,6 +179,7 @@ class SessionPrompt:
         self.workspace: str | None = None
         self.fts_status: dict[str, Any] | None = None
         self.workspace_memory_section: str | None = None
+        self.analysis_memory_section: str | None = None
         self.system_prompt_parts: SystemPromptParts | None = None
         self.merged_permissions: list = []
         self.request_permissions: list = []
@@ -269,6 +270,11 @@ class SessionPrompt:
         if _is_expert_team_creation_mode(self.request):
             self.request.agent = "build"
             self.request.skills = _normalize_selected_skills([*self.request.skills, "create_expert_teams"])
+        elif self.request.mode == "codata":
+            # Codata data-workspace mode routes to the dedicated data agent
+            # (read-only + datasage-focused), unless it doesn't exist.
+            if self.agent_registry.get("data") is not None:
+                self.request.agent = "data"
         self.agent = self.agent_registry.get(self.request.agent) or self.agent_registry.default_agent()
         self.expert_team_registry = _try_get_expert_team_registry()
         self.expert_role_registry = _try_get_expert_role_registry()
@@ -328,7 +334,7 @@ class SessionPrompt:
         if self.provider.id == "ollama":
             try:
                 from app.api.config import _update_env_file
-                _update_env_file("WORKCRAFT_OLLAMA_LAST_MODEL", model_id.removeprefix("ollama/"))
+                _update_env_file("CODATA_OLLAMA_LAST_MODEL", model_id.removeprefix("ollama/"))
             except Exception:
                 pass
 
@@ -344,6 +350,7 @@ class SessionPrompt:
                             db,
                             id=self.job.session_id,
                             directory=self.request.workspace or ".",
+                            app_mode="codata" if self.request.mode == "codata" else None,
                         )
                         self.is_first_turn = True
 
@@ -439,12 +446,25 @@ class SessionPrompt:
             except Exception:
                 logger.debug("Workspace memory injection skipped", exc_info=True)
 
+        # --- Load structured analysis memory for the data agent ---
+        if self.agent.name == "data":
+            try:
+                from app.memory.analysis_memory_injection import build_analysis_memory_section
+
+                self.analysis_memory_section = await build_analysis_memory_section(
+                    self.session_factory, None  # single-user: user_id None
+                )
+            except Exception:
+                logger.debug("Analysis memory injection skipped", exc_info=True)
+
         self.system_prompt_parts = build_system_prompt(
             self.agent,
             directory=self.directory,
             workspace=self.workspace,
             fts_status=self.fts_status,
             workspace_memory_section=self.workspace_memory_section,
+            analysis_memory_section=self.analysis_memory_section,
+            app_mode=self.request.mode,
         )
 
         # --- 5. Merge permission rulesets ---
@@ -1061,6 +1081,27 @@ class SessionPrompt:
             except Exception:
                 logger.warning("Workspace memory queue submission failed", exc_info=True)
 
+        # Queue conversation for analysis-memory refresh (codata sessions only).
+        if not self.job.abort_event.is_set() and self.request.mode == "codata":
+            try:
+                from app.memory.analysis_memory_queue import get_analysis_memory_queue
+                from app.session.manager import get_message_history_for_llm as _get_hist
+
+                am_queue = get_analysis_memory_queue()
+                if am_queue is not None:
+                    async with self.session_factory() as db:
+                        async with db.begin():
+                            _msgs = await _get_hist(db, self.job.session_id)
+                    # Single-user open-source build: user_id stays None.
+                    am_queue.add(
+                        self.job.session_id,
+                        None,
+                        _msgs,
+                        model_id=self.model_id,
+                    )
+            except Exception:
+                logger.warning("Analysis memory queue submission failed", exc_info=True)
+
         # Publish DONE to unlock the frontend UI.
         self.job.publish(
             SSEEvent(
@@ -1097,6 +1138,8 @@ class SessionPrompt:
             workspace=self.workspace,
             fts_status=self.fts_status,
             workspace_memory_section=self.workspace_memory_section,
+            analysis_memory_section=self.analysis_memory_section,
+            app_mode=self.request.mode,
         )
 
 

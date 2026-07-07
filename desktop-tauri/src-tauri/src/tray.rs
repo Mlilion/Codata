@@ -32,7 +32,7 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
 
     let builder = TrayIconBuilder::with_id(TRAY_ID)
         .icon(tray_icon)
-        .tooltip("WorkCraft")
+        .tooltip("Codata")
         .menu(&menu);
 
     #[cfg(target_os = "macos")]
@@ -75,7 +75,7 @@ fn build_menu(app: &AppHandle, recents: &[TrayRecent]) -> tauri::Result<Menu<tau
     let recent_submenu = build_recent_submenu(app, recents)?;
 
     let show_window =
-        MenuItem::with_id(app, "show_window", "Open WorkCraft", true, None::<&str>)?;
+        MenuItem::with_id(app, "show_window", "Open Codata", true, None::<&str>)?;
     let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
     let check_updates = MenuItem::with_id(
         app,
@@ -84,7 +84,7 @@ fn build_menu(app: &AppHandle, recents: &[TrayRecent]) -> tauri::Result<Menu<tau
         true,
         None::<&str>,
     )?;
-    let quit = MenuItem::with_id(app, "quit", "Quit WorkCraft", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Codata", true, None::<&str>)?;
 
     Menu::with_items(
         app,

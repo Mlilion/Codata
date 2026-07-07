@@ -232,9 +232,9 @@ impl BackendState {
                 .resource_dir()
                 .map_err(|e| format!("Failed to get resource dir: {e}"))?;
             let backend_binary = if cfg!(target_os = "windows") {
-                "workcraft-backend.exe"
+                "codata-backend.exe"
             } else {
-                "workcraft-backend"
+                "codata-backend"
             };
             let backend_path = resource_dir.join("backend").join(backend_binary);
             let backend_dir = resource_dir.join("backend");
@@ -769,7 +769,7 @@ async fn load_session_token(data_dir: &Path) -> Result<String, String> {
     loop {
         match tokio::fs::read_to_string(&token_path).await {
             Ok(raw) => {
-                // Minimal JSON parse: we expect `{"token": "workcraft_st_..."}`.
+                // Minimal JSON parse: we expect `{"token": "codata_st_..."}`.
                 // Bringing in serde_json here would be overkill for a two-field
                 // file we control the format of, so we extract the string
                 // value directly.

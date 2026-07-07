@@ -3,7 +3,7 @@ import { AppProviders } from "@/components/providers/app-providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "WorkCraft",
+  title: "Codata",
   description: "Your local AI assistant — private, powerful, personal",
   icons: {
     icon: "/favicon.svg",

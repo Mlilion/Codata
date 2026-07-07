@@ -10,7 +10,7 @@ TOKEN_KEYS = ("input", "output", "reasoning", "cache_read", "cache_write")
 
 
 def empty_usage() -> dict[str, int]:
-    """Return a canonical token bucket used by WorkCraft streams."""
+    """Return a canonical token bucket used by Codata streams."""
     return {key: 0 for key in TOKEN_KEYS}
 
 

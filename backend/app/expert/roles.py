@@ -134,7 +134,7 @@ class ExpertRoleRegistry:
     @staticmethod
     def _default_dirs(project_dir: str | None) -> list[Path]:
         dirs: list[Path] = []
-        env_dir = os.getenv("WORKCRAFT_AGENTS_DIR")
+        env_dir = os.getenv("CODATA_AGENTS_DIR")
         if env_dir:
             dirs.append(Path(env_dir))
         repo_root = Path(__file__).resolve().parents[3]
@@ -142,7 +142,7 @@ class ExpertRoleRegistry:
         if project_dir:
             project = Path(project_dir)
             dirs.extend([
-                project / ".workcraft" / "agency-agents-zh",
+                project / ".codata" / "agency-agents-zh",
                 project / "agency-agents-zh",
                 project / "node_modules" / "agency-agents-zh",
             ])
@@ -150,13 +150,13 @@ class ExpertRoleRegistry:
             app_data_dir / "agency-agents-zh",
             repo_root / "node_modules" / "agency-agents-zh",
             repo_root / "agency-agents-zh",
-            Path.home() / ".workcraft" / "agency-agents-zh",
+            Path.home() / ".codata" / "agency-agents-zh",
             Path.home() / "agency-agents-zh",
         ])
         if project_dir:
             project = Path(project_dir)
             dirs.extend([
-                project / ".workcraft" / "agency-agents",
+                project / ".codata" / "agency-agents",
                 project / "agency-agents",
                 project / "node_modules" / "agency-agents",
             ])
@@ -164,7 +164,7 @@ class ExpertRoleRegistry:
             app_data_dir / "agency-agents",
             repo_root / "node_modules" / "agency-agents",
             repo_root / "agency-agents",
-            Path.home() / ".workcraft" / "agency-agents",
+            Path.home() / ".codata" / "agency-agents",
             Path.home() / "agency-agents",
         ])
         return list(dict.fromkeys(dirs))

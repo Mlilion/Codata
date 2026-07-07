@@ -6,19 +6,19 @@ const strict = process.argv.includes("--strict");
 const groups = [
   {
     name: "account-login",
-    description: "Remove WorkCraft account login, cloud proxy, and subscription account modules from the open-source repository",
+    description: "Remove Codata account login, cloud proxy, and subscription account modules from the open-source repository",
     paths: [
       "backend/app/api/openai_auth.py",
       "backend/app/provider/openai_oauth.py",
       "backend/app/provider/openai_subscription.py",
       "backend/app/provider/proxy_auth.py",
-      "backend/tests/test_api/test_workcraft_account.py",
+      "backend/tests/test_api/test_codata_account.py",
       "backend/tests/test_provider/test_openai_oauth.py",
       "backend/tests/test_provider/test_proxy_auth.py",
       "frontend/src/stores/auth-store.ts",
       "frontend/src/stores/billing-store.ts",
       "frontend/src/lib/proxy-api.ts",
-      "frontend/src/lib/workcraft-billing.ts",
+      "frontend/src/lib/codata-billing.ts",
       "frontend/src/components/settings/account-tab.tsx",
       "frontend/src/components/settings/recharge-panel.tsx",
       "frontend/src/components/billing/upgrade-prompt.tsx",

@@ -9,13 +9,13 @@ let splashHasBeenShown = false;
 /**
  * Animated logo component with fade-in effect
  */
-export function AnimatedWorkCraftLogo({ size = 80 }: { size?: number }) {
+export function AnimatedCodataLogo({ size = 80 }: { size?: number }) {
   return (
     <motion.img
       src="/logo-512.png"
       width={size}
       height={size}
-      alt="WorkCraft"
+      alt="Codata"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1.0, ease: "easeInOut", delay: 0.2 }}
@@ -80,7 +80,7 @@ export function SplashScreen() {
               opacity: { duration: 0.3 }
             }}
           >
-            <AnimatedWorkCraftLogo size={120} />
+            <AnimatedCodataLogo size={120} />
           </motion.div>
 
           {/* App name - fades in after logo animation */}
@@ -91,7 +91,7 @@ export function SplashScreen() {
             transition={{ duration: 0.6, delay: 1.4 }}
           >
             <h1 className="text-3xl font-semibold text-[var(--text-primary)] tracking-wide">
-              WORKCRAFT
+              CODATA
             </h1>
             <p className="mt-2 text-sm text-[var(--text-tertiary)]">
               Your local AI assistant

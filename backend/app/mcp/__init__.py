@@ -1,7 +1,7 @@
 """MCP (Model Context Protocol) integration.
 
 Connects to external MCP servers (local stdio or remote HTTP/SSE)
-and exposes their tools as WorkCraft ToolDefinitions.
+and exposes their tools as Codata ToolDefinitions.
 """
 
 from app.mcp.manager import McpManager

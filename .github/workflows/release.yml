@@ -48,11 +48,11 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt pyinstaller
-          pyinstaller workcraft.spec --noconfirm
+          pyinstaller codata.spec --noconfirm
 
       - name: Verify backend bundle
         shell: bash
-        run: node scripts/verify-bundle.mjs backend/dist/workcraft-backend
+        run: node scripts/verify-bundle.mjs backend/dist/codata-backend
 
       - name: Download Node.js runtime
         run: cd backend && python scripts/download_node.py
@@ -186,10 +186,10 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt pyinstaller
-          pyinstaller workcraft.spec --noconfirm
+          pyinstaller codata.spec --noconfirm
 
       - name: Sign backend native binaries
-        run: scripts/sign-macos-bundle.sh backend/dist/workcraft-backend "$APPLE_SIGNING_IDENTITY"
+        run: scripts/sign-macos-bundle.sh backend/dist/codata-backend "$APPLE_SIGNING_IDENTITY"
 
       - name: Verify backend bundle
         env:
@@ -197,7 +197,7 @@ jobs:
           # runtime smoke test can't execute the binary natively. Static
           # checks still run. The aarch64 matrix leg runs the full smoke.
           VERIFY_BUNDLE_SKIP_SMOKE: ${{ matrix.arch == 'x64' && '1' || '0' }}
-        run: node scripts/verify-bundle.mjs backend/dist/workcraft-backend
+        run: node scripts/verify-bundle.mjs backend/dist/codata-backend
 
       - name: Download Node.js runtime
         run: cd backend && python3 scripts/download_node.py --platform ${{ matrix.node_platform }}
@@ -216,28 +216,28 @@ jobs:
 
       - name: Fix PyInstaller framework links in app bundle
         run: |
-          APP_BACKEND="desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/WorkCraft.app/Contents/Resources/backend"
+          APP_BACKEND="desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/Codata.app/Contents/Resources/backend"
           echo "Repairing PyInstaller Python.framework symlinks after Tauri resource copy"
           scripts/fix-macos-pyinstaller-frameworks.sh "$APP_BACKEND"
 
       - name: Sign bundled resource binaries
         run: |
-          APP_RESOURCES="desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/WorkCraft.app/Contents/Resources"
+          APP_RESOURCES="desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/Codata.app/Contents/Resources"
           scripts/sign-macos-bundle.sh "$APP_RESOURCES/backend" "$APPLE_SIGNING_IDENTITY"
           scripts/sign-macos-bundle.sh "$APP_RESOURCES/nodejs" "$APPLE_SIGNING_IDENTITY" desktop-tauri/src-tauri/node.entitlements.plist
 
       - name: Re-sign app bundle
         run: |
-          APP_PATH="desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/WorkCraft.app"
-          codesign --force --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$APP_PATH/Contents/MacOS/workcraft"
+          APP_PATH="desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/Codata.app"
+          codesign --force --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$APP_PATH/Contents/MacOS/codata"
           codesign --force --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$APP_PATH"
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
           codesign -dv --verbose=4 "$APP_PATH"
 
       - name: Notarize app
         run: |
-          APP_PATH="desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/WorkCraft.app"
-          NOTARY_ZIP="$RUNNER_TEMP/WorkCraft-${{ matrix.arch }}-notarize.zip"
+          APP_PATH="desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/Codata.app"
+          NOTARY_ZIP="$RUNNER_TEMP/Codata-${{ matrix.arch }}-notarize.zip"
 
           ditto -c -k --keepParent "$APP_PATH" "$NOTARY_ZIP"
           if [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_PASSWORD:-}" ] && [ -n "${APPLE_TEAM_ID:-}" ]; then
@@ -262,7 +262,7 @@ jobs:
           # full smoke test against the unpackaged backend.
           VERIFY_BUNDLE_SKIP_SMOKE: "1"
         run: |
-          APP_BACKEND="desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/WorkCraft.app/Contents/Resources/backend"
+          APP_BACKEND="desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/Codata.app/Contents/Resources/backend"
           node scripts/verify-bundle.mjs "$APP_BACKEND"
 
       - name: Regenerate notarized macOS artifacts
@@ -270,9 +270,9 @@ jobs:
           BUNDLE_DIR="desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle"
           VERSION=$(python3 -c "import json; print(json.load(open('package.json'))['version'])")
           ARCH="${{ matrix.arch }}"
-          TAR_NAME="WorkCraft_${VERSION}_${ARCH}.app.tar.gz"
-          DMG_NAME="WorkCraft_${VERSION}_${ARCH}.dmg"
-          APP_PATH="$BUNDLE_DIR/macos/WorkCraft.app"
+          TAR_NAME="Codata_${VERSION}_${ARCH}.app.tar.gz"
+          DMG_NAME="Codata_${VERSION}_${ARCH}.dmg"
+          APP_PATH="$BUNDLE_DIR/macos/Codata.app"
 
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
           codesign -dv --verbose=4 "$APP_PATH"
@@ -280,8 +280,8 @@ jobs:
           xcrun stapler validate "$APP_PATH"
 
           cd "$BUNDLE_DIR/macos"
-          rm -f WorkCraft.app.tar.gz WorkCraft.app.tar.gz.sig WorkCraft_*.app.tar.gz WorkCraft_*.app.tar.gz.sig
-          tar -czf "$TAR_NAME" WorkCraft.app
+          rm -f Codata.app.tar.gz Codata.app.tar.gz.sig Codata_*.app.tar.gz Codata_*.app.tar.gz.sig
+          tar -czf "$TAR_NAME" Codata.app
           cd $GITHUB_WORKSPACE
 
           npx @tauri-apps/cli signer sign "$BUNDLE_DIR/macos/$TAR_NAME"
@@ -291,7 +291,7 @@ jobs:
           DMG_STAGING=$(mktemp -d)
           cp -R "$APP_PATH" "$DMG_STAGING/"
           ln -s /Applications "$DMG_STAGING/Applications"
-          hdiutil create -volname "WorkCraft" \
+          hdiutil create -volname "Codata" \
             -srcfolder "$DMG_STAGING" \
             -ov -format UDZO \
             "$BUNDLE_DIR/dmg/$DMG_NAME"
@@ -318,9 +318,9 @@ jobs:
 
           ARCHIVE_CHECK=$(mktemp -d)
           tar -xzf "$BUNDLE_DIR/macos/$TAR_NAME" -C "$ARCHIVE_CHECK"
-          codesign --verify --deep --strict --verbose=2 "$ARCHIVE_CHECK/WorkCraft.app"
-          spctl --assess --type execute --verbose=4 "$ARCHIVE_CHECK/WorkCraft.app"
-          xcrun stapler validate "$ARCHIVE_CHECK/WorkCraft.app"
+          codesign --verify --deep --strict --verbose=2 "$ARCHIVE_CHECK/Codata.app"
+          spctl --assess --type execute --verbose=4 "$ARCHIVE_CHECK/Codata.app"
+          xcrun stapler validate "$ARCHIVE_CHECK/Codata.app"
           rm -rf "$ARCHIVE_CHECK"
 
       - name: Upload artifacts
@@ -329,8 +329,8 @@ jobs:
           name: macos-${{ matrix.arch }}-bundle
           path: |
             desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/WorkCraft_*.app.tar.gz
-            desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/WorkCraft_*.app.tar.gz.sig
+            desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/Codata_*.app.tar.gz
+            desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/Codata_*.app.tar.gz.sig
 
   publish:
     needs: [build-windows, build-macos]

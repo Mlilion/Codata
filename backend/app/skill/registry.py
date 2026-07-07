@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Directories under a project root (or home dir) that may contain skills.
 _EXTERNAL_SKILL_DIRS = [".claude", ".agents"]
-_WORKCRAFT_SKILL_DIR = ".workcraft"
+_CODATA_SKILL_DIR = ".codata"
 
 
 class SkillRegistry:
@@ -20,9 +20,9 @@ class SkillRegistry:
 
     Discovery order (lowest → highest priority):
       1. Bundled skills shipped with the application
-      2. Global user skills  (~/.workcraft/skills/)
+      2. Global user skills  (~/.codata/skills/)
       3. External skills     ({project}/.claude/skills/, {project}/.agents/skills/)
-      4. Project skills      ({project}/.workcraft/skills/)
+      4. Project skills      ({project}/.codata/skills/)
 
     Later-discovered skills with the same name override earlier ones.
     """
@@ -59,7 +59,7 @@ class SkillRegistry:
 
         # 2. Global user skills
         home = Path.home()
-        global_dir = home / _WORKCRAFT_SKILL_DIR / "skills"
+        global_dir = home / _CODATA_SKILL_DIR / "skills"
         if global_dir.is_dir():
             search_dirs.append(global_dir)
 
@@ -72,8 +72,8 @@ class SkillRegistry:
                 if ext_dir.is_dir():
                     search_dirs.append(ext_dir)
 
-            # 4. Project-level .workcraft/skills (highest priority)
-            proj_dir = project / _WORKCRAFT_SKILL_DIR / "skills"
+            # 4. Project-level .codata/skills (highest priority)
+            proj_dir = project / _CODATA_SKILL_DIR / "skills"
             if proj_dir.is_dir():
                 search_dirs.append(proj_dir)
 
@@ -173,8 +173,8 @@ class SkillRegistry:
 
     def _resolve_disabled_path(self) -> Path | None:
         if self._project_dir:
-            return Path(self._project_dir).resolve() / ".workcraft" / "skills.disabled.json"
-        return Path.home() / ".workcraft" / "skills.disabled.json"
+            return Path(self._project_dir).resolve() / ".codata" / "skills.disabled.json"
+        return Path.home() / ".codata" / "skills.disabled.json"
 
     def _load_disabled(self) -> set[str]:
         if not self._disabled_path or not self._disabled_path.is_file():

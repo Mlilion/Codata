@@ -29,7 +29,7 @@ let _backendTokenPromise: Promise<string> | null = null;
 const FALLBACK_BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const WEB_DEV_BACKEND_TOKEN =
-  process.env.NEXT_PUBLIC_WORKCRAFT_DEV_SESSION_TOKEN || "";
+  process.env.NEXT_PUBLIC_CODATA_DEV_SESSION_TOKEN || "";
 
 /**
  * Get the backend URL. In desktop mode, this is resolved asynchronously
@@ -222,7 +222,8 @@ export const API = {
   },
   SESSIONS: {
     BASE: "/api/sessions",
-    LIST: (limit = 50, offset = 0) => `/api/sessions?limit=${limit}&offset=${offset}`,
+    LIST: (limit = 50, offset = 0, appMode?: string) =>
+      `/api/sessions?limit=${limit}&offset=${offset}${appMode ? `&app_mode=${appMode}` : ""}`,
     SEARCH: (q: string, limit = 20, offset = 0) =>
       `/api/sessions/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`,
     DETAIL: (id: string) => `/api/sessions/${id}`,
@@ -288,6 +289,7 @@ export const API = {
   TOOLS: "/api/tools",
   SKILLS: {
     LIST: "/api/skills",
+    CREATE: "/api/skills",
     DETAIL: (name: string) => `/api/skills/${encodeURIComponent(name)}` as const,
     ENABLE: (name: string) => `/api/skills/${name}/enable` as const,
     DISABLE: (name: string) => `/api/skills/${name}/disable` as const,
@@ -352,6 +354,25 @@ export const API = {
     FROM_TEMPLATE: "/api/automations/from-template",
     LOOP_PRESETS: "/api/automations/loop-presets",
   },
+  ANALYSIS: {
+    RECOMMENDATIONS: "/api/analysis/recommendations",
+  },
+  DASHBOARD: {
+    // Dashboards (named collections)
+    DASHBOARDS: "/api/dashboards",
+    DASHBOARD_DETAIL: (id: string) => `/api/dashboards/${id}` as const,
+    // Items (pinned charts)
+    ITEMS: (dashboardId?: string) =>
+      dashboardId
+        ? (`/api/dashboard/items?dashboard_id=${encodeURIComponent(dashboardId)}` as const)
+        : ("/api/dashboard/items" as const),
+    CREATE: "/api/dashboard/items",
+    DETAIL: (id: string) => `/api/dashboard/items/${id}` as const,
+    DELETE: (id: string) => `/api/dashboard/items/${id}` as const,
+    REFRESH: (id: string) => `/api/dashboard/items/${id}/refresh` as const,
+    REORDER: "/api/dashboard/reorder",
+    LAYOUT: "/api/dashboard/layout",
+  },
   CHANNELS: {
     LIST: "/api/channels",
     ADD: "/api/channels/add",
@@ -381,6 +402,8 @@ export const API = {
 export const queryKeys = {
   sessions: {
     all: ["sessions"] as const,
+    list: (appMode?: string) =>
+      appMode ? (["sessions", "mode", appMode] as const) : (["sessions"] as const),
     detail: (id: string) => ["sessions", id] as const,
     search: (q: string) => ["sessions", "search", q] as const,
     todos: (id: string) => ["sessions", id, "todos"] as const,
@@ -415,6 +438,13 @@ export const queryKeys = {
     detail: (id: string) => ["automations", id] as const,
     runs: (id: string) => ["automations", id, "runs"] as const,
     templates: ["automations", "templates"] as const,
+  },
+  dashboard: {
+    list: ["dashboard", "list"] as const,
+    items: (dashboardId?: string) =>
+      dashboardId
+        ? (["dashboard", "items", dashboardId] as const)
+        : (["dashboard", "items"] as const),
   },
   workspaceMemory: (workspace: string) =>
     ["workspaceMemory", workspace] as const,

@@ -17,7 +17,7 @@ from app.tool.context import ToolContext
 
 
 class CreateExpertTeamsTool(ToolDefinition):
-    """Generate, validate, and optionally persist a WorkCraft expert team."""
+    """Generate, validate, and optionally persist a Codata expert team."""
 
     @property
     def is_concurrency_safe(self) -> bool:
@@ -30,7 +30,7 @@ class CreateExpertTeamsTool(ToolDefinition):
     @property
     def description(self) -> str:
         return (
-            "Create a WorkCraft expert team from a natural-language requirement or a complete "
+            "Create a Codata expert team from a natural-language requirement or a complete "
             "ExpertTeamConfig object. Use this when the user asks to create, design, scaffold, "
             "or publish a multi-agent expert team. The tool validates workflow references and "
             "can save the result into the user's expert-team registry."

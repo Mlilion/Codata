@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ─── WorkCraft — Codex-aligned defaults ─── */
+/* ─── Codata — Codex-aligned defaults ─── */
 
 :root {
   /* Surface */
@@ -1188,4 +1188,19 @@ pre code {
     animation: none;
     -webkit-text-fill-color: var(--text-secondary);
   }
+}
+
+/* react-grid-layout: theme the drag placeholder + resize handle for Codata dashboard */
+.dashboard-grid .react-grid-placeholder {
+  background: var(--brand-primary);
+  opacity: 0.15;
+  border-radius: 0.75rem;
+}
+.dashboard-grid .react-grid-item > .react-resizable-handle::after {
+  border-right-color: var(--text-tertiary);
+  border-bottom-color: var(--text-tertiary);
+}
+.dashboard-grid .react-grid-item.react-draggable-dragging {
+  z-index: 10;
+  cursor: grabbing;
 }

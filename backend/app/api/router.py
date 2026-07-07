@@ -6,7 +6,9 @@ from fastapi import APIRouter
 
 from app.api import agents as agents_api
 from app.api import artifacts as artifacts_api
+from app.api import analysis as analysis_api
 from app.api import automations as automations_api
+from app.api import dashboard as dashboard_api
 from app.api import workspace_memory as workspace_memory_api
 from app.api import channels as channels_api
 from app.api import ollama as ollama_api
@@ -16,7 +18,6 @@ from app.api import connectors as connectors_api
 from app.api import files as files_api
 from app.api import expert_roles as expert_roles_api
 from app.api import expert_teams as expert_teams_api
-from app.api import vimax as vimax_api
 from app.api import google_auth as google_auth_api
 from app.api import mcp as mcp_api
 from app.api import messages as messages_api
@@ -40,7 +41,6 @@ api_router.include_router(messages_api.router, tags=["messages"])
 api_router.include_router(files_api.router, tags=["files"])
 api_router.include_router(expert_roles_api.router, tags=["expert-roles"])
 api_router.include_router(expert_teams_api.router, tags=["expert-teams"])
-api_router.include_router(vimax_api.router, tags=["vimax"])
 api_router.include_router(artifacts_api.router, tags=["artifacts"])
 api_router.include_router(usage_api.router, tags=["usage"])
 api_router.include_router(config_api.router, tags=["config"])
@@ -50,6 +50,8 @@ api_router.include_router(connectors_api.router, tags=["connectors"])
 api_router.include_router(google_auth_api.router, tags=["google"])
 api_router.include_router(plugins_api.router, tags=["plugins"])
 api_router.include_router(automations_api.router, tags=["automations"])
+api_router.include_router(dashboard_api.router, tags=["dashboard"])
+api_router.include_router(analysis_api.router, tags=["analysis"])
 api_router.include_router(ollama_api.router, tags=["ollama"])
 api_router.include_router(channels_api.router, tags=["channels"])
 api_router.include_router(workspace_memory_api.router, tags=["workspace-memory"])

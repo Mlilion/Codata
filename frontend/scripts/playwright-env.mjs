@@ -6,7 +6,7 @@ delete env.NO_COLOR;
 
 const args = process.argv.slice(2);
 if (args[0] === "--headless") {
-  env.WORKCRAFT_UI_HEADLESS = "true";
+  env.CODATA_UI_HEADLESS = "true";
   args.shift();
 }
 

@@ -915,34 +915,6 @@ def test_runtime_manager_id_is_valid_for_resume_requests() -> None:
     assert request.from_task_id == "__manager__"
 
 
-def test_long_running_tool_task_gets_higher_round_budget() -> None:
-    team = ExpertTeamConfig(
-        id="video",
-        name="视频测试",
-        default_max_tool_rounds=6,
-        members=[
-            {
-                "id": "producer",
-                "name": "渲染执行",
-                "role": "ViMax 渲染执行专家",
-                "goal": "调用 ViMax 生成视频。",
-                "tools": ["vimax_generate_video"],
-            }
-        ],
-        tasks=[
-            {
-                "id": "render",
-                "name": "视频渲染",
-                "member": "producer",
-                "task": "调用 vimax_generate_video 生成最终视频。",
-            }
-        ],
-    )
-    runner = _runner(team)
-
-    assert runner._max_tool_rounds_for_task(team.tasks[0], team.members[0]) == 16
-
-
 def test_hierarchical_dynamic_task_can_be_finalized_from_restored_state() -> None:
     team = ExpertTeamConfig(
         id="hier-dynamic-final",

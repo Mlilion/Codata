@@ -308,7 +308,7 @@ def pack_pptx(input_dir, pptx_path):
 
 ## 5. Dependencies
 
-Core (included with WorkCraft):
+Core (included with Codata):
 - `python-pptx` — read, create, edit presentations
 
 Optional:

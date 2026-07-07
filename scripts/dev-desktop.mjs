@@ -40,7 +40,7 @@ const env = {
   // ``backend/`` directly (no chdir), so override the path to keep the
   // file under ``backend/data/`` where ``DEV_BACKEND_DATA_DIR`` says
   // Tauri will poll for it.
-  WORKCRAFT_SESSION_TOKEN_PATH: "data/session_token.json",
+  CODATA_SESSION_TOKEN_PATH: "data/session_token.json",
   NEXT_PUBLIC_API_URL: `http://localhost:${backendPort}`,
   // Tauri merges TAURI_CONFIG JSON into tauri.conf.json at runtime
   TAURI_CONFIG: JSON.stringify({

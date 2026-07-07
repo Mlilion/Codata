@@ -8,6 +8,8 @@ interface AssistantMessageGroupProps {
   messages: MessageResponse[];
   /** Whether this group just arrived (animate) or was loaded from history (skip animation). */
   isNew?: boolean;
+  /** Whether this is the last message group in the thread (newest data card starts expanded). */
+  isLastMessage?: boolean;
 }
 
 /**
@@ -17,7 +19,7 @@ interface AssistantMessageGroupProps {
  * the user's perspective these are all one response. This component combines
  * all parts from all messages and renders them through a single AssistantMessage.
  */
-export const AssistantMessageGroup = memo(function AssistantMessageGroup({ messages, isNew = true }: AssistantMessageGroupProps) {
+export const AssistantMessageGroup = memo(function AssistantMessageGroup({ messages, isNew = true, isLastMessage = false }: AssistantMessageGroupProps) {
   const combinedParts = useMemo(
     () =>
       messages.flatMap((msg) =>
@@ -34,6 +36,7 @@ export const AssistantMessageGroup = memo(function AssistantMessageGroup({ messa
           message={messages[0]}
           combinedParts={combinedParts}
           isNew={isNew}
+          isLastMessage={isLastMessage}
         />
       </div>
     </div>

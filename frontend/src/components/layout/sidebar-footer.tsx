@@ -28,7 +28,7 @@ import { IS_DESKTOP } from "@/lib/constants";
 import { desktopAPI } from "@/lib/tauri-api";
 import { cn } from "@/lib/utils";
 
-const USER_GUIDE_URL = "https://work-craft.com/workcraft-office-user-guide.html";
+const USER_GUIDE_URL = "https://example.com/codata-office-user-guide.html";
 
 export function SidebarFooter() {
   const { t } = useTranslation(["common", "settings"]);

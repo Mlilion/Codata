@@ -11,7 +11,7 @@ from app.auth.token import ensure_session_token
 
 def test_ensure_session_token_accepts_dev_override(tmp_path):
     token_path = tmp_path / "session_token.json"
-    token = "workcraft_st_test_dev_override"
+    token = "codata_st_test_dev_override"
 
     generated = ensure_session_token(token_path, token=token)
 
@@ -20,5 +20,5 @@ def test_ensure_session_token_accepts_dev_override(tmp_path):
 
 
 def test_ensure_session_token_rejects_non_session_override(tmp_path):
-    with pytest.raises(ValueError, match="workcraft_st_"):
+    with pytest.raises(ValueError, match="codata_st_"):
         ensure_session_token(tmp_path / "session_token.json", token="wrong_prefix")

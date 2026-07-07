@@ -7,6 +7,7 @@ import Link from "next/link";
 import { SquarePen } from "lucide-react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { SettingsSidebar } from "@/components/settings/settings-sidebar";
+import { CodataSidebar } from "@/components/codata/codata-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { RightSidebar } from "@/components/right-sidebar/right-sidebar";
 import { usePlanReviewStore } from "@/stores/plan-review-store";
@@ -17,7 +18,7 @@ import { TitleBar } from "@/components/desktop/title-bar";
 import { WindowTopIcons } from "@/components/layout/window-top-icons";
 import { UpdateBanner } from "@/components/desktop/update-banner";
 import { Button } from "@/components/ui/button";
-import { WorkCraftLogo } from "@/components/ui/workcraft-logo";
+import { CodataLogo } from "@/components/ui/codata-logo";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useSettingsHasHydrated } from "@/stores/settings-store";
@@ -50,6 +51,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
   const isCollapsed = useSidebarStore((s) => s.isCollapsed);
+  const appMode = useSidebarStore((s) => s.appMode);
   const toggleSidebar = useSidebarStore((s) => s.toggle);
   const sidebarWidth = useSidebarStore((s) => s.width);
   const rightSidebarIsOpen = useRightSidebarStore((s) => s.isOpen);
@@ -138,6 +140,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const isChatPage = pathname?.startsWith("/c/") ?? false;
   const isSettingsPage = pathname?.startsWith("/settings") ?? false;
+  // Codata mode swaps the sidebar (unless on settings, which owns its own nav).
+  const isCodataMode = appMode === "codata" && !isSettingsPage;
   const isActiveChat = isChatPage && pathname !== "/c/new";
   // Settings replaces the sidebar with its own; always keep the gutter.
   const marginLeft =
@@ -193,6 +197,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <Suspense fallback={null}>
             <SettingsSidebar />
           </Suspense>
+        ) : isCodataMode ? (
+          <CodataSidebar />
         ) : (
           <Sidebar />
         )}
@@ -224,7 +230,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   onClick={toggleSidebar}
                   aria-label={t("openSidebar")}
                 >
-                  <WorkCraftLogo size={18} />
+                  <CodataLogo size={18} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">{t("openSidebar")}</TooltipContent>

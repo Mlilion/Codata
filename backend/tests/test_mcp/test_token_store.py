@@ -86,7 +86,7 @@ class TestMcpTokenStore:
 class TestMigrateNamespacedKeys:
     def test_migrates_colon_key(self, tmp_path: Path):
         # Pre-populate JSON with namespaced key
-        tokens_path = tmp_path / ".workcraft" / "mcp-tokens.json"
+        tokens_path = tmp_path / ".codata" / "mcp-tokens.json"
         tokens_path.parent.mkdir(parents=True)
         tokens_path.write_text(json.dumps({
             "engineering:slack": {"access_token": "at", "expires_at": 100}
@@ -96,7 +96,7 @@ class TestMigrateNamespacedKeys:
         assert store.has_token("engineering:slack") is False
 
     def test_keeps_latest_expiry(self, tmp_path: Path):
-        tokens_path = tmp_path / ".workcraft" / "mcp-tokens.json"
+        tokens_path = tmp_path / ".codata" / "mcp-tokens.json"
         tokens_path.parent.mkdir(parents=True)
         tokens_path.write_text(json.dumps({
             "a:slack": {"access_token": "old", "expires_at": 100},
@@ -108,7 +108,7 @@ class TestMigrateNamespacedKeys:
         assert got.access_token == "new"
 
     def test_no_migration_needed(self, tmp_path: Path):
-        tokens_path = tmp_path / ".workcraft" / "mcp-tokens.json"
+        tokens_path = tmp_path / ".codata" / "mcp-tokens.json"
         tokens_path.parent.mkdir(parents=True)
         tokens_path.write_text(json.dumps({
             "slack": {"access_token": "at", "expires_at": 100}

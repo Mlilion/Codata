@@ -1,7 +1,7 @@
-; Custom NSIS installer hooks for WorkCraft.
+; Custom NSIS installer hooks for Codata.
 ;
-; WorkCraft runs as two processes: the Tauri UI (WorkCraft.exe) and a PyInstaller
-; sidecar (workcraft-backend.exe). The backend keeps several .pyd files loaded
+; Codata runs as two processes: the Tauri UI (Codata.exe) and a PyInstaller
+; sidecar (codata-backend.exe). The backend keeps several .pyd files loaded
 ; (e.g. PIL's _imaging.pyd, mypyc-compiled modules), which locks them on disk.
 ;
 ; Tauri's default NSIS template only terminates ${MAINBINARYNAME}.exe before
@@ -13,32 +13,32 @@
 ; locked files cleanly.
 
 !macro NSIS_HOOK_PREINSTALL
-  DetailPrint "Terminating WorkCraft backend process if running..."
+  DetailPrint "Terminating Codata backend process if running..."
 
   ; Kill the backend sidecar. Try current-user first (matches our default
   ; per-user install), then fall back to the machine-wide variant so this
   ; also works when the installer is running elevated.
-  nsis_tauri_utils::FindProcessCurrentUser "workcraft-backend.exe"
+  nsis_tauri_utils::FindProcessCurrentUser "codata-backend.exe"
   Pop $R0
   ${If} $R0 = 0
-    nsis_tauri_utils::KillProcessCurrentUser "workcraft-backend.exe"
+    nsis_tauri_utils::KillProcessCurrentUser "codata-backend.exe"
     Pop $R0
   ${EndIf}
 
-  nsis_tauri_utils::FindProcess "workcraft-backend.exe"
+  nsis_tauri_utils::FindProcess "codata-backend.exe"
   Pop $R0
   ${If} $R0 = 0
-    nsis_tauri_utils::KillProcess "workcraft-backend.exe"
+    nsis_tauri_utils::KillProcess "codata-backend.exe"
     Pop $R0
   ${EndIf}
 
   ; Also make sure the main binary is gone. Tauri's CheckIfAppIsRunning
   ; handles this later too, but doing it here means we don't race the
   ; backend respawning a UI process between the two steps.
-  nsis_tauri_utils::FindProcessCurrentUser "WorkCraft.exe"
+  nsis_tauri_utils::FindProcessCurrentUser "Codata.exe"
   Pop $R0
   ${If} $R0 = 0
-    nsis_tauri_utils::KillProcessCurrentUser "WorkCraft.exe"
+    nsis_tauri_utils::KillProcessCurrentUser "Codata.exe"
     Pop $R0
   ${EndIf}
 

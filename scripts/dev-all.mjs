@@ -10,13 +10,13 @@
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 
-const token = `workcraft_st_${randomBytes(32).toString("base64url")}`;
+const token = `codata_st_${randomBytes(32).toString("base64url")}`;
 
 const env = {
   ...process.env,
-  WORKCRAFT_ALLOW_DEV_SESSION_TOKEN: "true",
-  WORKCRAFT_DEV_SESSION_TOKEN: token,
-  NEXT_PUBLIC_WORKCRAFT_DEV_SESSION_TOKEN: token,
+  CODATA_ALLOW_DEV_SESSION_TOKEN: "true",
+  CODATA_DEV_SESSION_TOKEN: token,
+  NEXT_PUBLIC_CODATA_DEV_SESSION_TOKEN: token,
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
 };
 

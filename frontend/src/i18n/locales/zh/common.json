@@ -72,7 +72,7 @@
   "minutesAgo": "{{count}} 分钟前",
   "hoursAgo": "{{count}} 小时前",
   "daysAgo": "{{count}} 天前",
-  "poweredBy": "由 OpenRouter 提供支持 · WorkCraft v0.1",
+  "poweredBy": "由 OpenRouter 提供支持 · Codata v0.1",
   "sortBy": "排序",
   "name": "名称",
   "price": "价格",

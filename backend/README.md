@@ -1,6 +1,6 @@
 [中文](README.zh-CN.md)
 
-# WorkCraft Backend
+# Codata Backend
 
 Python FastAPI backend that replicates OpenCode's complete agent architecture, bringing Claude Code-level agentic capabilities to open-source models via OpenRouter.
 
@@ -12,7 +12,7 @@ pip install -e ".[dev]"
 
 # 2. Configure environment
 cp .env.example .env
-# Edit .env — set WORKCRAFT_OPENROUTER_API_KEY
+# Edit .env — set CODATA_OPENROUTER_API_KEY
 
 # 3. Start the server
 uvicorn app.main:app --reload
@@ -270,7 +270,7 @@ Each tool can be set to `allow`, `deny`, or `ask` (prompts user in UI).
 | SiliconFlow (硅基流动) | BYOK | |
 | Xiaomi MiMo | BYOK | |
 
-All BYOK provider keys follow the pattern `WORKCRAFT_{PROVIDER}_API_KEY`.
+All BYOK provider keys follow the pattern `CODATA_{PROVIDER}_API_KEY`.
 
 ## Usage Examples
 
@@ -313,21 +313,21 @@ curl http://localhost:8000/api/agents
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `WORKCRAFT_OPENROUTER_API_KEY` | OpenRouter API key | (optional) |
-| `WORKCRAFT_DATABASE_URL` | Database connection string | `sqlite+aiosqlite:///./data/workcraft.db` |
-| `WORKCRAFT_HOST` | Listen address | `0.0.0.0` |
-| `WORKCRAFT_PORT` | Listen port | `8000` |
-| `WORKCRAFT_DEBUG` | Debug mode | `false` |
-| `WORKCRAFT_PROJECT_DIR` | Workspace root (for file operations) | `.` |
-| `WORKCRAFT_COMPACTION_AUTO` | Auto context compression | `true` |
-| `WORKCRAFT_DAILY_SEARCH_LIMIT` | Daily web search quota | `20` |
-| `WORKCRAFT_FTS_ENABLED` | Full-text search indexing | `true` |
-| `WORKCRAFT_OLLAMA_BASE_URL` | Ollama server URL (auto-set by setup) | `` |
-| `WORKCRAFT_OLLAMA_AUTO_START` | Auto-start managed Ollama on launch | `true` |
-| `WORKCRAFT_OLLAMA_LAST_MODEL` | Last-used model for startup pre-warming | `` |
-| `WORKCRAFT_CHANNELS_ENABLED` | Enable in-process messaging channels | `true` |
-| `WORKCRAFT_CHANNELS_CONFIG_PATH` | Messaging channel config JSON path | `data/channels.json` |
-| `WORKCRAFT_BRAVE_SEARCH_API_KEY` | Brave Search API key (enhanced web search) | `` |
+| `CODATA_OPENROUTER_API_KEY` | OpenRouter API key | (optional) |
+| `CODATA_DATABASE_URL` | Database connection string | `sqlite+aiosqlite:///./data/codata.db` |
+| `CODATA_HOST` | Listen address | `0.0.0.0` |
+| `CODATA_PORT` | Listen port | `8000` |
+| `CODATA_DEBUG` | Debug mode | `false` |
+| `CODATA_PROJECT_DIR` | Workspace root (for file operations) | `.` |
+| `CODATA_COMPACTION_AUTO` | Auto context compression | `true` |
+| `CODATA_DAILY_SEARCH_LIMIT` | Daily web search quota | `20` |
+| `CODATA_FTS_ENABLED` | Full-text search indexing | `true` |
+| `CODATA_OLLAMA_BASE_URL` | Ollama server URL (auto-set by setup) | `` |
+| `CODATA_OLLAMA_AUTO_START` | Auto-start managed Ollama on launch | `true` |
+| `CODATA_OLLAMA_LAST_MODEL` | Last-used model for startup pre-warming | `` |
+| `CODATA_CHANNELS_ENABLED` | Enable in-process messaging channels | `true` |
+| `CODATA_CHANNELS_CONFIG_PATH` | Messaging channel config JSON path | `data/channels.json` |
+| `CODATA_BRAVE_SEARCH_API_KEY` | Brave Search API key (enhanced web search) | `` |
 
 ## Build & Deploy
 
@@ -339,6 +339,6 @@ uvicorn app.main:app --reload
 python run.py --port 8100 --data-dir /path/to/app/data
 
 # Production (PyInstaller bundle)
-pyinstaller workcraft.spec
-./dist/workcraft
+pyinstaller codata.spec
+./dist/codata
 ```

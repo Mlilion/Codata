@@ -1,4 +1,4 @@
-# WorkCraft Backend — pinned production dependencies
+# Codata Backend — pinned production dependencies
 # Generated from local environment. Only packages actually used by the app.
 
 # ── Web Framework ────────────────────────────────────────────────────────

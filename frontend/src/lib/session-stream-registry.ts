@@ -524,6 +524,10 @@ export async function startStream(sessionId: string, streamId: string): Promise<
       openGeneratedFileArtifacts(data.call_id, generatedFiles);
     }
 
+    // Codata data results (SQL / indicator / chart) render inline as a data
+    // card in the message thread (see DataResultCard). We deliberately do NOT
+    // auto-open the right panel — the user promotes a card with its ↗ button.
+
     if (data.tool && FILE_RESULT_TOOLS.has(data.tool)) {
       refreshWorkspaceFiles();
     }

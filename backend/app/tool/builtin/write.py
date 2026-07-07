@@ -43,7 +43,7 @@ class WriteTool(ToolDefinition):
     async def execute(self, args: dict[str, Any], ctx: ToolContext) -> ToolResult:
         file_path = args["file_path"]
 
-        # Workspace restriction check (relative paths default to workcraft_written/)
+        # Workspace restriction check (relative paths default to codata_written/)
         try:
             file_path = resolve_for_write(file_path, ctx.workspace)
         except WorkspaceViolation as e:

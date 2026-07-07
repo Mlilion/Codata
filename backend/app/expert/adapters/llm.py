@@ -10,7 +10,7 @@ from app.session.utils import strip_image_content
 
 
 class ExpertLLMAdapter:
-    """Resolve and call WorkCraft providers for an expert member."""
+    """Resolve and call Codata providers for an expert member."""
 
     def __init__(self, provider_registry: ProviderRegistry) -> None:
         self._provider_registry = provider_registry

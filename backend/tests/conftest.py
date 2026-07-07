@@ -14,7 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.agent.agent import AgentRegistry
 from app.config import Settings
 from app.models.base import Base
-from app.models import vimax_task_run as _vimax_task_run_models  # noqa: F401 — registers ViMaxTaskRun
+from app.models import dashboard as _dashboard_models  # noqa: F401 — registers Dashboard
+from app.models import dashboard_item as _dashboard_item_models  # noqa: F401 — registers DashboardItem
+from app.models import analysis_memory as _analysis_memory_models  # noqa: F401 — registers AnalysisMemory
 from app.provider.openrouter import OpenRouterProvider
 from app.provider.registry import ProviderRegistry
 from app.tool.registry import ToolRegistry
@@ -45,7 +47,7 @@ def settings() -> Settings:
 def api_key(settings: Settings) -> str:
     key = settings.openrouter_api_key
     if not key:
-        pytest.skip("WORKCRAFT_OPENROUTER_API_KEY not set")
+        pytest.skip("CODATA_OPENROUTER_API_KEY not set")
     return key
 
 

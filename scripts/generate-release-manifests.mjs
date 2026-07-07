@@ -5,7 +5,7 @@ import path from "node:path";
 const rootDir = process.cwd();
 const artifactRoot = path.resolve(rootDir, process.argv[2] || "artifacts");
 const outRoot = path.resolve(rootDir, process.env.RELEASE_SITE_DIR || "release-site");
-const repository = process.env.GITHUB_REPOSITORY || "Mlilion/workcraft";
+const repository = process.env.GITHUB_REPOSITORY || "Mlilion/Codata";
 const tag = process.env.GITHUB_REF_NAME || process.env.RELEASE_TAG;
 const releaseCacheKey = process.env.GITHUB_RUN_ID
   ? `${process.env.GITHUB_RUN_ID}.${process.env.GITHUB_RUN_ATTEMPT || "1"}`
@@ -22,12 +22,12 @@ if (!fs.existsSync(artifactRoot)) {
 const version = tag.replace(/^v/, "");
 const releasePath = `downloads/releases/${tag}`;
 const releaseAssetBaseUrl = (() => {
-  if (process.env.WORKCRAFT_RELEASE_ASSET_BASE_URL) {
-    return process.env.WORKCRAFT_RELEASE_ASSET_BASE_URL.replace(/\/$/, "");
+  if (process.env.CODATA_RELEASE_ASSET_BASE_URL) {
+    return process.env.CODATA_RELEASE_ASSET_BASE_URL.replace(/\/$/, "");
   }
 
-  if (process.env.WORKCRAFT_SITE_BASE_URL) {
-    return `${process.env.WORKCRAFT_SITE_BASE_URL.replace(/\/$/, "")}/${releasePath}`;
+  if (process.env.CODATA_SITE_BASE_URL) {
+    return `${process.env.CODATA_SITE_BASE_URL.replace(/\/$/, "")}/${releasePath}`;
   }
 
   return `https://github.com/${repository}/releases/download/${tag}`;
@@ -116,7 +116,7 @@ const macIntelDmg = requireFile(
   inArtifact("macos-x64-bundle", (name) => name.endsWith(".dmg")),
 );
 
-const notes = process.env.RELEASE_NOTES || `WorkCraft ${version}`;
+const notes = process.env.RELEASE_NOTES || `Codata ${version}`;
 const pubDate = new Date().toISOString();
 
 const updateManifest = {
@@ -169,5 +169,5 @@ fs.writeFileSync(path.join(downloadsOutDir, "latest.json"), `${JSON.stringify(do
 fs.writeFileSync(path.join(outRoot, "latest.json"), `${JSON.stringify(updateManifest, null, 2)}\n`);
 fs.writeFileSync(path.join(outRoot, "downloads-latest.json"), `${JSON.stringify(downloadManifest, null, 2)}\n`);
 
-console.log(`Generated release manifests for WorkCraft ${version}`);
+console.log(`Generated release manifests for Codata ${version}`);
 console.log(`Release payload: ${outRoot}`);

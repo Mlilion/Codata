@@ -70,9 +70,9 @@ Once you have enough information:
 2. Generate the instructions file following the template structure exactly.
 3. Present it warmly and ask for confirmation. Frame it as "here's [Name] on paper — does this feel right?"
 4. Iterate until the user confirms.
-5. Write the confirmed content to the project's `.workcraft/instructions.md` file using the `write` tool:
+5. Write the confirmed content to the project's `.codata/instructions.md` file using the `write` tool:
    - First, determine the current project/workspace path
-   - Write to `{workspace}/.workcraft/instructions.md`
+   - Write to `{workspace}/.codata/instructions.md`
 6. After the file is written successfully, confirm to the user that the setup is complete.
 
 **Generation rules:**

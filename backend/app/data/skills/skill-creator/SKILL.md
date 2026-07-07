@@ -5,7 +5,7 @@ description: Create new skills, modify and improve existing skills, and measure 
 
 # Skill Creator
 
-> **WorkCraft note:** This skill was adapted from Anthropic's official skill-creator. The evaluation scripts (`run_eval.py`, `run_loop.py`, `improve_description.py`) reference `claude -p` CLI which is not available in WorkCraft. For evaluation in WorkCraft, use the `task` tool to spawn sub-agents instead. The core skill writing guidance works as-is.
+> **Codata note:** This skill was adapted from Anthropic's official skill-creator. The evaluation scripts (`run_eval.py`, `run_loop.py`, `improve_description.py`) reference `claude -p` CLI which is not available in Codata. For evaluation in Codata, use the `task` tool to spawn sub-agents instead. The core skill writing guidance works as-is.
 
 A skill for creating new skills and iteratively improving them.
 

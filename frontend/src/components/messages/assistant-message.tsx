@@ -24,9 +24,11 @@ interface AssistantMessageProps {
   onRegenerate?: () => void;
   /** Whether this message just arrived (animate) or was loaded from history (skip animation). */
   isNew?: boolean;
+  /** Whether this is the last message in the thread (newest data card starts expanded). */
+  isLastMessage?: boolean;
 }
 
-export function AssistantMessage({ message, combinedParts, onRegenerate, isNew = true }: AssistantMessageProps) {
+export function AssistantMessage({ message, combinedParts, onRegenerate, isNew = true, isLastMessage = false }: AssistantMessageProps) {
   const [hovered, setHovered] = useState(false);
   const refreshForMessage = useActivityStore((s) => s.refreshForMessage);
   const parts = combinedParts ?? message.parts.map((p) => p.data as PartData);
@@ -137,6 +139,7 @@ export function AssistantMessage({ message, combinedParts, onRegenerate, isNew =
           <MessageContent
             parts={mainParts}
             activityKey={activityKey}
+            expandLatestDataCard={isLastMessage}
           />
         </motion.div>
 

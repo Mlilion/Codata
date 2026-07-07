@@ -1,4 +1,4 @@
-# Tauri 桌面应用图标包 - WorkCraft
+# Tauri 桌面应用图标包 - Codata
 
 基于 `ox-mascot.png` (1024x1024) 生成的完整 Tauri 桌面应用图标集合，覆盖 macOS、Windows、Linux 三大平台。
 

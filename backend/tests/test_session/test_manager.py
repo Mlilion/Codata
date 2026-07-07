@@ -43,6 +43,28 @@ class TestSessionManager:
         assert len(sessions) >= 2
 
     @pytest.mark.asyncio
+    async def test_list_sessions_app_mode_filter(self, db: AsyncSession):
+        legacy = await create_session(db, title="legacy")  # app_mode NULL
+        chat = await create_session(db, title="chat", app_mode=None)
+        codata = await create_session(db, title="codata", app_mode="codata")
+
+        codata_only = await list_sessions(db, app_mode="codata")
+        ids = {s.id for s in codata_only}
+        assert codata.id in ids
+        assert legacy.id not in ids and chat.id not in ids
+
+        chat_only = await list_sessions(db, app_mode="chat")
+        ids = {s.id for s in chat_only}
+        # Legacy (null) counts as chat; codata excluded.
+        assert legacy.id in ids
+        assert codata.id not in ids
+
+        # No filter → everything.
+        every = await list_sessions(db)
+        ids = {s.id for s in every}
+        assert {legacy.id, codata.id} <= ids
+
+    @pytest.mark.asyncio
     async def test_update_title(self, db: AsyncSession):
         session = await create_session(db, title="Old")
         await update_session_title(db, session.id, "New")

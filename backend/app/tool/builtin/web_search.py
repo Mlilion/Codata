@@ -62,7 +62,7 @@ class WebSearchTool(ToolDefinition):
             async with httpx.AsyncClient(timeout=15.0) as client:
                 resp = await client.get(
                     f"https://html.duckduckgo.com/html/?q={quote_plus(query)}",
-                    headers={"User-Agent": "WorkCraft/0.1"},
+                    headers={"User-Agent": "Codata/0.1"},
                 )
                 resp.raise_for_status()
 

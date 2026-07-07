@@ -1,4 +1,4 @@
-"""Expert team runner that reuses WorkCraft providers, tools, streams, and sessions."""
+"""Expert team runner that reuses Codata providers, tools, streams, and sessions."""
 
 from __future__ import annotations
 
@@ -70,16 +70,14 @@ from app.config import get_settings as _config_get_settings
 
 logger = logging.getLogger(__name__)
 
-LONG_RUNNING_TOOL_MIN_ROUNDS = {
-    "vimax_generate_video": 16,
-}
+LONG_RUNNING_TOOL_MIN_ROUNDS: dict[str, int] = {}
 
 _DELIVERABLE_FINALIZATION_MAX_ATTEMPTS = 3
 _FILE_TOOLS = frozenset({"read", "write", "edit"})
 _COORDINATOR_ID = "coordinator"
 _PREFLIGHT_TASK_ID = "preflight"
 _MAX_RETRY_DELAY_SECONDS = 30.0
-_DELIVERABLE_FILE_TOOLS = frozenset({"write", "edit", "present_file", "vimax_generate_video", "baoyu_image_generate"})
+_DELIVERABLE_FILE_TOOLS = frozenset({"write", "edit", "present_file"})
 _RAW_OUTPUT_PART_TYPE = "expert-raw-output"
 _DELIVERABLE_REQUEST_TERMS = (
     "交付",
@@ -157,6 +155,8 @@ class ExpertTeamRunner:
         self._attachment_file_parts: list[dict[str, Any]] | None = None
         self._allowed_file_paths: set[str] = set()
         self._resume_skip_task_ids: set[str] = set()
+        # Analysis-memory section injected into member prompts for data teams.
+        self._analysis_memory_section: str | None = None
         self.total_tokens: dict[str, int] = {
             "input": 0,
             "output": 0,
@@ -186,6 +186,8 @@ class ExpertTeamRunner:
                 await self._prepare_resume()
             else:
                 await self._run_preflight_interaction()
+
+            await self._load_analysis_memory()
 
             executor = self._executor_for_process()
             if executor is None:
@@ -2344,8 +2346,6 @@ class ExpertTeamRunner:
         required: list[str] = []
         deliverable_type = self._deliverable_type_value(deliverable)
         presentation = self._deliverable_presentation_value(deliverable)
-        if deliverable_type == ExpertDeliverableType.VIDEO.value:
-            required.extend(["vimax_generate_video", "present_file"])
         if deliverable_type == ExpertDeliverableType.ARTIFACT.value or presentation in {
             ExpertDeliverablePresentation.ARTIFACT_PANEL.value,
             ExpertDeliverablePresentation.BOTH.value,
@@ -2457,7 +2457,7 @@ class ExpertTeamRunner:
                 self._build_coordinator_prompt(),
                 "You are the expert team's final delivery specialist.",
                 "Your job is to create or present a concrete user-facing deliverable, not only summarize prior work.",
-                "You must call the appropriate tool before your final text: write+present_file for file deliverables, artifact for panel deliverables, or vimax_generate_video/present_file for video deliverables.",
+                "You must call the appropriate tool before your final text: write+present_file for file deliverables, artifact for panel deliverables.",
                 "A chat-only answer does not satisfy the deliverable contract.",
                 "If a required deliverable cannot be produced, fail clearly and explain the blocking reason.",
                 retry_instruction,
@@ -2591,7 +2591,6 @@ class ExpertTeamRunner:
                 "- Do not finish with only prose in the chat.",
                 "- If the deliverable is file-based, create the file and then call present_file with that file path.",
                 "- If the deliverable is an artifact-panel deliverable, call artifact with command=create or rewrite and complete content.",
-                "- If the deliverable is video, call vimax_generate_video or present an existing final video file returned by ViMax.",
                 "- Keep the final chat text brief and point to the created or presented deliverable.",
             ]
         )
@@ -3106,38 +3105,6 @@ class ExpertTeamRunner:
         if tool_id in {"write", "edit"}:
             return
 
-        if tool_id == "vimax_generate_video":
-            file_path = metadata.get("file_path")
-            if isinstance(file_path, str) and file_path.strip():
-                self._deliverable_outputs.append(
-                    {
-                        "kind": "video",
-                        "path": file_path,
-                        "title": str(metadata.get("title") or title or "video"),
-                        "tool": tool_id,
-                    }
-                )
-            return
-
-        if tool_id == "baoyu_image_generate":
-            generated_files = metadata.get("generated_files") if isinstance(metadata.get("generated_files"), list) else None
-            attachments = metadata.get("attachments") if isinstance(metadata.get("attachments"), list) else None
-            candidates = generated_files or attachments or []
-            for item in candidates:
-                if not isinstance(item, dict):
-                    continue
-                file_path = item.get("path")
-                if isinstance(file_path, str) and file_path.strip():
-                    self._deliverable_outputs.append(
-                        {
-                            "kind": "image",
-                            "path": file_path,
-                            "title": str(item.get("name") or title or "image"),
-                            "tool": tool_id,
-                        }
-                    )
-                    break
-
     async def _track_session_file(self, db: AsyncSession, file_path: str, tool_id: str) -> None:
         path = Path(file_path)
         result = await db.execute(
@@ -3365,6 +3332,26 @@ class ExpertTeamRunner:
                 snapshot=snapshot or {},
             )
 
+    def _is_data_analysis_team(self) -> bool:
+        """Heuristic: a data-analysis team by category or tag."""
+        category = (self.team.category or "").strip()
+        tags = {str(t).strip().lower() for t in (self.team.tags or [])}
+        return category == "数据分析" or "数据分析" in tags or "data-analysis" in tags
+
+    async def _load_analysis_memory(self) -> None:
+        """Prefetch the user's analysis-memory section (data teams only)."""
+        if not self._is_data_analysis_team():
+            return
+        try:
+            from app.memory.analysis_memory_injection import build_analysis_memory_section
+
+            # Single-user open-source build: user_id None.
+            self._analysis_memory_section = await build_analysis_memory_section(
+                self.session_factory, None
+            )
+        except Exception:
+            logger.debug("Expert analysis-memory injection skipped", exc_info=True)
+
     def _build_system_prompt(self, member: ExpertMemberConfig) -> str:
         skills = sorted(set([*self.team.skills, *member.skills]))
         connectors = sorted(set([*self.team.connectors, *member.connectors]))
@@ -3382,9 +3369,11 @@ class ExpertTeamRunner:
         if member.backstory:
             lines.append(member.backstory)
         if skills:
-            lines.append("Use these WorkCraft skills when relevant: " + ", ".join(skills))
+            lines.append("Use these Codata skills when relevant: " + ", ".join(skills))
         if connectors:
             lines.append("The team may rely on these MCP connectors: " + ", ".join(connectors))
+        if self._analysis_memory_section:
+            lines.append(self._analysis_memory_section)
         lines.append("Work as one member of an expert team. Be concise, concrete, and hand off useful context to the next expert.")
         lines.append("Do not ask the user questions directly. Any user clarification is collected by the team coordinator before execution. If information is still missing, state the assumption you used.")
         if self._uses_concise_expert_output():
@@ -3392,7 +3381,7 @@ class ExpertTeamRunner:
                 "\n".join(
                     [
                         "Output style:",
-                        "- Keep the visible answer concise and decision-oriented, like a normal WorkCraft answer.",
+                        "- Keep the visible answer concise and decision-oriented, like a normal Codata answer.",
                         "- Lead with the conclusion or completed action.",
                         "- Include only key evidence, assumptions, risks, and next handoff.",
                         "- Do not write a long report unless the task explicitly asks for one or you are creating a deliverable.",
@@ -3417,7 +3406,7 @@ class ExpertTeamRunner:
             {
                 "role": "user",
                 "content": (
-                    "The following WorkCraft skills are preloaded for this expert task. "
+                    "The following Codata skills are preloaded for this expert task. "
                     "Follow them when relevant, and treat bundled resource paths as relative to each skill base directory.\n\n"
                     + loaded
                     + "\n\n---\n\nContinue with the assigned expert task below."

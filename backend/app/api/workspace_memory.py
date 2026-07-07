@@ -164,14 +164,14 @@ async def export_workspace_memory_endpoint(
     workspace_path: str,
     session_factory=Depends(get_session_factory),
 ):
-    """Export workspace memory to a .workcraft/memory.md file in the workspace."""
+    """Export workspace memory to a .codata/memory.md file in the workspace."""
     from app.memory.workspace_memory_storage import get_workspace_memory
 
     content = await get_workspace_memory(session_factory, workspace_path)
     if content is None:
         raise HTTPException(status_code=404, detail="No memory found for this workspace")
 
-    target_dir = Path(workspace_path) / ".workcraft"
+    target_dir = Path(workspace_path) / ".codata"
     target_file = target_dir / "memory.md"
 
     try:

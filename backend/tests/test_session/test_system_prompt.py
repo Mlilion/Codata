@@ -27,6 +27,32 @@ class TestSystemPrompt:
         assert "Platform" in prompt
         assert "date" in prompt
 
+    def test_codata_mode_adds_data_guidance(self):
+        ar = AgentRegistry()
+        build = ar.get("build")
+        base = build_system_prompt(build).as_plain_text()
+        codata = build_system_prompt(build, app_mode="codata").as_plain_text()
+        assert "Codata Data Workspace Mode" not in base
+        assert "Codata Data Workspace Mode" in codata
+        assert "datasage" in codata
+        assert "chart_spec" in codata
+
+    def test_non_codata_mode_has_no_data_guidance(self):
+        ar = AgentRegistry()
+        build = ar.get("build")
+        prompt = build_system_prompt(build, app_mode="expert_team_creation").as_plain_text()
+        assert "Codata Data Workspace Mode" not in prompt
+
+    def test_data_agent_codata_mode_no_double_inject(self):
+        # The data agent carries its own analysis prompt, so the codata mode
+        # section must NOT be injected on top of it.
+        ar = AgentRegistry()
+        data = ar.get("data")
+        prompt = build_system_prompt(data, app_mode="codata").as_plain_text()
+        assert "Codata Data Workspace Mode" not in prompt
+        # But its own prompt (mentions run_query) is present.
+        assert "run_query" in prompt
+
     def test_plan_agent_prompt(self):
         ar = AgentRegistry()
         plan = ar.get("plan")
@@ -57,7 +83,7 @@ class TestSystemPrompt:
         build = ar.get("build")
         parts = build_system_prompt(build)
         # Agent base prompt is in cached section
-        assert "WorkCraft" in parts.cached or "tool" in parts.cached.lower()
+        assert "Codata" in parts.cached or "tool" in parts.cached.lower()
         # Environment info is in dynamic section
         assert "Working directory" in parts.dynamic
 
@@ -75,7 +101,7 @@ class TestSystemPrompt:
         assert "cache_control" not in blocks[1]
 
     def test_includes_skill_routing_when_skills_available(self, tmp_path: Path):
-        skills_dir = tmp_path / ".workcraft" / "skills" / "sheet-helper"
+        skills_dir = tmp_path / ".codata" / "skills" / "sheet-helper"
         skills_dir.mkdir(parents=True)
         (skills_dir / "SKILL.md").write_text(
             "---\nname: sheet-helper\ndescription: Helps with spreadsheet workflows.\n---\nUse for sheets.",

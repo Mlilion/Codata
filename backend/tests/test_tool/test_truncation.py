@@ -98,7 +98,7 @@ class TestTruncateOutput:
     def test_output_dir_created(self, tmp_workspace):
         text = "\n".join(["line" for _ in range(MAX_LINES + 10)])
         result = truncate_output(text, workspace=tmp_workspace)
-        output_dir = Path(tmp_workspace) / ".workcraft" / "tool-output"
+        output_dir = Path(tmp_workspace) / ".codata" / "tool-output"
         assert output_dir.exists()
         assert result.output_path is not None
 
@@ -118,7 +118,7 @@ class TestCleanup:
     """Tests for cleanup_old_outputs()."""
 
     def test_cleanup_removes_old_files(self, tmp_workspace):
-        output_dir = Path(tmp_workspace) / ".workcraft" / "tool-output"
+        output_dir = Path(tmp_workspace) / ".codata" / "tool-output"
         output_dir.mkdir(parents=True, exist_ok=True)
         # Create a file and backdate it
         old_file = output_dir / "old.txt"

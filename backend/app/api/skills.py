@@ -5,7 +5,7 @@ scraped from https://skillsmp.com (see
 ``scripts/update_skills_catalog.py``). Hitting SkillsMP live every time
 a user opens the browser is a non-starter: their anon quota is 50
 req/day per IP, which burns out under debounced search-as-you-type.
-Instead we ship a JSON catalog and refresh it on each WorkCraft release.
+Instead we ship a JSON catalog and refresh it on each Codata release.
 
 Install still uses live GitHub raw content so the actual SKILL.md
 body is always authoritative; only discovery is offline.
@@ -130,6 +130,60 @@ async def disable_skill(registry: SkillRegistryDep, skill_name: str) -> dict[str
     }
 
 
+class CreateSkillRequest(BaseModel):
+    """Body for ``POST /api/skills`` — author a custom skill in-app."""
+
+    name: str
+    description: str
+    # The SKILL.md body (markdown). The frontmatter (name/description) is
+    # generated from the fields above, so the body is just the instructions.
+    instructions: str
+    overwrite: bool = False
+
+
+@router.post("/skills")
+async def create_skill(
+    registry: SkillRegistryDep, body: CreateSkillRequest
+) -> dict[str, Any]:
+    """Create a custom skill (a reusable analysis playbook) from the UI.
+
+    Writes ``~/.codata/skills/{slug}/SKILL.md`` and rescans. This is how an
+    analyst or business user captures their own repeatable analysis method as
+    a skill the agent can invoke.
+    """
+    name = body.name.strip()
+    description = body.description.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Skill name is required")
+    if not description:
+        raise HTTPException(status_code=400, detail="Skill description is required")
+
+    slug = _slug(name)
+    skill_dir = _global_skills_dir() / slug
+    skill_path = skill_dir / "SKILL.md"
+    if skill_path.exists() and not body.overwrite:
+        raise HTTPException(status_code=409, detail=f"Skill already exists: {slug}")
+
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    # Escape any accidental frontmatter fence in the description.
+    safe_desc = description.replace("\n", " ").strip()
+    content = (
+        "---\n"
+        f"name: {name}\n"
+        f"description: {safe_desc}\n"
+        "---\n\n"
+        f"{body.instructions.strip()}\n"
+    )
+    skill_path.write_text(content, encoding="utf-8")
+
+    registry.scan()
+    return {
+        "success": True,
+        "slug": slug,
+        "skills": [_skill_to_dict(s, registry) for s in registry.all_skills()],
+    }
+
+
 # ---------------------------------------------------------------------
 # Store
 # ---------------------------------------------------------------------
@@ -176,7 +230,7 @@ def _slug(name: str) -> str:
 
 
 def _global_skills_dir() -> Path:
-    d = Path.home() / ".workcraft" / "skills"
+    d = Path.home() / ".codata" / "skills"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -275,7 +329,7 @@ async def install_skill(
     body: InstallRequest,
 ) -> dict[str, Any]:
     """Download a SKILL.md from GitHub and install it to the global
-    user skills directory (``~/.workcraft/skills/<slug>/SKILL.md``).
+    user skills directory (``~/.codata/skills/<slug>/SKILL.md``).
 
     The registry is rescanned so the new skill is immediately available
     without restarting the backend. Existing skills with the same

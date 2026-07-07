@@ -1,9 +1,9 @@
 ---
-# WorkCraft Design System — Single Source of Truth
+# Codata Design System — Single Source of Truth
 # Read this file before generating UI. Token *values* live in globals.css; this
 # file indexes them, codifies rules, and explains the *why*.
 
-product: WorkCraft Desktop
+product: Codata Desktop
 implementation_source_of_truth: frontend/src/app/globals.css
 component_root: frontend/src/components
 ui_primitives: frontend/src/components/ui          # shadcn/ui — do not bypass
@@ -101,7 +101,7 @@ ai_patterns:
   streaming_marker: streaming-cursor               # blinking 2px cursor at end of last block
 ---
 
-# WorkCraft Design System
+# Codata Design System
 
 > **This file is the SSOT.** Every token name, component rule, and motion primitive an agent needs to ship correct UI lives here or is referenced from here. Token *values* are intentionally not duplicated — they live in [`frontend/src/app/globals.css`](frontend/src/app/globals.css). When values change, only that file changes; this document stays current because it indexes by name.
 
@@ -115,7 +115,7 @@ The defaults below are deliberate. Future contributors should change them only w
 
 `--ui-font-size-base: 13px` is unusually small for a 2026 web app (most products use 14–16 px). This is intentional.
 
-WorkCraft is a **local desktop workbench** for office workflows: tool-call traces, reasoning steps, file artifacts, multi-step automations. Users keep dozens of message parts on screen simultaneously. A 13 px base lets us:
+Codata is a **local desktop workbench** for office workflows: tool-call traces, reasoning steps, file artifacts, multi-step automations. Users keep dozens of message parts on screen simultaneously. A 13 px base lets us:
 
 - Show ~25% more vertical content per viewport vs. a 16 px base.
 - Match the density expectations of professional creative/IDE tools (Figma, VS Code, Linear, ChatGPT desktop).
@@ -141,7 +141,7 @@ The main content area opts back into an opaque surface via `.vibrancy-opaque` ([
 
 Light theme uses **dark code blocks** ([`globals.css:23-28`](frontend/src/app/globals.css:23)). This is not a bug.
 
-WorkCraft's audience writes and reads code daily. Dark code surfaces with the VS Code Dark+ palette (`--code-keyword: #569CD6`, `--code-string: #CE9178`, etc., identical between `:root` and `.dark`) deliver:
+Codata's audience writes and reads code daily. Dark code surfaces with the VS Code Dark+ palette (`--code-keyword: #569CD6`, `--code-string: #CE9178`, etc., identical between `:root` and `.dark`) deliver:
 
 - **Higher token contrast** — syntax colors were designed for dark backgrounds; on light surfaces they wash out.
 - **Visual continuity** with the user's IDE.
@@ -155,7 +155,7 @@ The `--code-block-*` tokens stay close in light/dark but shift slightly so the d
 
 - **Monochrome + one accent.** UI chrome is grayscale; brand blue (`#339CFF`) appears only on primary actions and focus rings. Resist coloring chrome.
 - **Border-by-default.** `* { border-color: var(--border-default); }` ([`globals.css:172-174`](frontend/src/app/globals.css:172)) — any element using `border` Tailwind utility picks up the theme border without extra plumbing.
-- **`overflow: hidden` on `html` and `body`.** WorkCraft is a desktop shell, not a scrolling document. Layout owns scroll; never add page-level scroll.
+- **`overflow: hidden` on `html` and `body`.** Codata is a desktop shell, not a scrolling document. Layout owns scroll; never add page-level scroll.
 
 ---
 
@@ -209,7 +209,7 @@ Use Tailwind defaults (`space-y-2`, `gap-3`, `p-4`). Custom radii reference `--r
 
 ### 3.1 Philosophy
 
-Motion in WorkCraft is **functional, not decorative**. Every animation either:
+Motion in Codata is **functional, not decorative**. Every animation either:
 
 - Acknowledges an action (button press → `active:scale-[0.97]`).
 - Reveals new state (message arrival → `slide-up`).
@@ -248,7 +248,7 @@ Helper classes: `.animate-fade-in`, `.animate-slide-up`, `.animate-slide-in-righ
 
 ## 4. AI-Native UI Guidelines
 
-WorkCraft is an agent runtime. Its UI must communicate **what the AI is doing** at every moment. These rules are non-negotiable.
+Codata is an agent runtime. Its UI must communicate **what the AI is doing** at every moment. These rules are non-negotiable.
 
 ### 4.1 Tool-call lifecycle
 
@@ -271,7 +271,7 @@ Canonical implementation: [`activity/activity-panel.tsx`](frontend/src/component
 
 ### 4.2 User vs. AI-generated content
 
-WorkCraft does not use chat-bubble-on-both-sides styling (which makes assistant text feel cramped and second-class). Instead:
+Codata does not use chat-bubble-on-both-sides styling (which makes assistant text feel cramped and second-class). Instead:
 
 | Author | Container | Background | Width |
 |---|---|---|---|

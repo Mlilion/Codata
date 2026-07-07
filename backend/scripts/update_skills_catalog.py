@@ -1,6 +1,6 @@
 """Refresh the bundled skills catalog from skillsmp.com.
 
-Run this before every WorkCraft release (``release_prep`` step) to keep
+Run this before every Codata release (``release_prep`` step) to keep
 the "Browse skills" store browsable without live network calls.
 
 Why a bundled snapshot instead of a live proxy:

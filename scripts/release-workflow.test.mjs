@@ -4,7 +4,7 @@ import { test } from "node:test";
 
 const workflow = fs.readFileSync(".github/workflows/release.yml", "utf8");
 const tauriConfig = JSON.parse(fs.readFileSync("desktop-tauri/src-tauri/tauri.conf.json", "utf8"));
-const pyinstallerSpec = fs.readFileSync("backend/workcraft.spec", "utf8");
+const pyinstallerSpec = fs.readFileSync("backend/codata.spec", "utf8");
 const verifyBundleScript = fs.readFileSync("scripts/verify-bundle.mjs", "utf8");
 const expectedPresetFiles = [
   "video_production.yaml",
@@ -59,7 +59,7 @@ test("macOS release workflow imports the Apple certificate before custom codesig
 
 test("macOS release workflow signs PyInstaller native binaries before Tauri packaging", () => {
   assert.match(workflow, /Sign backend native binaries/);
-  assert.match(workflow, /scripts\/sign-macos-bundle\.sh backend\/dist\/workcraft-backend "\$APPLE_SIGNING_IDENTITY"/);
+  assert.match(workflow, /scripts\/sign-macos-bundle\.sh backend\/dist\/codata-backend "\$APPLE_SIGNING_IDENTITY"/);
   assert.match(workflow, /Verify backend bundle[\s\S]*?Build Tauri \(no notarization\)/);
 });
 
@@ -84,7 +84,7 @@ test("macOS Tauri build unsets notarization credentials instead of passing empty
 test("macOS release workflow repairs PyInstaller Python.framework symlinks after Tauri resource copy", () => {
   assert.match(workflow, /scripts\/fix-macos-pyinstaller-frameworks\.sh "\$APP_BACKEND"/);
   assert.match(workflow, /Python\.framework/);
-  assert.match(workflow, /WorkCraft\.app\/Contents\/Resources\/backend/);
+  assert.match(workflow, /Codata\.app\/Contents\/Resources\/backend/);
 
   const repairScript = fs.readFileSync("scripts/fix-macos-pyinstaller-frameworks.sh", "utf8");
   assert.match(repairScript, /Python\.framework/);
@@ -133,13 +133,13 @@ test("open-source release workflow publishes updater files only to GitHub Releas
   assert.doesNotMatch(workflow, /draft:\s+true/);
   assert.doesNotMatch(workflow, /Require website deploy secrets/);
   assert.doesNotMatch(workflow, /easingthemes\/ssh-deploy/);
-  assert.doesNotMatch(workflow, /WORKCRAFT_WEB_/);
-  assert.doesNotMatch(workflow, /\/opt\/workcraft/);
+  assert.doesNotMatch(workflow, /CODATA_WEB_/);
+  assert.doesNotMatch(workflow, /\/opt\/codata/);
   assert.doesNotMatch(workflow, /Verify website download and updater endpoints/);
 });
 
 test("open-source desktop updater checks the GitHub latest.json release asset", () => {
   assert.deepEqual(tauriConfig.plugins.updater.endpoints, [
-    "https://github.com/Mlilion/workcraft/releases/latest/download/latest.json",
+    "https://github.com/Mlilion/Codata/releases/latest/download/latest.json",
   ]);
 });

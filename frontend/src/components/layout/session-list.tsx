@@ -20,7 +20,7 @@ import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { ProjectsToolbar } from "./projects-toolbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { Check, ChevronRight, Copy, FolderClosed, FolderOpen, GraduationCap, Loader2, MessageSquare, PlugZap, SearchX, Sparkles, SquarePen, Zap } from "lucide-react";
+import { Check, ChevronRight, Copy, FolderClosed, FolderOpen, Loader2, MessageSquare, PlugZap, SearchX, Sparkles, SquarePen, Zap } from "lucide-react";
 import { getChatRoute } from "@/lib/routes";
 import { cn, groupSessionsByDate, groupSessionsByWorkspace } from "@/lib/utils";
 import type { SessionResponse } from "@/types/session";
@@ -42,7 +42,7 @@ export function SessionList() {
     isFetchingNextPage,
     refetch,
     fetchNextPage,
-  } = useSessions();
+  } = useSessions("chat");
   const deleteSession = useDeleteSession();
   const renameSession = useRenameSession();
   const pinSession = usePinSession();
@@ -617,13 +617,6 @@ export function SessionList() {
 function SidebarQuickNav() {
   return (
     <div className="space-y-1 px-3 pb-2">
-      <Link
-        href="/experts"
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-ui-body text-[var(--text-secondary)] transition-colors hover:bg-[var(--sidebar-hover)] hover:text-[var(--text-primary)]"
-      >
-        <GraduationCap className="h-3.5 w-3.5 shrink-0" />
-        <span>专家团</span>
-      </Link>
       <Link
         href="/skills"
         className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-ui-body text-[var(--text-secondary)] transition-colors hover:bg-[var(--sidebar-hover)] hover:text-[var(--text-primary)]"

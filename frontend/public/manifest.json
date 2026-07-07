@@ -1,7 +1,7 @@
 {
-  "name": "WorkCraft Remote",
-  "short_name": "WorkCraft",
-  "description": "Remote control for your desktop WorkCraft AI assistant",
+  "name": "Codata Remote",
+  "short_name": "Codata",
+  "description": "Remote control for your desktop Codata AI assistant",
   "start_url": "/m",
   "display": "standalone",
   "background_color": "#09090b",

@@ -18,7 +18,7 @@ from fastapi import FastAPI
 from app.auth.middleware import AuthMiddleware
 
 
-_SESSION_TOKEN = "workcraft_st_test_session_abcdef0123456789"
+_SESSION_TOKEN = "codata_st_test_session_abcdef0123456789"
 
 
 def _settings(**overrides) -> types.SimpleNamespace:
@@ -266,7 +266,7 @@ class TestMandatoryAuth:
         async with await _client(app) as c:
             r = await c.get(
                 "/api/ping",
-                headers={"authorization": "Bearer workcraft_st_wrong_token_value"},
+                headers={"authorization": "Bearer codata_st_wrong_token_value"},
             )
         assert r.status_code == 401
         assert r.json()["detail"] == "Invalid token"

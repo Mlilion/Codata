@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class TaskRunner:
-    """Run one expert task through the WorkCraft LLM/tool loop."""
+    """Run one expert task through the Codata LLM/tool loop."""
 
     def __init__(self, runner: "ExpertTeamRunner") -> None:
         self._runner = runner

@@ -13,18 +13,18 @@ function writeFile(filePath, contents) {
 }
 
 function createArtifacts(root) {
-  writeFile(path.join(root, "windows-bundle/WorkCraft_9.9.9_x64-setup.exe"), "win");
-  writeFile(path.join(root, "windows-bundle/WorkCraft_9.9.9_x64-setup.exe.sig"), "winsig");
-  writeFile(path.join(root, "macos-aarch64-bundle/WorkCraft_9.9.9_aarch64.app.tar.gz"), "arm");
-  writeFile(path.join(root, "macos-aarch64-bundle/WorkCraft_9.9.9_aarch64.app.tar.gz.sig"), "armsig");
-  writeFile(path.join(root, "macos-aarch64-bundle/WorkCraft_9.9.9_aarch64.dmg"), "armdmg");
-  writeFile(path.join(root, "macos-x64-bundle/WorkCraft_9.9.9_x64.app.tar.gz"), "x64");
-  writeFile(path.join(root, "macos-x64-bundle/WorkCraft_9.9.9_x64.app.tar.gz.sig"), "x64sig");
-  writeFile(path.join(root, "macos-x64-bundle/WorkCraft_9.9.9_x64.dmg"), "x64dmg");
+  writeFile(path.join(root, "windows-bundle/Codata_9.9.9_x64-setup.exe"), "win");
+  writeFile(path.join(root, "windows-bundle/Codata_9.9.9_x64-setup.exe.sig"), "winsig");
+  writeFile(path.join(root, "macos-aarch64-bundle/Codata_9.9.9_aarch64.app.tar.gz"), "arm");
+  writeFile(path.join(root, "macos-aarch64-bundle/Codata_9.9.9_aarch64.app.tar.gz.sig"), "armsig");
+  writeFile(path.join(root, "macos-aarch64-bundle/Codata_9.9.9_aarch64.dmg"), "armdmg");
+  writeFile(path.join(root, "macos-x64-bundle/Codata_9.9.9_x64.app.tar.gz"), "x64");
+  writeFile(path.join(root, "macos-x64-bundle/Codata_9.9.9_x64.app.tar.gz.sig"), "x64sig");
+  writeFile(path.join(root, "macos-x64-bundle/Codata_9.9.9_x64.dmg"), "x64dmg");
 }
 
 test("adds a run-specific query string to public release asset URLs", () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "workcraft-release-manifest-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codata-release-manifest-"));
   const artifacts = path.join(tmp, "artifacts");
   const releaseSite = path.join(tmp, "release-site");
   createArtifacts(artifacts);
@@ -34,7 +34,7 @@ test("adds a run-specific query string to public release asset URLs", () => {
       ...process.env,
       GITHUB_REF_NAME: "v9.9.9",
       RELEASE_SITE_DIR: releaseSite,
-      WORKCRAFT_SITE_BASE_URL: "https://work-craft.test",
+      CODATA_SITE_BASE_URL: "https://codata.test",
     },
     encoding: "utf8",
   });
@@ -53,19 +53,19 @@ test("adds a run-specific query string to public release asset URLs", () => {
 });
 
 test("defaults release asset URLs to GitHub Releases", () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "workcraft-release-manifest-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codata-release-manifest-"));
   const artifacts = path.join(tmp, "artifacts");
   const releaseSite = path.join(tmp, "release-site");
   createArtifacts(artifacts);
 
   const env = { ...process.env };
-  delete env.WORKCRAFT_SITE_BASE_URL;
-  delete env.WORKCRAFT_RELEASE_ASSET_BASE_URL;
+  delete env.CODATA_SITE_BASE_URL;
+  delete env.CODATA_RELEASE_ASSET_BASE_URL;
 
   const result = spawnSync(process.execPath, [scriptPath, artifacts], {
     env: {
       ...env,
-      GITHUB_REPOSITORY: "Mlilion/workcraft",
+      GITHUB_REPOSITORY: "Mlilion/Codata",
       GITHUB_REF_NAME: "v9.9.9",
       RELEASE_SITE_DIR: releaseSite,
     },
@@ -85,15 +85,15 @@ test("defaults release asset URLs to GitHub Releases", () => {
 
   assert.deepEqual(githubUpdaterManifest, updateManifest);
   assert.deepEqual(githubDownloadManifest, downloadManifest);
-  assert.equal(downloadManifest.source, "https://github.com/Mlilion/workcraft/releases/tag/v9.9.9");
+  assert.equal(downloadManifest.source, "https://github.com/Mlilion/Codata/releases/tag/v9.9.9");
   assert(urls.length > 0);
   assert(
-    urls.every((url) => url.startsWith("https://github.com/Mlilion/workcraft/releases/download/v9.9.9/")),
+    urls.every((url) => url.startsWith("https://github.com/Mlilion/Codata/releases/download/v9.9.9/")),
   );
 });
 
 test("keeps website release paths when a site base URL is configured", () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "workcraft-release-manifest-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codata-release-manifest-"));
   const artifacts = path.join(tmp, "artifacts");
   const releaseSite = path.join(tmp, "release-site");
   createArtifacts(artifacts);
@@ -101,10 +101,10 @@ test("keeps website release paths when a site base URL is configured", () => {
   const result = spawnSync(process.execPath, [scriptPath, artifacts], {
     env: {
       ...process.env,
-      GITHUB_REPOSITORY: "Mlilion/workcraft",
+      GITHUB_REPOSITORY: "Mlilion/Codata",
       GITHUB_REF_NAME: "v9.9.9",
       RELEASE_SITE_DIR: releaseSite,
-      WORKCRAFT_SITE_BASE_URL: "https://oss.work-craft.test",
+      CODATA_SITE_BASE_URL: "https://oss.codata.test",
     },
     encoding: "utf8",
   });
@@ -120,6 +120,6 @@ test("keeps website release paths when a site base URL is configured", () => {
 
   assert(urls.length > 0);
   assert(
-    urls.every((url) => url.startsWith("https://oss.work-craft.test/downloads/releases/v9.9.9/")),
+    urls.every((url) => url.startsWith("https://oss.codata.test/downloads/releases/v9.9.9/")),
   );
 });

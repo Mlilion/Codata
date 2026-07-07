@@ -5,7 +5,7 @@ from __future__ import annotations
 from app.provider.generic_openai import GenericOpenAIProvider
 
 LOCAL_PROVIDER_ID = "local"
-LOCAL_BASE_URL_ENV = "WORKCRAFT_LOCAL_BASE_URL"
+LOCAL_BASE_URL_ENV = "CODATA_LOCAL_BASE_URL"
 
 
 def create_local_provider(base_url: str) -> GenericOpenAIProvider:

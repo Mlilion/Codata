@@ -34,13 +34,13 @@ after(async () => {
 });
 
 test("fails before checking assets when the remote manifest is still on an older version", async () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "workcraft-release-site-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codata-release-site-"));
   writeJson(path.join(tmp, "downloads/latest.json"), {
     version: "1.1.6",
     downloads: {
       "macos-x86_64": {
-        filename: "WorkCraft_1.1.6_x64.dmg",
-        url: `${baseUrl}/downloads/releases/v1.1.6/WorkCraft_1.1.6_x64.dmg`,
+        filename: "Codata_1.1.6_x64.dmg",
+        url: `${baseUrl}/downloads/releases/v1.1.6/Codata_1.1.6_x64.dmg`,
         size: 10,
         sha256: "abc",
       },
@@ -50,7 +50,7 @@ test("fails before checking assets when the remote manifest is still on an older
     version: "1.1.6",
     platforms: {
       "darwin-x86_64": {
-        url: `${baseUrl}/downloads/releases/v1.1.6/WorkCraft_1.1.6_x64.app.tar.gz`,
+        url: `${baseUrl}/downloads/releases/v1.1.6/Codata_1.1.6_x64.app.tar.gz`,
       },
     },
   });
@@ -78,13 +78,13 @@ test("fails before checking assets when the remote manifest is still on an older
 });
 
 test("uses a cache-busting query string when checking release assets", async () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "workcraft-release-site-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codata-release-site-"));
   const downloadManifest = {
     version: "1.1.6",
     downloads: {
       "macos-x86_64": {
-        filename: "WorkCraft_1.1.6_x64.dmg",
-        url: `${baseUrl}/downloads/releases/v1.1.6/WorkCraft_1.1.6_x64.dmg`,
+        filename: "Codata_1.1.6_x64.dmg",
+        url: `${baseUrl}/downloads/releases/v1.1.6/Codata_1.1.6_x64.dmg`,
         size: 10,
         sha256: "abc",
       },
@@ -94,7 +94,7 @@ test("uses a cache-busting query string when checking release assets", async () 
     version: "1.1.6",
     platforms: {
       "darwin-x86_64": {
-        url: `${baseUrl}/downloads/releases/v1.1.6/WorkCraft_1.1.6_x64.app.tar.gz`,
+        url: `${baseUrl}/downloads/releases/v1.1.6/Codata_1.1.6_x64.app.tar.gz`,
       },
     },
   };
@@ -135,13 +135,13 @@ test("uses a cache-busting query string when checking release assets", async () 
 });
 
 test("changes the cache-busting query string between asset check retries", async () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "workcraft-release-site-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codata-release-site-"));
   const downloadManifest = {
     version: "1.1.6",
     downloads: {
       "macos-x86_64": {
-        filename: "WorkCraft_1.1.6_x64.dmg",
-        url: `${baseUrl}/downloads/releases/v1.1.6/WorkCraft_1.1.6_x64.dmg`,
+        filename: "Codata_1.1.6_x64.dmg",
+        url: `${baseUrl}/downloads/releases/v1.1.6/Codata_1.1.6_x64.dmg`,
         size: 10,
         sha256: "abc",
       },
@@ -191,13 +191,13 @@ test("changes the cache-busting query string between asset check retries", async
 });
 
 test("fails when the public asset URL is still returning a cached 404", async () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "workcraft-release-site-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codata-release-site-"));
   const downloadManifest = {
     version: "1.1.6",
     downloads: {
       "macos-x86_64": {
-        filename: "WorkCraft_1.1.6_x64.dmg",
-        url: `${baseUrl}/downloads/releases/v1.1.6/WorkCraft_1.1.6_x64.dmg`,
+        filename: "Codata_1.1.6_x64.dmg",
+        url: `${baseUrl}/downloads/releases/v1.1.6/Codata_1.1.6_x64.dmg`,
         size: 10,
         sha256: "abc",
       },
@@ -235,6 +235,6 @@ test("fails when the public asset URL is still returning a cached 404", async ()
 
   await assert.rejects(
     () => verifyReleaseSite({ releaseSiteDir: tmp, siteBaseUrl: baseUrl, attempts: 1, delayMs: 1 }),
-    /public endpoint .*WorkCraft_1\.1\.6_x64\.dmg returned 404/,
+    /public endpoint .*Codata_1\.1\.6_x64\.dmg returned 404/,
   );
 });

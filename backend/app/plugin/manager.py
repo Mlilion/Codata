@@ -184,13 +184,13 @@ class PluginManager:
 
     def _resolve_enabled_path(self) -> Path | None:
         if self._project_dir:
-            return Path(self._project_dir).resolve() / ".workcraft" / "plugins.enabled.json"
-        return Path.home() / ".workcraft" / "plugins.enabled.json"
+            return Path(self._project_dir).resolve() / ".codata" / "plugins.enabled.json"
+        return Path.home() / ".codata" / "plugins.enabled.json"
 
     def _resolve_disabled_path(self) -> Path | None:
         if self._project_dir:
-            return Path(self._project_dir).resolve() / ".workcraft" / "plugins.disabled.json"
-        return Path.home() / ".workcraft" / "plugins.disabled.json"
+            return Path(self._project_dir).resolve() / ".codata" / "plugins.disabled.json"
+        return Path.home() / ".codata" / "plugins.disabled.json"
 
     def _load_enabled(self) -> set[str]:
         if not self._enabled_path or not self._enabled_path.is_file():

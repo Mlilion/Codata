@@ -1,0 +1,137 @@
+team:
+  id: ab-experiment
+  name: A/B 实验分析专家团
+  description: 校验实验分流与样本健康度,计算处理组与对照组的指标差异、提升幅度与统计显著性,交付可信的实验结论报告。
+  icon: flask-conical
+  category: 实验分析
+  tags: [数据分析, AB实验, 实验, 显著性, 统计, datasage]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 10
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是 A/B 实验分析专家团协调者。把实验健康检查、组间指标对比、显著性判断和上线建议整合成报告。
+    数据来自 datasage —— 不要臆造;不显著的差异绝不说成有效,前提不满足要明确标注为方向性参考。
+  finalization:
+    mode: deliverable
+    member: reporter
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: markdown
+      title: A/B 实验分析报告
+      filename_template: ab-experiment.md
+      source: final_report
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: experiment_goal
+      description: 实验假设与要评估的核心指标(如 新版落地页是否提升下单转化)。
+      required: true
+    - name: variant_setup
+      description: 实验分组标识与口径(对照组/处理组如何区分、分流字段);没有则留空由专家确认。
+      required: false
+      default: ""
+    - name: reporting_period
+      description: 实验观测周期或日期范围。
+      required: false
+      default: ""
+  skills: [data-analysis, charting, report]
+  members:
+    - id: data_explorer
+      name: 数据发现
+      role: SQL 与数据发现专家
+      goal: 确认实验分组字段、样本表与核心/护栏指标口径,产出可查询的实验数据定义。
+      role_ref: data/sql-query-expert
+      tools: [search, run_query, skill]
+      skills: [data-analysis]
+      icon: database
+    - id: experiment_analyst
+      name: 实验分析
+      role: A/B 实验与统计分析专家
+      goal: 做分流健康检查,计算组间指标差异、提升幅度与统计显著性。
+      role_ref: data/experiment-analyst
+      tools: [run_query, chart_spec, skill]
+      skills: [data-analysis, charting]
+      icon: flask-conical
+    - id: reporter
+      name: 结论与报告
+      role: 可视化与报告交付专家
+      goal: 汇总实验结论,给出能否上线的建议并撰写报告。
+      role_ref: data/visualization-expert
+      tools: [run_query, chart_spec, write, present_file, artifact, skill]
+      skills: [report, charting]
+      icon: file-text
+  tasks:
+    - id: define_experiment
+      name: 实验分组与指标口径确认
+      member: data_explorer
+      task: |
+        确认实验分析所需的数据。
+
+        实验目标:
+        {{experiment_goal}}
+
+        分组设置:
+        {{variant_setup}}
+
+        周期:
+        {{reporting_period}}
+
+        步骤:用 search 找到实验分流/样本表与核心指标,确认对照组与处理组如何区分、核心指标与护栏指标的口径;必要时 run_query 试查验证分组是否可识别。
+        输出:实验分组定义、核心/护栏指标口径、观测周期、数据风险。
+      expected_output: 可查询的实验数据定义。
+      output: experiment_def
+      context_policy: explicit
+      context_max_chars: 16000
+      timeout_seconds: 360
+      retry_count: 1
+    - id: analyze_experiment
+      name: 健康检查与组间显著性分析
+      member: experiment_analyst
+      depends_on: [define_experiment]
+      context: [define_experiment]
+      task: |
+        评估实验效果与统计显著性。
+
+        实验定义:
+        {{experiment_def}}
+
+        步骤:先做健康检查(分流是否均匀/样本量/周期完整性),再用 run_query 分组计算核心指标与人均值,算出绝对/相对提升,评估显著性与置信量级,检查护栏指标;关键对比用 chart_spec 出组间对比图。
+        输出:健康检查结论、各组指标与提升幅度、显著性/置信判断、护栏指标状况、需谨慎解释的问题。
+      expected_output: 实验效果与显著性分析(含图表)。
+      output: experiment_result
+      context_policy: explicit
+      context_max_chars: 20000
+      timeout_seconds: 480
+      retry_count: 1
+    - id: conclude
+      name: 上线建议与实验报告
+      member: reporter
+      depends_on: [define_experiment, analyze_experiment]
+      context: [define_experiment, analyze_experiment]
+      task: |
+        基于实验分析给出上线建议并撰写报告。
+
+        实验定义:
+        {{experiment_def}}
+
+        实验分析:
+        {{experiment_result}}
+
+        报告包含:实验结论(能否上线,配组间对比图)、各组指标与提升、显著性与置信说明、护栏指标、风险与待确认问题。区分事实/推断/建议;不显著的结论要明说。
+      expected_output: 可交付的 A/B 实验分析报告。
+      output: final_report
+      context_policy: explicit
+      context_max_chars: 28000
+      timeout_seconds: 300
+      retry_count: 1

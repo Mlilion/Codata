@@ -15,9 +15,9 @@ from app.expert.validation import validate_expert_team_config
 logger = logging.getLogger(__name__)
 
 PRESETS_DIR = Path(__file__).parent / "presets"
-DEFAULT_REMOTE_MANIFEST_PATH = Path.home() / ".workcraft" / "remote-expert-teams" / "manifest.json"
+DEFAULT_REMOTE_MANIFEST_PATH = Path.home() / ".codata" / "remote-expert-teams" / "manifest.json"
 DEFAULT_REMOTE_MANIFEST_CACHE_PATH = (
-    Path.home() / ".workcraft" / "remote-expert-teams" / "cache" / "manifest.json"
+    Path.home() / ".codata" / "remote-expert-teams" / "cache" / "manifest.json"
 )
 
 
@@ -39,7 +39,7 @@ class ExpertTeamRegistry:
     ) -> None:
         self._presets_dir = presets_dir or PRESETS_DIR
         self._project_dir = project_dir
-        self._user_dir = user_dir or Path.home() / ".workcraft" / "expert-teams"
+        self._user_dir = user_dir or Path.home() / ".codata" / "expert-teams"
         self._remote_enabled = remote_enabled
         self._remote_manifest_url = remote_manifest_url.strip()
         self._remote_auth_token = remote_auth_token
@@ -67,7 +67,7 @@ class ExpertTeamRegistry:
         self._scan_dir(self._user_dir, is_preset=False, origin="user")
 
         if self._project_dir:
-            project_dir = Path(self._project_dir).resolve() / ".workcraft" / "expert-teams"
+            project_dir = Path(self._project_dir).resolve() / ".codata" / "expert-teams"
             self._scan_dir(project_dir, is_preset=False, origin="project")
 
         self._scan_remote_manifest()

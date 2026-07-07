@@ -16,14 +16,6 @@ from pydantic import BaseModel, Field
 
 from app.config import get_custom_endpoints
 from app.dependencies import ProviderRegistryDep, SettingsDep
-from app.media_model_config import (
-    DEFAULT_DATAEYES_MEDIA_BASE_URL,
-    DEFAULT_VIMAX_MEDIA_BASE_URL,
-    PUBLIC_VIMAX_MEDIA_PRESETS,
-    VIMAX_MEDIA_PRESETS,
-    normalize_vimax_media_preset,
-    vimax_media_preset,
-)
 from app.provider.catalog import PROVIDER_CATALOG
 from app.provider.factory import create_provider as create_desktop_provider
 from app.provider.local import (
@@ -158,56 +150,6 @@ class LocalProviderUpdate(BaseModel):
     base_url: str
 
 
-class ViMaxMediaModelOption(BaseModel):
-    id: str
-    label: str
-    description: str = ""
-    preset: str
-    metadata: dict[str, str] = Field(default_factory=dict)
-    default_base_url: str = ""
-
-
-class ViMaxMediaCompatibleTool(BaseModel):
-    tool_id: str
-    scope: str
-    adapter_status: str
-
-
-class ViMaxMediaConfigStatus(BaseModel):
-    preset: str
-    preset_label: str
-    base_url: str
-    image_model: str
-    video_model: str
-    video_t2v_model: str
-    video_ff2v_model: str
-    video_flf2v_model: str
-    image_api_version: str
-    video_api_version: str
-    has_api_key: bool = False
-    masked_api_key: str | None = None
-    key_source: str = ""
-    ready: bool = False
-    missing: list[str] = Field(default_factory=list)
-    presets: list[ViMaxMediaModelOption] = Field(default_factory=list)
-    image_models: list[ViMaxMediaModelOption] = Field(default_factory=list)
-    video_models: list[ViMaxMediaModelOption] = Field(default_factory=list)
-    compatible_tools: list[ViMaxMediaCompatibleTool] = Field(default_factory=list)
-
-
-class ViMaxMediaConfigUpdate(BaseModel):
-    preset: str | None = None
-    api_key: str | None = None
-    clear_api_key: bool = False
-    base_url: str | None = None
-    image_model: str | None = None
-    video_model: str | None = None
-    video_t2v_model: str | None = None
-    video_ff2v_model: str | None = None
-    video_flf2v_model: str | None = None
-    image_api_version: str | None = None
-    video_api_version: str | None = None
-
 
 def _normalize_local_base_url(value: str) -> str:
     """Normalize user input and ensure it includes a scheme."""
@@ -232,209 +174,6 @@ def _normalize_optional_http_base_url(value: str) -> str:
     return trimmed.rstrip("/")
 
 
-def _persist_runtime_setting(settings: Any, attr: str, env_key: str, value: str) -> None:
-    clean = value.strip()
-    setattr(settings, attr, clean)
-    if clean:
-        _update_env_file(env_key, clean)
-    else:
-        _remove_env_key(env_key)
-
-
-def _vimax_media_options() -> tuple[
-    list[ViMaxMediaModelOption],
-    list[ViMaxMediaModelOption],
-    list[ViMaxMediaModelOption],
-]:
-    presets: list[ViMaxMediaModelOption] = []
-    image_models: list[ViMaxMediaModelOption] = []
-    video_models: list[ViMaxMediaModelOption] = []
-    for preset_id, config in VIMAX_MEDIA_PRESETS.items():
-        if preset_id not in PUBLIC_VIMAX_MEDIA_PRESETS:
-            continue
-        presets.append(
-            ViMaxMediaModelOption(
-                id=preset_id,
-                label=str(config["label"]),
-                description=str(config.get("description") or ""),
-                preset=preset_id,
-                default_base_url=_default_media_base_url_for_preset(preset_id),
-            )
-        )
-        image = config.get("image") if isinstance(config.get("image"), dict) else {}
-        video = config.get("video") if isinstance(config.get("video"), dict) else {}
-        image_model = str(image.get("model") or "")
-        video_model = str(video.get("model") or video.get("ff2v_model") or "")
-        if image_model:
-            image_models.append(
-                ViMaxMediaModelOption(
-                    id=image_model,
-                    label=image_model,
-                    description=str(config.get("description") or ""),
-                    preset=preset_id,
-                    metadata={
-                        "api_version": str(image.get("api_version") or ""),
-                        "class_path": str(image.get("class_path") or ""),
-                    },
-                    default_base_url=_default_media_base_url_for_preset(preset_id),
-                )
-            )
-        if video_model:
-            video_models.append(
-                ViMaxMediaModelOption(
-                    id=video_model,
-                    label=video_model,
-                    description=str(config.get("description") or ""),
-                    preset=preset_id,
-                    metadata={
-                        "api_version": str(video.get("api_version") or ""),
-                        "class_path": str(video.get("class_path") or ""),
-                        "t2v_model": str(video.get("t2v_model") or video_model),
-                        "ff2v_model": str(video.get("ff2v_model") or video_model),
-                        "flf2v_model": str(video.get("flf2v_model") or video_model),
-                    },
-                    default_base_url=_default_media_base_url_for_preset(preset_id),
-                )
-            )
-    return presets, image_models, video_models
-
-
-def _default_media_base_url_for_preset(preset_id: str) -> str:
-    if preset_id in {"doubao", "gemini"}:
-        return DEFAULT_VIMAX_MEDIA_BASE_URL
-    if preset_id in {"dataeyes", "dataeyes_gemini_veo"}:
-        return DEFAULT_DATAEYES_MEDIA_BASE_URL
-    if preset_id == "config":
-        return ""
-    return DEFAULT_VIMAX_MEDIA_BASE_URL
-
-
-def _vimax_custom_yunwu_key(settings: Any) -> str:
-    candidates = []
-    for endpoint in get_custom_endpoints(settings):
-        base_url = str(endpoint.get("base_url") or "").lower()
-        if "yunwu.ai" in base_url:
-            candidates.append(endpoint)
-    for endpoint in [*filter(lambda item: item.get("enabled", True), candidates), *candidates]:
-        api_key = str(endpoint.get("api_key") or "").strip()
-        if api_key:
-            return api_key
-    return ""
-
-
-def _vimax_custom_dataeyes_key(settings: Any) -> str:
-    candidates = []
-    for endpoint in get_custom_endpoints(settings):
-        base_url = str(endpoint.get("base_url") or "").lower()
-        if "dataeyes.ai" in base_url:
-            candidates.append(endpoint)
-    for endpoint in [*filter(lambda item: item.get("enabled", True), candidates), *candidates]:
-        api_key = str(endpoint.get("api_key") or "").strip()
-        if api_key:
-            return api_key
-    return ""
-
-
-def _vimax_media_key_status(settings: Any, preset_id: str) -> tuple[str, str]:
-    explicit = str(getattr(settings, "vimax_media_api_key", "") or "").strip()
-    if explicit:
-        return explicit, "vimax_media_api_key"
-
-    if preset_id in {"dataeyes", "dataeyes_gemini_veo"}:
-        dataeyes = _vimax_custom_dataeyes_key(settings)
-        if dataeyes:
-            return dataeyes, "custom_dataeyes_endpoint"
-        return "", ""
-
-    if preset_id in {"gemini", "doubao"}:
-        yunwu = str(getattr(settings, "vimax_yunwu_api_key", "") or "").strip()
-        if yunwu:
-            return yunwu, "vimax_yunwu_api_key"
-        custom = _vimax_custom_yunwu_key(settings)
-        if custom:
-            return custom, "custom_yunwu_endpoint"
-        return "", ""
-
-    if preset_id == "config":
-        return "", ""
-
-    yunwu = str(getattr(settings, "vimax_yunwu_api_key", "") or "").strip()
-    if yunwu:
-        return yunwu, "vimax_yunwu_api_key"
-    custom = _vimax_custom_yunwu_key(settings)
-    if custom:
-        return custom, "custom_yunwu_endpoint"
-    google = str(getattr(settings, "vimax_google_api_key", "") or "").strip()
-    if google:
-        return google, "vimax_google_api_key"
-    provider_google = str(getattr(settings, "google_api_key", "") or "").strip()
-    if provider_google:
-        return provider_google, "google_api_key"
-    return "", ""
-
-
-def _vimax_media_config_status(settings: Any) -> ViMaxMediaConfigStatus:
-    raw_preset = str(getattr(settings, "vimax_media_preset", "") or "").strip()
-    preset_id = normalize_vimax_media_preset(raw_preset)
-    preset = vimax_media_preset(preset_id)
-    image = preset.get("image") if isinstance(preset.get("image"), dict) else {}
-    video = preset.get("video") if isinstance(preset.get("video"), dict) else {}
-    default_image_model = str(image.get("model") or "")
-    default_video_model = str(video.get("model") or video.get("ff2v_model") or "")
-    default_t2v_model = str(video.get("t2v_model") or default_video_model)
-    default_ff2v_model = str(video.get("ff2v_model") or default_video_model)
-    default_flf2v_model = str(video.get("flf2v_model") or default_video_model)
-    api_key, key_source = _vimax_media_key_status(settings, preset_id)
-    default_base_url = _default_media_base_url_for_preset(preset_id)
-    base_url = default_base_url
-    image_api_version = (
-        str(getattr(settings, "vimax_image_api_version", "") or "").strip()
-        or str(getattr(settings, "vimax_media_api_version", "") or "").strip()
-        or str(image.get("api_version") or "")
-    )
-    video_api_version = (
-        str(getattr(settings, "vimax_video_api_version", "") or "").strip()
-        or str(video.get("api_version") or "")
-    )
-    missing: list[str] = []
-    if not raw_preset:
-        missing.append("preset")
-    if preset_id != "config" and not api_key:
-        missing.append("api_key")
-    presets, image_models, video_models = _vimax_media_options()
-    return ViMaxMediaConfigStatus(
-        preset=preset_id,
-        preset_label=str(preset.get("label") or preset_id),
-        base_url=base_url,
-        image_model=str(getattr(settings, "vimax_image_model", "") or "").strip() or default_image_model,
-        video_model=str(getattr(settings, "vimax_video_model", "") or "").strip() or default_video_model,
-        video_t2v_model=str(getattr(settings, "vimax_video_t2v_model", "") or "").strip() or default_t2v_model,
-        video_ff2v_model=str(getattr(settings, "vimax_video_ff2v_model", "") or "").strip() or default_ff2v_model,
-        video_flf2v_model=str(getattr(settings, "vimax_video_flf2v_model", "") or "").strip() or default_flf2v_model,
-        image_api_version=image_api_version,
-        video_api_version=video_api_version,
-        has_api_key=bool(api_key),
-        masked_api_key=_mask_key(api_key) if api_key else None,
-        key_source=key_source,
-        ready=not missing,
-        missing=missing,
-        presets=presets,
-        image_models=image_models,
-        video_models=video_models,
-        compatible_tools=[
-            ViMaxMediaCompatibleTool(
-                tool_id="vimax_generate_video",
-                scope="image+video",
-                adapter_status="active",
-            ),
-            ViMaxMediaCompatibleTool(
-                tool_id="baoyu_image_generate",
-                scope="image",
-                adapter_status="reserved",
-            ),
-        ],
-    )
-
 
 def _local_provider_status(settings: Any, registry: Any) -> LocalProviderStatus:
     """Build a status object from the current configuration + registry state."""
@@ -449,76 +188,6 @@ def _local_provider_status(settings: Any, registry: Any) -> LocalProviderStatus:
         status=status,
     )
 
-
-@router.get("/config/vimax-media", response_model=ViMaxMediaConfigStatus)
-async def get_vimax_media_config(settings: SettingsDep) -> ViMaxMediaConfigStatus:
-    """Return the WorkCraft-managed media model defaults for ViMax."""
-    return _vimax_media_config_status(settings)
-
-
-@router.patch("/config/vimax-media", response_model=ViMaxMediaConfigStatus)
-async def update_vimax_media_config(
-    settings: SettingsDep,
-    body: ViMaxMediaConfigUpdate,
-) -> ViMaxMediaConfigStatus:
-    """Persist ViMax media model defaults used by vimax_generate_video."""
-    if body.preset is not None:
-        requested = str(body.preset or "").strip().lower()
-        if requested and requested not in VIMAX_MEDIA_PRESETS and requested not in {
-            "auto",
-            "google",
-            "veo",
-            "nanobanana",
-            "seedream",
-            "seedance",
-            "dataeye",
-            "dataeyes",
-            "dataeyes_gemini",
-            "dataeyes_veo",
-            "dataeyes_gemini_veo",
-            "dataeyes_nanobanana",
-            "yaml",
-            "default",
-        }:
-            raise HTTPException(400, f"Unsupported ViMax media preset: {body.preset}")
-        _persist_runtime_setting(
-            settings,
-            "vimax_media_preset",
-            "WORKCRAFT_VIMAX_MEDIA_PRESET",
-            normalize_vimax_media_preset(body.preset),
-        )
-
-    if body.clear_api_key:
-        _persist_runtime_setting(settings, "vimax_media_api_key", "WORKCRAFT_VIMAX_MEDIA_API_KEY", "")
-    elif body.api_key is not None:
-        _persist_runtime_setting(
-            settings,
-            "vimax_media_api_key",
-            "WORKCRAFT_VIMAX_MEDIA_API_KEY",
-            str(body.api_key or "").strip(),
-        )
-
-    if body.base_url is not None:
-        _persist_runtime_setting(
-            settings,
-            "vimax_media_base_url",
-            "WORKCRAFT_VIMAX_MEDIA_BASE_URL",
-            "",
-        )
-
-    for attr, env_key, value in [
-        ("vimax_image_model", "WORKCRAFT_VIMAX_IMAGE_MODEL", body.image_model),
-        ("vimax_video_model", "WORKCRAFT_VIMAX_VIDEO_MODEL", body.video_model),
-        ("vimax_video_t2v_model", "WORKCRAFT_VIMAX_VIDEO_T2V_MODEL", body.video_t2v_model),
-        ("vimax_video_ff2v_model", "WORKCRAFT_VIMAX_VIDEO_FF2V_MODEL", body.video_ff2v_model),
-        ("vimax_video_flf2v_model", "WORKCRAFT_VIMAX_VIDEO_FLF2V_MODEL", body.video_flf2v_model),
-        ("vimax_image_api_version", "WORKCRAFT_VIMAX_IMAGE_API_VERSION", body.image_api_version),
-        ("vimax_video_api_version", "WORKCRAFT_VIMAX_VIDEO_API_VERSION", body.video_api_version),
-    ]:
-        if value is not None:
-            _persist_runtime_setting(settings, attr, env_key, str(value or ""))
-
-    return _vimax_media_config_status(settings)
 
 
 @router.get("/config/api-key", response_model=ApiKeyStatus)
@@ -571,7 +240,7 @@ async def update_api_key(registry: ProviderRegistryDep, body: ApiKeyUpdate) -> A
         logger.warning("Model refresh failed after API key update: %s — will retry on next request", e)
 
     # Persist to .env so it survives restarts
-    _update_env_file("WORKCRAFT_OPENROUTER_API_KEY", api_key)
+    _update_env_file("CODATA_OPENROUTER_API_KEY", api_key)
 
     return ApiKeyStatus(
         is_configured=True,
@@ -584,7 +253,7 @@ async def update_api_key(registry: ProviderRegistryDep, body: ApiKeyUpdate) -> A
 async def delete_api_key(settings: SettingsDep, registry: ProviderRegistryDep) -> ApiKeyStatus:
     """Delete the stored OpenRouter API key."""
     settings.openrouter_api_key = ""
-    _remove_env_key("WORKCRAFT_OPENROUTER_API_KEY")
+    _remove_env_key("CODATA_OPENROUTER_API_KEY")
     registry.unregister("openrouter")
 
     return ApiKeyStatus(is_configured=False)
@@ -650,7 +319,7 @@ async def connect_ollama(
         logger.warning("Model refresh failed after Ollama connect: %s", e)
 
     # Persist to .env and runtime settings
-    _update_env_file("WORKCRAFT_OLLAMA_BASE_URL", base_url)
+    _update_env_file("CODATA_OLLAMA_BASE_URL", base_url)
     settings.ollama_base_url = base_url
 
     return OllamaStatus(
@@ -664,7 +333,7 @@ async def connect_ollama(
 async def disconnect_ollama(settings: SettingsDep, registry: ProviderRegistryDep) -> OllamaStatus:
     """Disconnect Ollama: remove provider and clear config."""
     settings.ollama_base_url = ""
-    _remove_env_key("WORKCRAFT_OLLAMA_BASE_URL")
+    _remove_env_key("CODATA_OLLAMA_BASE_URL")
 
     registry.unregister("ollama")
 
@@ -780,7 +449,7 @@ async def set_provider_key(
 
         # Persist base_url
         setattr(settings, url_setting, base_url)
-        _update_env_file(f"WORKCRAFT_{url_setting.upper()}", base_url)
+        _update_env_file(f"CODATA_{url_setting.upper()}", base_url)
 
     model_count, _ = await _validate_provider_connection(provider_id, api_key, **extra_kwargs)
 
@@ -805,10 +474,10 @@ async def set_provider_key(
             )
 
     # Persist to .env
-    env_key = f"WORKCRAFT_{pdef.settings_key.upper()}"
+    env_key = f"CODATA_{pdef.settings_key.upper()}"
     _update_env_file(env_key, api_key)
     settings.disabled_providers = ",".join(sorted(disabled))
-    _update_env_file("WORKCRAFT_DISABLED_PROVIDERS", settings.disabled_providers)
+    _update_env_file("CODATA_DISABLED_PROVIDERS", settings.disabled_providers)
 
     # Update runtime settings
     setattr(settings, pdef.settings_key, api_key)
@@ -860,12 +529,12 @@ async def delete_provider_key(
     setattr(settings, pdef.settings_key, "")
 
     # Remove from .env
-    env_key = f"WORKCRAFT_{pdef.settings_key.upper()}"
+    env_key = f"CODATA_{pdef.settings_key.upper()}"
     _remove_env_key(env_key)
 
     if pdef.kind == "openai_compat_azure":
         settings.azure_openai_base_url = ""
-        _remove_env_key("WORKCRAFT_AZURE_OPENAI_BASE_URL")
+        _remove_env_key("CODATA_AZURE_OPENAI_BASE_URL")
 
     # Unregister provider
     registry.unregister(provider_id)
@@ -922,7 +591,7 @@ async def toggle_provider(
 
     # Persist disabled list
     settings.disabled_providers = ",".join(sorted(disabled))
-    _update_env_file("WORKCRAFT_DISABLED_PROVIDERS", settings.disabled_providers)
+    _update_env_file("CODATA_DISABLED_PROVIDERS", settings.disabled_providers)
 
     # Build response
     provider = registry.get_provider(provider_id)
@@ -985,7 +654,7 @@ async def create_custom_endpoint(
         endpoints.append(new_config)
 
         settings.custom_endpoints = json.dumps(endpoints)
-        _update_env_file("WORKCRAFT_CUSTOM_ENDPOINTS", settings.custom_endpoints)
+        _update_env_file("CODATA_CUSTOM_ENDPOINTS", settings.custom_endpoints)
 
     if enabled:
         registry.register(test_provider)
@@ -1022,7 +691,7 @@ async def delete_custom_endpoint(
             raise HTTPException(404, "Custom endpoint not found")
 
         settings.custom_endpoints = json.dumps(endpoints)
-        _update_env_file("WORKCRAFT_CUSTOM_ENDPOINTS", settings.custom_endpoints)
+        _update_env_file("CODATA_CUSTOM_ENDPOINTS", settings.custom_endpoints)
 
     registry.unregister(endpoint_id)
 
@@ -1093,7 +762,7 @@ async def update_custom_endpoint(
         endpoints[found_idx] = updated_config
 
         settings.custom_endpoints = json.dumps(endpoints)
-        _update_env_file("WORKCRAFT_CUSTOM_ENDPOINTS", settings.custom_endpoints)
+        _update_env_file("CODATA_CUSTOM_ENDPOINTS", settings.custom_endpoints)
 
     if enabled and needs_rebuild and test_provider is not None:
         registry.unregister(endpoint_id)

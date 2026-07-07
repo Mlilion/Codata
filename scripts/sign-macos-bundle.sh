@@ -54,7 +54,7 @@ sort -rn "$tmp_candidates" | cut -f2- | while IFS= read -r file_path; do
   codesign --verify --strict --verbose=2 "$file_path"
 done
 
-launcher="$bundle_dir/workcraft-backend"
+launcher="$bundle_dir/codata-backend"
 if [ -f "$launcher" ]; then
   codesign --verify --deep --strict --verbose=2 "$launcher"
 fi

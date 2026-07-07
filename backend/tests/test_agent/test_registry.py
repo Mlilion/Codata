@@ -8,7 +8,20 @@ class TestAgentRegistry:
         r = AgentRegistry()
         agents = r.list_agents(include_hidden=True)
         names = {a.name for a in agents}
-        assert names == {"build", "plan", "explore", "general", "compaction", "title", "summary"}
+        assert names == {"build", "plan", "data", "explore", "general", "compaction", "title", "summary"}
+
+    def test_data_agent_is_readonly_analysis(self):
+        from app.agent.permission import evaluate
+
+        r = AgentRegistry()
+        data = r.get("data")
+        assert data is not None and data.mode == "primary"
+        assert data.system_prompt  # loads data.txt
+        # Read-only + analysis: mutation denied, query/chart allowed.
+        for denied in ("write", "edit", "bash", "code_execute"):
+            assert evaluate(denied, "*", data.permissions) == "deny"
+        for allowed in ("run_query", "chart_spec", "read", "search"):
+            assert evaluate(allowed, "*", data.permissions) == "allow"
 
     def test_default_agent_is_build(self):
         r = AgentRegistry()
@@ -39,7 +52,7 @@ class TestAgentRegistry:
         r = AgentRegistry()
         primaries = r.primary_agents()
         assert all(a.mode == "primary" for a in primaries)
-        assert {a.name for a in primaries} == {"build", "plan"}
+        assert {a.name for a in primaries} == {"build", "plan", "data"}
 
     def test_subagents(self):
         r = AgentRegistry()

@@ -7,7 +7,7 @@ from app.streaming.manager import GenerationJob
 
 
 class ExpertStreamAdapter:
-    """Publish expert team activity through the existing WorkCraft stream."""
+    """Publish expert team activity through the existing Codata stream."""
 
     def __init__(self, job: GenerationJob) -> None:
         self._job = job

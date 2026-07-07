@@ -1,4 +1,4 @@
-//! WorkCraft Desktop — Tauri 2.0 application entry point.
+//! Codata Desktop — Tauri 2.0 application entry point.
 //!
 //! Registers plugins, sets up the backend sidecar, tray, menu,
 //! and all IPC command handlers.
@@ -122,9 +122,9 @@ pub fn run() {
                 if is_running_from_dmg_volume(app) {
                     app.dialog()
                         .message(
-                            "WorkCraft is running from the DMG volume.\n\nPlease copy WorkCraft.app to Applications and launch it from there.",
+                            "Codata is running from the DMG volume.\n\nPlease copy Codata.app to Applications and launch it from there.",
                         )
-                        .title("Install WorkCraft to Applications")
+                        .title("Install Codata to Applications")
                         .kind(MessageDialogKind::Warning)
                         .blocking_show();
                 }
@@ -300,7 +300,7 @@ fn extract_route_from_urls<'a>(mut urls: impl Iterator<Item = &'a str>) -> Optio
 
 fn extract_route_from_url(raw: &str) -> Option<String> {
     let url = Url::parse(raw).ok()?;
-    if url.scheme() != "workcraft-oss" {
+    if url.scheme() != "codata-oss" {
         return None;
     }
 

@@ -1,6 +1,6 @@
 """OpenAI-compatible API endpoints for external integrations.
 
-Exposes /v1/chat/completions and /v1/models so WorkCraft can be used as a
+Exposes /v1/chat/completions and /v1/models so Codata can be used as a
 drop-in OpenAI-compatible backend. Internally delegates to the same
 run_generation() pipeline used by the native chat API.
 """
@@ -49,15 +49,15 @@ router = APIRouter()
 # Heartbeat interval — keeps the SSE connection alive through proxies.
 _HEARTBEAT_INTERVAL = 15.0
 
-# Agent name prefix used in model IDs: "workcraft-build" -> agent "build"
-_MODEL_PREFIX = "workcraft-"
+# Agent name prefix used in model IDs: "codata-build" -> agent "build"
+_MODEL_PREFIX = "codata-"
 
 # Available agents exposed as model IDs.
 _AGENT_MODELS = {
-    "workcraft-build": {"agent": "build", "description": "Full-featured assistant with all tools"},
-    "workcraft-plan": {"agent": "plan", "description": "Read-only analysis and planning"},
-    "workcraft-explore": {"agent": "explore", "description": "Fast search and exploration"},
-    "workcraft-general": {"agent": "general", "description": "General-purpose assistant"},
+    "codata-build": {"agent": "build", "description": "Full-featured assistant with all tools"},
+    "codata-plan": {"agent": "plan", "description": "Read-only analysis and planning"},
+    "codata-explore": {"agent": "explore", "description": "Fast search and exploration"},
+    "codata-general": {"agent": "general", "description": "General-purpose assistant"},
 }
 
 
@@ -72,7 +72,7 @@ class ChatMessage(BaseModel):
 
 
 class ChatCompletionRequest(BaseModel):
-    model: str = "workcraft-build"
+    model: str = "codata-build"
     messages: list[ChatMessage] = Field(default_factory=list)
     stream: bool = False
     user: str | None = None  # Channel user key for session mapping
@@ -321,7 +321,7 @@ async def list_models():
             "id": model_id,
             "object": "model",
             "created": 1700000000,
-            "owned_by": "workcraft",
+            "owned_by": "codata",
             "description": info["description"],
         })
     return {"object": "list", "data": models}
@@ -339,7 +339,7 @@ async def chat_completions(
 ):
     """OpenAI-compatible chat completions endpoint.
 
-    Delegates to WorkCraft's full agent loop (run_generation) and translates
+    Delegates to Codata's full agent loop (run_generation) and translates
     SSE events into the OpenAI streaming format.
     """
     # Extract sender info from channel metadata messages (for session title).
@@ -413,7 +413,7 @@ async def _stream_openai_chunks(
     model: str,
     run_id: str,
 ):
-    """Translate WorkCraft SSE events into OpenAI streaming chunks."""
+    """Translate Codata SSE events into OpenAI streaming chunks."""
     queue = job.subscribe()
     created = int(time.time())
 
@@ -454,7 +454,7 @@ async def _stream_openai_chunks(
                 yield "data: [DONE]\n\n"
                 break
 
-            # tool-call, tool-result, permission-request, etc. are silent — internal to WorkCraft
+            # tool-call, tool-result, permission-request, etc. are silent — internal to Codata
 
     except asyncio.CancelledError:
         pass

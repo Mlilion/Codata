@@ -8,7 +8,7 @@ from app.tool.registry import ToolRegistry
 
 
 class ExpertToolAdapter:
-    """Expose WorkCraft tools to expert members through OpenAI tool schemas."""
+    """Expose Codata tools to expert members through OpenAI tool schemas."""
 
     def __init__(self, tool_registry: ToolRegistry) -> None:
         self._tool_registry = tool_registry

@@ -122,7 +122,7 @@ className="transition-colors hover:border-[var(--brand-primary)]"
 
 ### 设计系统文件
 
-- **`design-system/workcraft-expert-teams/MASTER.md`** - 全局设计系统源文件
+- **`design-system/codata-expert-teams/MASTER.md`** - 全局设计系统源文件
 
 ## 技术栈
 

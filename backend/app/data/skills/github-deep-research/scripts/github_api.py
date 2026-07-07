@@ -56,7 +56,7 @@ class GitHubAPI:
     def __init__(self, token: Optional[str] = None):
         self.headers = {
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "WorkCraft-Research/1.0",
+            "User-Agent": "Codata-Research/1.0",
         }
         if token:
             self.headers["Authorization"] = f"token {token}"

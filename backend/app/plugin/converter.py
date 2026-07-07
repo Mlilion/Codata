@@ -1,4 +1,4 @@
-"""Convert parsed Claude plugin data to WorkCraft registry objects."""
+"""Convert parsed Claude plugin data to Codata registry objects."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from app.skill.model import SkillInfo
 
 
 def convert_skill(raw: PluginSkillRaw, plugin: PluginMeta) -> SkillInfo:
-    """Convert a raw Claude plugin skill to a WorkCraft SkillInfo.
+    """Convert a raw Claude plugin skill to a Codata SkillInfo.
 
     Skills are namespaced as "{plugin}:{skill}" to avoid conflicts.
     """

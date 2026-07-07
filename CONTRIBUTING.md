@@ -1,6 +1,6 @@
-# Contributing to WorkCraft
+# Contributing to Codata
 
-Thanks for your interest in improving WorkCraft. This repository is the Apache-2.0 open-source edition of WorkCraft, and focused contributions are welcome.
+Thanks for your interest in improving Codata. This repository is the Apache-2.0 open-source edition of Codata, and focused contributions are welcome.
 
 Please keep contributions aligned with the open-source product boundary:
 
@@ -12,8 +12,8 @@ Please keep contributions aligned with the open-source product boundary:
 ## Development Setup
 
 ```bash
-git clone https://github.com/Mlilion/workcraft.git
-cd workcraft
+git clone https://github.com/Mlilion/Codata.git
+cd codata
 
 npm install
 cd frontend && npm install --legacy-peer-deps
@@ -139,7 +139,7 @@ Use the bug report template and include:
 2. Steps to reproduce.
 3. Expected behavior.
 4. Actual behavior.
-5. OS, WorkCraft version, provider route, and whether you are using desktop or browser development mode.
+5. OS, Codata version, provider route, and whether you are using desktop or browser development mode.
 6. Relevant logs or screenshots.
 
 Do not include secrets, API keys, private documents, or sensitive customer data in public issues.
@@ -151,7 +151,7 @@ Use the feature request template. Explain the problem first, then the proposed s
 ## Project Structure
 
 ```text
-workcraft/
+codata/
 ├── backend/        FastAPI backend, agent runtime, expert teams, providers, tools
 ├── frontend/       Next.js 15 desktop UI
 ├── desktop-tauri/  Tauri v2 desktop shell

@@ -8,7 +8,7 @@ const deletedFrontendPaths = [
   "frontend/src/stores/auth-store.ts",
   "frontend/src/stores/billing-store.ts",
   "frontend/src/lib/proxy-api.ts",
-  "frontend/src/lib/workcraft-billing.ts",
+  "frontend/src/lib/codata-billing.ts",
   "frontend/src/components/settings/account-tab.tsx",
   "frontend/src/components/settings/recharge-panel.tsx",
   "frontend/src/components/billing/upgrade-prompt.tsx",
@@ -22,7 +22,7 @@ const forbiddenImportFragments = [
   "@/stores/auth-store",
   "@/stores/billing-store",
   "@/lib/proxy-api",
-  "@/lib/workcraft-billing",
+  "@/lib/codata-billing",
   "@/components/billing/upgrade-prompt",
   "@/components/settings/account-tab",
   "@/components/settings/recharge-panel",
@@ -30,7 +30,7 @@ const forbiddenImportFragments = [
 ];
 
 const forbiddenConstantFragments = [
-  "WORKCRAFT_ACCOUNT",
+  "CODATA_ACCOUNT",
   "PROXY_AUTH_",
   "PROXY_KEYS_",
   "PROXY_PAYMENT_",
@@ -38,11 +38,11 @@ const forbiddenConstantFragments = [
 ];
 
 const forbiddenAccountFrontendFragments = [
-  "WorkCraft account",
-  "WorkCraft 账号",
-  "WorkCraft Account",
-  "workcraft-auth",
-  "/api/config/workcraft-account",
+  "Codata account",
+  "Codata 账号",
+  "Codata Account",
+  "codata-auth",
+  "/api/config/codata-account",
   "/api/config/openai-subscription",
   "openai-subscription",
   "ChatGPT Subscription",
@@ -153,11 +153,11 @@ test("open source frontend removes commercial proxy constants", () => {
   assert.deepEqual(offenders, []);
 });
 
-test("open source frontend removes WorkCraft cloud proxy provider references", () => {
+test("open source frontend removes Codata cloud proxy provider references", () => {
   const offenders = [];
   for (const file of frontendSourceFiles(trackedFiles())) {
     const source = read(file);
-    if (source.includes("workcraft-proxy")) {
+    if (source.includes("codata-proxy")) {
       offenders.push(file);
     }
   }

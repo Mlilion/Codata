@@ -2,9 +2,9 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in WorkCraft, please report it responsibly.
+If you discover a security vulnerability in Codata, please report it responsibly.
 
-**Email:** [workcraft@126.com](mailto:workcraft@126.com)
+**Email:** [codata@126.com](mailto:codata@126.com)
 
 Please include:
 - Description of the vulnerability
@@ -20,14 +20,14 @@ Please include:
 - **Initial assessment:** within 7 days
 - **Fix or mitigation:** depends on severity, typically within 30 days
 
-## How WorkCraft Handles Your Data
+## How Codata Handles Your Data
 
-WorkCraft is designed with local-first privacy:
+Codata is designed with local-first privacy:
 
 - **Files, conversations, and memory** are stored on your device. Nothing is uploaded to any server.
-- **Cloud model usage** sends only your prompt text directly to the model provider's API (OpenAI, Anthropic, etc.). WorkCraft does not proxy, log, or store these requests.
+- **Cloud model usage** sends only your prompt text directly to the model provider's API (OpenAI, Anthropic, etc.). Codata does not proxy, log, or store these requests.
 - **Local model usage** (via Ollama) keeps everything on your machine. No network requests are made.
-- **No telemetry, no analytics, no tracking.** WorkCraft does not collect usage data.
+- **No telemetry, no analytics, no tracking.** Codata does not collect usage data.
 
 ## Supported Versions
 

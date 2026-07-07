@@ -102,12 +102,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Ensure all models are registered with Base.metadata before create_all
     from app.memory import workspace_memory_model as _ws_memory_models  # noqa: F401 — registers WorkspaceMemory
-    from app.models import vimax_task_run as _vimax_task_run_models  # noqa: F401 — registers ViMaxTaskRun
+    from app.models import dashboard as _dashboard_models  # noqa: F401 — registers Dashboard
+    from app.models import dashboard_item as _dashboard_item_models  # noqa: F401 — registers DashboardItem
+    from app.models import analysis_memory as _analysis_memory_models  # noqa: F401 — registers AnalysisMemory
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         # Add any missing columns to existing tables (lightweight auto-migration)
         await conn.run_sync(_add_missing_columns)
+
+    # Ensure a default dashboard exists and orphan items are assigned to it.
+    await _ensure_default_dashboard(session_factory)
 
     app.state.engine = engine
     app.state.session_factory = session_factory
@@ -201,7 +206,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             if pdef.kind == "openai_compat_azure":
                 azure_url = getattr(settings, "azure_openai_base_url", "")
                 if not azure_url:
-                    logger.warning("Azure API key set but WORKCRAFT_AZURE_OPENAI_BASE_URL is missing — skipping")
+                    logger.warning("Azure API key set but CODATA_AZURE_OPENAI_BASE_URL is missing — skipping")
                     continue
                 extra_kwargs["base_url"] = azure_url
 
@@ -248,7 +253,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.provider_registry = registry
     set_provider_registry(registry)
 
-    # Agent registry (built-in + custom agents from config / .workcraft/agents/*.md)
+    # Agent registry (built-in + custom agents from config / .codata/agents/*.md)
     agent_registry = AgentRegistry()
     agent_registry.load_custom_agents(settings.agents, settings.project_dir)
     app.state.agent_registry = agent_registry
@@ -288,7 +293,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     connector_registry = ConnectorRegistry(project_dir=settings.project_dir)
 
-    # Plugin loader (Claude knowledge-work-plugins → WorkCraft registries)
+    # Plugin loader (Claude knowledge-work-plugins → Codata registries)
     from app.plugin import load_plugins_by_source
     from app.plugin.manager import PluginManager
 
@@ -412,6 +417,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     set_workspace_memory_queue(ws_memory_queue)
     app.state.ws_memory_queue = ws_memory_queue
 
+    # Analysis memory queue (structured, user-scoped; codata sessions only)
+    from app.memory.analysis_memory_queue import (
+        AnalysisMemoryUpdateQueue,
+        set_analysis_memory_queue,
+    )
+
+    analysis_memory_queue = AnalysisMemoryUpdateQueue(
+        session_factory,
+        registry,
+        debounce_seconds=_mem_cfg.debounce_seconds,
+    )
+    set_analysis_memory_queue(analysis_memory_queue)
+    app.state.analysis_memory_queue = analysis_memory_queue
+
     yield
 
     # --- Shutdown ---
@@ -471,9 +490,9 @@ def _register_builtin_tools(
     """Register all built-in tools."""
     from app.tool.builtin.apply_patch import ApplyPatchTool
     from app.tool.builtin.artifact import ArtifactTool
-    from app.tool.builtin.baoyu_image_generate import BaoyuImageGenerateTool
-    from app.tool.builtin.baoyu_publish import BaoyuPublishTool
     from app.tool.builtin.bash import BashTool
+    from app.tool.builtin.chart_spec import ChartSpecTool
+    from app.tool.builtin.run_query import RunQueryTool
     from app.tool.builtin.code_execute import CodeExecuteTool
     from app.tool.builtin.create_expert_teams import CreateExpertTeamsTool
     from app.tool.builtin.edit import EditTool
@@ -488,7 +507,6 @@ def _register_builtin_tools(
     from app.tool.builtin.skill import SkillTool
     from app.tool.builtin.task import TaskTool
     from app.tool.builtin.todo import TodoTool
-    from app.tool.builtin.vimax_generate_video import ViMaxGenerateVideoTool
     from app.tool.builtin.web_fetch import WebFetchTool
     from app.tool.builtin.web_search import WebSearchTool
     from app.tool.builtin.write import WriteTool
@@ -499,8 +517,8 @@ def _register_builtin_tools(
         GlobTool, GrepTool, QuestionTool, TodoTool,
         TaskTool, WebFetchTool, WebSearchTool, InvalidTool,
         PlanTool, SubmitPlanTool, ArtifactTool, PresentFileTool,
-        CreateExpertTeamsTool, ViMaxGenerateVideoTool,
-        BaoyuImageGenerateTool, BaoyuPublishTool,
+        CreateExpertTeamsTool, ChartSpecTool,
+        RunQueryTool,
     ]:
         registry.register(tool_cls())
 
@@ -567,6 +585,49 @@ def _add_missing_columns(connection) -> None:
             connection.execute(text(sql))
 
 
+async def _ensure_default_dashboard(session_factory) -> None:
+    """Guarantee one default Dashboard exists and adopt any orphan items.
+
+    Idempotent: safe to run on every startup. Migrates the pre-multi-dashboard
+    state (items with dashboard_id IS NULL) into a default "我的看板".
+    """
+    from sqlalchemy import select, update as sa_update
+    from app.models.dashboard import Dashboard
+    from app.models.dashboard_item import DashboardItem
+    from app.utils.id import generate_ulid
+
+    try:
+        async with session_factory() as db:
+            async with db.begin():
+                default = (
+                    await db.execute(
+                        select(Dashboard).where(Dashboard.is_default.is_(True))
+                    )
+                ).scalar_one_or_none()
+                if default is None:
+                    # Reuse an existing (non-default) board if present, else create one.
+                    default = (
+                        await db.execute(select(Dashboard).order_by(Dashboard.position.asc()))
+                    ).scalars().first()
+                    if default is None:
+                        default = Dashboard(
+                            id=generate_ulid(), name="我的看板", is_default=True, position=0
+                        )
+                        db.add(default)
+                        await db.flush()
+                    else:
+                        default.is_default = True
+
+                # Adopt orphan items (from the single-dashboard era).
+                await db.execute(
+                    sa_update(DashboardItem)
+                    .where(DashboardItem.dashboard_id.is_(None))
+                    .values(dashboard_id=default.id)
+                )
+    except Exception:
+        logger.warning("Default dashboard backfill skipped", exc_info=True)
+
+
 def _find_frontend_dir() -> Path | None:
     """Locate the frontend static build (out/) directory.
 
@@ -589,14 +650,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         settings = Settings()
 
     app = FastAPI(
-        title="WorkCraft",
+        title="Codata",
         version="0.0.1",
         lifespan=lifespan,
     )
     app.state.settings = settings
     set_settings(settings)
 
-    # CORS — restricted to the WorkCraft frontend origins. Wildcard would let
+    # CORS — restricted to the Codata frontend origins. Wildcard would let
     # any webpage read responses from this local server cross-origin, which
     # is a PII-leak vector on top of the CSRF risk handled below.
     #   - Tauri desktop shell: tauri://localhost (macOS/Linux) and

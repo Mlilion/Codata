@@ -1,6 +1,6 @@
 """OpenRouter provider tests (live API calls).
 
-These tests require a valid WORKCRAFT_OPENROUTER_API_KEY in .env.
+These tests require a valid CODATA_OPENROUTER_API_KEY in .env.
 """
 
 import pytest

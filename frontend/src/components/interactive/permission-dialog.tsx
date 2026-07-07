@@ -138,9 +138,9 @@ function notifyIfHidden(tool: string) {
   if (typeof document === "undefined" || document.visibilityState !== "hidden") return;
   if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
   try {
-    new Notification("WorkCraft — Permission Required", {
+    new Notification("Codata — Permission Required", {
       body: `The assistant wants to use ${tool} and needs your approval.`,
-      tag: "workcraft-permission", // deduplicate
+      tag: "codata-permission", // deduplicate
     });
   } catch {
     // Notifications may not be supported in all contexts

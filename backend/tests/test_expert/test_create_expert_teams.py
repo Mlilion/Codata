@@ -58,7 +58,7 @@ def _team_payload() -> dict:
     }
 
 
-def _workcraft_settings() -> SimpleNamespace:
+def _codata_settings() -> SimpleNamespace:
     return SimpleNamespace()
 
 
@@ -209,7 +209,7 @@ def test_normalize_generated_team_defaults_finalization_to_deliverable() -> None
 
 def test_expert_team_creation_access_allows_selected_provider() -> None:
     access = check_expert_team_creation_access(
-        settings=_workcraft_settings(),
+        settings=_codata_settings(),
         provider_registry=_FakeProviderRegistry(),
         provider_id="custom_example",
         model="gpt-5.5",
@@ -222,7 +222,7 @@ def test_expert_team_creation_access_allows_selected_provider() -> None:
 
 def test_expert_team_creation_access_rejects_provider_without_registry() -> None:
     access = check_expert_team_creation_access(
-        settings=_workcraft_settings(),
+        settings=_codata_settings(),
         provider_registry=None,
         provider_id="not-a-real-provider",
         model="gpt-5.5",
@@ -238,7 +238,7 @@ def test_expert_team_creation_access_rejects_unknown_provider() -> None:
             return None
 
     access = check_expert_team_creation_access(
-        settings=_workcraft_settings(),
+        settings=_codata_settings(),
         provider_registry=FakeProviderRegistry(),
         provider_id="not-a-real-provider",
         model=None,
@@ -250,7 +250,7 @@ def test_expert_team_creation_access_rejects_unknown_provider() -> None:
 
 def test_expert_team_creation_access_requires_provider() -> None:
     access = check_expert_team_creation_access(
-        settings=_workcraft_settings(),
+        settings=_codata_settings(),
         provider_id=None,
         model=None,
     )
@@ -334,7 +334,7 @@ async def test_create_expert_teams_tool_validates_and_saves_team(tmp_path: Path)
     ctx._app_state = {  # type: ignore[attr-defined]
         "expert_team_registry": registry,
         "provider_registry": _FakeProviderRegistry(),
-        "settings": _workcraft_settings(),
+        "settings": _codata_settings(),
     }
     ctx._provider_id = "custom_example"  # type: ignore[attr-defined]
 
@@ -369,7 +369,7 @@ async def test_create_expert_teams_tool_saves_with_selected_provider(tmp_path: P
     ctx._app_state = {  # type: ignore[attr-defined]
         "expert_team_registry": registry,
         "provider_registry": _FakeProviderRegistry(),
-        "settings": _workcraft_settings(),
+        "settings": _codata_settings(),
     }
     ctx._model_id = "gpt-5.5"  # type: ignore[attr-defined]
     ctx._provider_id = "custom_example"  # type: ignore[attr-defined]
@@ -399,7 +399,7 @@ async def test_create_expert_teams_tool_rejects_invalid_team(tmp_path: Path) -> 
     ctx._app_state = {  # type: ignore[attr-defined]
         "expert_team_registry": registry,
         "provider_registry": _FakeProviderRegistry(),
-        "settings": _workcraft_settings(),
+        "settings": _codata_settings(),
     }
     ctx._provider_id = "custom_example"  # type: ignore[attr-defined]
 
@@ -447,7 +447,7 @@ async def test_create_expert_teams_tool_uses_context_provider_id(
         "expert_team_registry": registry,
         "expert_role_registry": object(),
         "provider_registry": _FakeProviderRegistry(),
-        "settings": _workcraft_settings(),
+        "settings": _codata_settings(),
     }
     ctx._model_id = "gpt-5.5"  # type: ignore[attr-defined]
     ctx._provider_id = "custom_example"  # type: ignore[attr-defined]
@@ -494,7 +494,7 @@ async def test_create_expert_teams_tool_returns_invalid_draft_without_saving(
         "expert_team_registry": registry,
         "expert_role_registry": object(),
         "provider_registry": _FakeProviderRegistry(),
-        "settings": _workcraft_settings(),
+        "settings": _codata_settings(),
     }
     ctx._model_id = "gpt-5.5"  # type: ignore[attr-defined]
     ctx._provider_id = "custom_example"  # type: ignore[attr-defined]

@@ -1,4 +1,4 @@
-"""Shared OAuth callback HTML template — WorkCraft dark theme."""
+"""Shared OAuth callback HTML template — Codata dark theme."""
 
 
 def render_callback(
@@ -39,7 +39,7 @@ def render_callback(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WorkCraft — {title}</title>
+<title>Codata — {title}</title>
 <style>
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
   body {{
