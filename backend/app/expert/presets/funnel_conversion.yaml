@@ -68,7 +68,7 @@ team:
       role: 归因与业务洞察专家
       goal: 定位瓶颈原因,给出可执行优化建议并撰写报告。
       role_ref: data/attribution-analyst
-      tools: [run_query, chart_spec, write, present_file, artifact, skill]
+      tools: [run_query, chart_spec, write, present_file, artifact, build_report, skill]
       skills: [report]
       icon: file-text
   tasks:

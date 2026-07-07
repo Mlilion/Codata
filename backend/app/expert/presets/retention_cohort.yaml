@@ -68,7 +68,7 @@ team:
       role: 可视化与报告交付专家
       goal: 汇总留存发现,给出改进留存的可执行建议并撰写报告。
       role_ref: data/visualization-expert
-      tools: [run_query, chart_spec, write, present_file, artifact, skill]
+      tools: [run_query, chart_spec, write, present_file, artifact, build_report, skill]
       skills: [report, charting]
       icon: file-text
   tasks:

@@ -65,7 +65,7 @@ team:
       role: 可视化与报告交付专家
       goal: 汇总为面向管理层的经营日报,配关键图表。
       role_ref: data/visualization-expert
-      tools: [run_query, chart_spec, write, present_file, artifact, skill]
+      tools: [run_query, chart_spec, write, present_file, artifact, build_report, skill]
       skills: [report, charting]
       icon: file-text
   tasks:
