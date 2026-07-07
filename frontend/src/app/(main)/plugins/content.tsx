@@ -232,11 +232,16 @@ function ConnectorRow({
   const reconnect = useConnectorReconnect();
   const setToken = useSetConnectorToken();
   const [tokenInput, setTokenInput] = useState("");
+  const [showUrlForm, setShowUrlForm] = useState(false);
 
   const isPending =
     toggle.isPending || connect.isPending || disconnect.isPending || reconnect.isPending;
 
   const qc = useQueryClient();
+
+  // A seed connector (builtin, no URL yet) can't do OAuth discovery — the user
+  // must supply their own MCP endpoint first. Route these into the add form.
+  const needsUrl = !connector.url && connector.status !== "connected";
 
   const handleConnect = async () => {
     let result: { success: boolean; auth_url?: string; state?: string; error?: string };
@@ -291,6 +296,7 @@ function ConnectorRow({
   };
 
   return (
+    <div>
     <div className="flex items-center gap-3 rounded-lg border border-[var(--border-default)] p-2.5">
       {/* Status dot */}
       <span
@@ -409,6 +415,12 @@ function ConnectorRow({
         <Switch
           checked={connector.enabled}
           onCheckedChange={async (checked) => {
+            // Seed connector without a URL: open the URL form instead of a
+            // doomed OAuth connect. Don't toggle enabled — nothing to connect yet.
+            if (checked && needsUrl) {
+              setShowUrlForm(true);
+              return;
+            }
             await toggle.mutateAsync({ id, enable: checked });
             if (checked && (connector.type === "remote" || id === "google-workspace")) {
               // Remote or Google: auto-trigger OAuth after enable
@@ -426,20 +438,49 @@ function ConnectorRow({
         />
       </div>
     </div>
+    {showUrlForm && (
+      <div className="mt-1.5">
+        <AddConnectorForm
+          onClose={() => setShowUrlForm(false)}
+          prefill={{
+            id,
+            name: connector.name,
+            description: connector.description,
+            category: connector.category,
+          }}
+        />
+      </div>
+    )}
+    </div>
   );
 }
 
-function AddConnectorForm({ onClose }: { onClose: () => void }) {
+function AddConnectorForm({
+  onClose,
+  prefill,
+}: {
+  onClose: () => void;
+  prefill?: { id: string; name: string; description?: string; category?: string };
+}) {
   const { t } = useTranslation("plugins");
   const addConnector = useAddCustomConnector();
-  const [name, setName] = useState("");
+  const [name, setName] = useState(prefill?.name ?? "");
   const [url, setUrl] = useState("");
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!name || !url) return;
-    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    await addConnector.mutateAsync({ id, name, url });
+    // For a seed connector keep its stable id so it claims the placeholder;
+    // otherwise derive an id from the name (custom connector).
+    const id =
+      prefill?.id ?? name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    await addConnector.mutateAsync({
+      id,
+      name,
+      url,
+      description: prefill?.description,
+      category: prefill?.category,
+    });
     onClose();
   };
 
