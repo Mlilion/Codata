@@ -1,0 +1,22 @@
+<svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif" role="img">
+  <!-- 折线图骨架。画布 720x360；padLeft=60 padTop=20 padRight=20 padBottom=40；plotW=640 plotH=300。基线 y=320。 -->
+
+  <!-- title -->
+  <text x="60" y="16" font-size="13" font-weight="600" fill="#111827"><!-- CHART TITLE --></text>
+
+  <!-- y axis grid + ticks: 3-5 档均匀。y = 20 + (1 - tickVal/max)*300 -->
+  <line x1="60" y1="20" x2="700" y2="20" stroke="#eceff3"/>
+  <line x1="60" y1="170" x2="700" y2="170" stroke="#eceff3"/>
+  <line x1="60" y1="320" x2="700" y2="320" stroke="#d0d5dd"/>
+  <!-- y 轴刻度文字: <text x="54" y="tickY+4" font-size="11" fill="#6b7280" text-anchor="end">23K</text> -->
+
+  <!-- 每个点: x = 60 + (i/(n-1))*640 ;  y = 20 + (1 - v/max)*300 （n=1 时 x=380）
+       把所有点拼进 points，一条 series 一条 polyline，第 i 条 series 用色板第 i%8 色 -->
+  <!-- <polyline fill="none" stroke="#4f8ff7" stroke-width="2" points="x0,y0 x1,y1 x2,y2 ..."/> -->
+
+  <!-- 可选:在每个点叠小圆 <circle cx="x" cy="y" r="3" fill="#4f8ff7"/> -->
+
+  <!-- x labels: <text x="pointX" y="336" font-size="11" fill="#6b7280" text-anchor="middle">label</text> -->
+
+  <!-- legend（多 series 时）: <rect .../> + <text fill="#6b7280">series</text> -->
+</svg>

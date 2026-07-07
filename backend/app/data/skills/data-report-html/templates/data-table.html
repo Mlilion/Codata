@@ -1,0 +1,28 @@
+<!-- 数据明细表片段。放进 report-shell.html 的 <section class="detail"> 里。
+     样式类(.detail table / th / td / td.num)已在 report-shell.html 的 <style> 里预置。
+     规则:
+       - 数字列表头和单元格都加 class="num"(右对齐 + tabular-nums 等宽数字)。
+       - 数字用千分位(如 1,234,567);百分比 1 位小数 + %。
+       - null / 缺失值:单元格留空,不要写 0 / -/ N/A。
+       - 数据量大时只放 Top N,并在表下用一行小字注明「仅展示 Top N」。 -->
+
+<table>
+  <thead>
+    <tr>
+      <th><!-- 维度列,如 地区 --></th>
+      <th class="num"><!-- 指标列,如 GMV --></th>
+      <th class="num"><!-- 环比 % --></th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- repeat per row:
+    <tr>
+      <td>华东</td>
+      <td class="num">2,340,000</td>
+      <td class="num">12.3%</td>
+    </tr>
+    -->
+    <!-- null 值留空: <td class="num"></td> -->
+  </tbody>
+</table>
+<!-- <p class="chart-caption">仅展示 Top 20,完整数据见来源表。</p> -->

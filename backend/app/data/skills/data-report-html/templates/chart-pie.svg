@@ -1,0 +1,23 @@
+<svg viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif" role="img">
+  <!-- 饼图骨架。正方形画布 360x360；圆心 cx=180 cy=180 半径 r=140。 -->
+
+  <!-- title -->
+  <text x="20" y="18" font-size="13" font-weight="600" fill="#111827"><!-- CHART TITLE --></text>
+
+  <!-- 逐块画扇形。total = 所有值之和。从 -90°(正上)起累加角度:
+       angle_i = value_i / total * 360
+       某块从累计角 a0 到 a1(度):
+         x0 = 180 + 140*cos(a0*π/180),  y0 = 180 + 140*sin(a0*π/180)
+         x1 = 180 + 140*cos(a1*π/180),  y1 = 180 + 140*sin(a1*π/180)
+         largeArc = (a1 - a0) > 180 ? 1 : 0
+         d = "M 180 180 L x0 y0 A 140 140 0 largeArc 1 x1 y1 Z"
+       第 i 块用色板第 i%8 色 -->
+  <!-- repeat per slice i:
+       <path d="M 180 180 L x0 y0 A 140 140 0 largeArc 1 x1 y1 Z" fill="#4f8ff7"/> -->
+
+  <!-- 色板顺序: #4f8ff7 #f79f4f #4fcf8f #c77dff #f7746f #4fc4cf #f7c14f #8f9ff7 -->
+
+  <!-- legend（每类一行,底部或右侧）:
+       <rect x=".." y=".." width="10" height="10" fill="#4f8ff7"/>
+       <text x=".." y=".." font-size="11" fill="#6b7280">label 12.3%</text> -->
+</svg>
