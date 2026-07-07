@@ -604,20 +604,20 @@ export function ChatForm({
     ? t("noModelPlaceholder")
     : expertCreationMode
       ? "描述要创建的专家团场景、成员职责、任务流程和最终交付物"
-      : placeholder ?? (hasWorkspace ? t("placeholder") + t("placeholderMention") : t("placeholder"));
+      : placeholder ?? (hasWorkspace ? "Ask Codata to query, chart, explain, or pin results..." : "Ask Codata to query, chart, explain, or pin results...");
   const accessibilityLabel = isLanding
     ? hasWorkspace ? t("placeholder") + t("placeholderMention") : t("placeholder")
     : undefined;
 
   return (
-    <div className={cn(isLanding ? "px-0 pb-0" : "px-4 pb-4", className)}>
-      <div className={cn("mx-auto", isLanding ? "max-w-none" : "max-w-3xl xl:max-w-4xl")}>
+    <div className={cn(isLanding ? "px-0 pb-0" : "px-5 pb-5", className)}>
+      <div className={cn("mx-auto", isLanding ? "max-w-none" : "max-w-5xl")}>
         <div
           className={cn(
-            "relative transition-all duration-200",
+            "relative border transition-all duration-200",
             isLanding
               ? "rounded-[28px] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[0_18px_50px_-38px_rgba(26,28,31,0.45)] focus-within:border-[var(--border-heavy)] focus-within:shadow-[0_24px_70px_-44px_rgba(26,28,31,0.55)]"
-              : "rounded-3xl bg-[var(--surface-secondary)] shadow-[var(--shadow-sm)] focus-within:shadow-[var(--shadow-md)]",
+              : "data-agent-panel rounded-xl border-[var(--border-default)] focus-within:border-[var(--border-heavy)] focus-within:shadow-[var(--shadow-md)]",
             isDragOver && "ring-1 ring-[var(--border-heavy)]",
           )}
           onDragOver={(e) => {
@@ -647,7 +647,7 @@ export function ChatForm({
           {/* Inner panel — lighter pill holding textarea + action bar.
               Fully rounded so the bottom corners curve inward, letting the
               darker outer frame the pill on all sides. */}
-          <div className={cn(isLanding ? "rounded-[28px] bg-transparent" : "rounded-3xl bg-[var(--surface-tertiary)]")}>
+          <div className={cn(isLanding ? "rounded-[28px] bg-transparent" : "rounded-xl bg-[var(--surface-primary)]")}>
           {/* Top section: file chips + textarea */}
           <div className={cn(isLanding ? "px-5 pt-6 pb-3 sm:px-7" : "px-4 pt-3 pb-2")}>
             {/* Skill and file chips */}
@@ -706,7 +706,7 @@ export function ChatForm({
                 "max-h-[200px]",
                 isLanding
                   ? "min-h-[52px] py-0 text-ui-md placeholder:text-[var(--text-tertiary)]"
-                  : "min-h-[28px] py-1",
+                  : "min-h-[44px] py-2 text-ui-body placeholder:text-[var(--text-tertiary)]",
               )}
               disabled={isInputDisabled}
             />
@@ -734,10 +734,10 @@ export function ChatForm({
           {/* Bottom action bar */}
           <div
             className={cn(
-              "flex items-center gap-2",
+              "flex items-center gap-2 border-t border-[var(--border-subtle)]",
               isLanding
                 ? "min-h-16 flex-wrap px-4 pb-4 sm:flex-nowrap sm:px-6"
-                : "px-3 pb-1.5",
+                : "px-3 py-2",
             )}
           >
             {/* Hidden file input */}
@@ -845,7 +845,7 @@ export function ChatForm({
           {/* Context row — outer layer, lighter bg, visually wraps the inner panel */}
           {!isLanding && (
             <div className={cn(
-            "flex flex-wrap items-center gap-2 px-3 py-2",
+            "flex flex-wrap items-center gap-2 border-t border-[var(--border-subtle)] bg-[var(--surface-secondary)]/70 px-3 py-2",
             isInputDisabled && "pointer-events-none opacity-50",
           )}>
             <WorkspaceToggle sessionId={sessionId} directory={directory} isIndexing={isIndexing} />

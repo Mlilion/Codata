@@ -143,9 +143,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   // Codata mode swaps the sidebar (unless on settings, which owns its own nav).
   const isCodataMode = appMode === "codata" && !isSettingsPage;
   const isActiveChat = isChatPage && pathname !== "/c/new";
+  const effectiveSidebarWidth = isCodataMode ? Math.min(sidebarWidth, 270) : sidebarWidth;
   // Settings replaces the sidebar with its own; always keep the gutter.
   const marginLeft =
-    isDesktop && (isSettingsPage || !isCollapsed) ? sidebarWidth : 0;
+    isDesktop && (isSettingsPage || !isCollapsed) ? effectiveSidebarWidth : 0;
   const marginRight = isDesktop && isActiveChat && rightSidebarIsOpen ? rightSidebarWidth : 0;
 
   // macOS uses native traffic lights overlay — page headers extend to the top.

@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Bot,
-  CheckCircle2,
   Check,
   ChevronDown,
+  ChevronRight,
   Code2,
   Copy,
   Database,
@@ -204,13 +204,6 @@ function compactSentence(value: string, fallback: string, limit = 72): string {
   const firstSentence = cleaned.split(/[。！？!?\n]/).map((item) => item.trim()).find(Boolean) ?? cleaned;
   if (firstSentence.length <= limit) return firstSentence;
   return `${firstSentence.slice(0, limit - 1).trimEnd()}…`;
-}
-
-function taskDisplaySummary(task: ExpertTaskConfig, member?: ExpertMemberConfig): string {
-  return compactSentence(
-    task.expected_output || task.description || task.task || "",
-    `${member?.name ?? "专家"}负责完成「${task.name}」这一步。`,
-  );
 }
 
 function memberDisplaySummary(member: ExpertMemberConfig | ExpertMemberSummary): string {
@@ -456,10 +449,11 @@ function normalizeTeamForSave(team: ExpertTeamConfig): ExpertTeamConfig {
 
 export default function ExpertsPage() {
   const router = useRouter();
-  const { data, isLoading } = useExpertTeams();
+  const { data, isLoading, isError } = useExpertTeams();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("全部");
   const [selected, setSelected] = useState<ExpertTeamSummary | null>(null);
+  const [detailDismissed, setDetailDismissed] = useState(false);
   const [editing, setEditing] = useState<{ team: ExpertTeamConfig; mode: "create" | "edit" } | null>(null);
   const createSession = useCreateSession();
   const settings = useSettingsStore();
@@ -492,12 +486,17 @@ export default function ExpertsPage() {
       return matchesCategory && matchesQuery;
     });
   }, [category, query, teams]);
+  const selectedTeam = detailDismissed
+    ? null
+    : selected && filtered.some((team) => team.id === selected.id)
+      ? selected
+      : filtered[0] ?? null;
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[var(--surface-chat)]">
       {/* Header Section - Enhanced hierarchy */}
       <div className="shrink-0 border-b border-[var(--border-subtle)] bg-[var(--surface-primary)]">
-        <div className="px-5 py-5 lg:px-7">
+        <div className="px-5 pb-3 pt-5 lg:px-7">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
               <div className="mb-3 flex items-center gap-3">
@@ -536,7 +535,8 @@ export default function ExpertsPage() {
                   }
                   setEditing({ team: createBlankTeam(), mode: "create" });
                 }}
-                className="h-10 gap-1.5 bg-[var(--text-primary)] font-medium text-[var(--surface-primary)] hover:bg-[var(--text-secondary)]"
+                variant="outline"
+                className="h-10 gap-1.5 border-[var(--data-accent)] bg-[var(--surface-primary)] font-semibold text-[var(--data-accent)] hover:bg-[var(--data-accent-soft)]"
                 title={canCreateExpertTeam ? undefined : "创建自己的专家团需要先在设置中选择模型提供商"}
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -571,7 +571,7 @@ export default function ExpertsPage() {
                   }
                 }}
                 disabled={createSession.isPending}
-                className="h-10 gap-1.5 font-medium"
+                className="h-10 gap-1.5 border-0 bg-[var(--data-accent)] font-semibold text-white shadow-[0_10px_26px_-18px_rgba(14,165,233,0.9)] hover:bg-[var(--data-accent-strong)]"
                 title={canCreateExpertTeam ? undefined : "AI 创建专家团需要先在设置中选择模型提供商"}
               >
                 {createSession.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
@@ -580,72 +580,83 @@ export default function ExpertsPage() {
             </div>
           </div>
 
-          {/* Category tabs - Cleaner design */}
-          <div className="mt-5 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {CATEGORIES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setCategory(item)}
-                className={cn(
-                  "h-9 shrink-0 rounded-lg px-3.5 text-sm font-medium transition-colors cursor-pointer",
-                  category === item
-                    ? "bg-[var(--sidebar-active)] text-[var(--text-primary)] shadow-[var(--sidebar-active-shadow)]"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]",
-                )}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
-      {/* Main Content - Better grid layout */}
-      <div className="flex-1 overflow-y-auto bg-[var(--surface-chat)] px-5 py-6 lg:px-7 scrollbar-auto">
-        {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-52 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] animate-pulse" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex h-full min-h-[360px] flex-col items-center justify-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[var(--surface-tertiary)]">
-              <Sparkles className="h-8 w-8 text-[var(--text-tertiary)]" />
+      {/* Main Content */}
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--surface-chat)] px-5 pb-5 pt-0 lg:px-7 xl:overflow-hidden">
+        <div className="grid min-h-0 gap-5 xl:h-full xl:grid-cols-[minmax(0,1fr)_390px]">
+          <div className="min-h-0 pr-1 pt-2 xl:overflow-y-auto xl:scrollbar-auto">
+            <div className="mb-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {CATEGORIES.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setCategory(item)}
+                  className={cn(
+                    "h-9 shrink-0 rounded-lg border px-4 text-sm font-medium transition-colors cursor-pointer",
+                    category === item
+                      ? "border-[var(--data-accent)] bg-[var(--data-accent-soft)] text-[var(--data-accent)]"
+                      : "border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--border-default)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]",
+                  )}
+                >
+                  {item}
+                </button>
+              ))}
             </div>
-            <p className="text-base font-medium text-[var(--text-secondary)]">未找到专家团</p>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((team) => (
-              <ExpertTeamCard
-                key={team.id}
-                team={team}
-                onClick={() => setSelected(team)}
+            {isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <ExpertTeamCardSkeleton key={index} />
+                ))}
+              </div>
+            ) : isError ? (
+              <ExpertTeamStatus
+                icon={Users}
+                title="无法加载专家团"
+                description="请确认后端服务已启动，或稍后刷新重试。"
               />
-            ))}
+            ) : filtered.length === 0 ? (
+              <ExpertTeamStatus
+                icon={Sparkles}
+                title="未找到专家团"
+                description={query || category !== "全部" ? "换个关键词或分类试试。" : "当前还没有可用的专家团。"}
+              />
+            ) : (
+              <div className="space-y-3">
+                {filtered.map((team) => (
+                  <ExpertTeamCard
+                    key={team.id}
+                    team={team}
+                    selected={selectedTeam?.id === team.id}
+                    onClick={() => {
+                      setSelected(team);
+                      setDetailDismissed(false);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {selected && (
-        <ExpertTeamModal
-          team={selected}
-          onClose={() => setSelected(null)}
-          onEdit={(teamConfig) => {
-            setSelected(null);
-            setEditing({ team: teamConfig, mode: "edit" });
-          }}
-          onCopy={(teamConfig) => {
-            setSelected(null);
-            setEditing({ team: teamConfig, mode: "create" });
-          }}
-          onLoaded={(sessionId) => {
-            router.push(getChatRoute(sessionId));
-          }}
-        />
-      )}
+          <ExpertTeamDetailPanel
+            team={selectedTeam}
+            onClose={() => {
+              setSelected(null);
+              setDetailDismissed(true);
+            }}
+            onEdit={(teamConfig) => {
+              setEditing({ team: teamConfig, mode: "edit" });
+            }}
+            onCopy={(teamConfig) => {
+              setEditing({ team: teamConfig, mode: "create" });
+            }}
+            onLoaded={(sessionId) => {
+              router.push(getChatRoute(sessionId));
+            }}
+          />
+        </div>
+      </div>
 
       {editing && (
         <ExpertTeamEditor
@@ -666,7 +677,66 @@ export default function ExpertsPage() {
   );
 }
 
-function ExpertTeamCard({ team, onClick }: { team: ExpertTeamSummary; onClick: () => void }) {
+function ExpertTeamCardSkeleton() {
+  return (
+    <div className="h-[118px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5">
+      <div className="animate-pulse">
+        <div className="flex h-full items-center gap-5">
+          <div className="h-16 w-16 rounded-lg bg-[var(--surface-tertiary)]" />
+          <div className="min-w-0 flex-1">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="h-5 w-44 rounded bg-[var(--surface-tertiary)]" />
+              <div className="h-5 w-12 rounded-md bg-[var(--surface-tertiary)]" />
+              <div className="h-5 w-14 rounded-md bg-[var(--surface-tertiary)]" />
+            </div>
+            <div className="mb-4 h-3 w-2/3 rounded bg-[var(--surface-tertiary)]" />
+            <div className="flex gap-2">
+              <div className="h-6 w-16 rounded-md bg-[var(--surface-tertiary)]" />
+              <div className="h-6 w-16 rounded-md bg-[var(--surface-tertiary)]" />
+              <div className="h-6 w-16 rounded-md bg-[var(--surface-tertiary)]" />
+            </div>
+          </div>
+          <div className="hidden w-40 shrink-0 items-center justify-between md:flex">
+            <div className="space-y-3">
+              <div className="h-4 w-14 rounded bg-[var(--surface-tertiary)]" />
+              <div className="flex gap-1.5">
+                <div className="h-7 w-7 rounded-full bg-[var(--surface-tertiary)]" />
+                <div className="h-7 w-7 rounded-full bg-[var(--surface-tertiary)]" />
+                <div className="h-7 w-7 rounded-full bg-[var(--surface-tertiary)]" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="h-4 w-14 rounded bg-[var(--surface-tertiary)]" />
+              <div className="h-7 w-7 rounded-full bg-[var(--surface-tertiary)]" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExpertTeamStatus({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: typeof Users;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex h-full min-h-[360px] flex-col items-center justify-center rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--surface-primary)] text-center">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-[var(--surface-tertiary)]">
+        <Icon className="h-7 w-7 text-[var(--text-tertiary)]" />
+      </div>
+      <p className="text-base font-medium text-[var(--text-secondary)]">{title}</p>
+      <p className="mt-1 text-ui-2xs text-[var(--text-tertiary)]">{description}</p>
+    </div>
+  );
+}
+
+function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; selected?: boolean; onClick: () => void }) {
   const Icon = teamIcon(team.icon);
   const isRemote = team.origin === "remote";
   const comingSoon = isExpertTeamComingSoon(team);
@@ -675,116 +745,122 @@ function ExpertTeamCard({ team, onClick }: { team: ExpertTeamSummary; onClick: (
     <button
       type="button"
       onClick={onClick}
-      className="group flex min-h-[160px] flex-col rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 text-left transition-colors cursor-pointer hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]"
+      className={cn(
+        "group relative flex min-h-[118px] w-full items-center gap-4 overflow-hidden rounded-lg border bg-[var(--surface-primary)] px-3.5 py-3 text-left transition-colors cursor-pointer hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]",
+        selected
+          ? "border-[var(--data-accent)] shadow-[0_18px_34px_-30px_rgba(14,165,233,0.85)]"
+          : "border-[var(--border-default)]",
+      )}
     >
-      {/* Card Header - Compact */}
-      <div className="flex items-start gap-3 mb-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-tertiary)] transition-colors group-hover:bg-[var(--sidebar-active)]">
-          <Icon className="h-5 w-5 text-[var(--text-secondary)] transition-colors group-hover:text-[var(--text-primary)]" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <h2 className="truncate text-sm font-semibold text-[var(--text-primary)]">{team.name}</h2>
-            <span className="shrink-0 rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs font-medium text-[var(--text-secondary)]">
-              {teamOriginLabel(team)}
-            </span>
-            <span
-              className="shrink-0 rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-tertiary)]"
-              title={teamProcessDescription(team.process)}
-            >
-              {teamProcessLabel(team.process)}
-            </span>
-            {isRemote && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--border-subtle)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-tertiary)]">
-                <Globe2 className="h-3 w-3" />
-                只读
-              </span>
+      {selected && <span className="absolute inset-y-0 left-0 w-1 rounded-r-full bg-[var(--data-accent)]" />}
+      <div
+        className={cn(
+          "flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border transition-colors",
+          selected
+            ? "border-[rgba(14,165,233,0.32)] bg-[var(--data-accent-soft)]"
+            : "border-[var(--border-subtle)] bg-[var(--surface-secondary)] group-hover:bg-[var(--sidebar-active)]",
+        )}
+      >
+        <Icon className={cn("h-8 w-8 transition-colors", selected ? "text-[var(--data-accent)]" : "text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]")} />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="mb-1.5 flex min-w-0 flex-nowrap items-center gap-2">
+          <h2 className="truncate text-base font-semibold text-[var(--text-primary)]">{team.name}</h2>
+          <span className="shrink-0 rounded-full bg-[var(--data-accent-soft)] px-2.5 py-0.5 text-ui-2xs font-semibold text-[var(--data-accent)]">
+            {teamOriginLabel(team)}
+          </span>
+          <span
+            className={cn(
+              "shrink-0 rounded-full px-2.5 py-0.5 text-ui-2xs font-semibold",
+              team.process === "workflow"
+                ? "bg-[rgba(34,197,94,0.12)] text-[var(--color-success)]"
+                : "bg-[rgba(124,58,237,0.12)] text-[rgb(124,58,237)]",
             )}
-            {comingSoon && (
-              <span className="shrink-0 rounded-md border border-[var(--border-default)] bg-[var(--surface-secondary)] px-1.5 py-0.5 text-ui-3xs font-medium text-[var(--text-tertiary)]">
-                即将上线
-              </span>
-            )}
-          </div>
-          {isRemote && team.remote_version && (
-            <div className="mb-1 text-ui-3xs text-[var(--text-tertiary)]">
-              v{team.remote_version}{team.remote_channel ? ` · ${team.remote_channel}` : ""}
-            </div>
+            title={teamProcessDescription(team.process)}
+          >
+            {teamProcessLabel(team.process)}
+          </span>
+          {isRemote && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--border-subtle)] px-2 py-0.5 text-ui-2xs text-[var(--text-tertiary)]">
+              <Globe2 className="h-3 w-3" />
+              只读
+            </span>
           )}
-          {/* Tags - Compact */}
-          <div className="flex flex-wrap gap-1">
-            {team.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-secondary)]">
-                {tag}
-              </span>
+          {comingSoon && (
+            <span className="shrink-0 rounded-full border border-[var(--border-default)] bg-[var(--surface-secondary)] px-2 py-0.5 text-ui-2xs font-medium text-[var(--text-tertiary)]">
+              即将上线
+            </span>
+          )}
+        </div>
+        <p className="mb-2.5 line-clamp-1 text-sm leading-5 text-[var(--text-secondary)]">{team.description}</p>
+        <div className="flex flex-wrap gap-1.5">
+          {team.tags.slice(0, 3).map((tag) => (
+            <span key={tag} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-2 py-1 text-ui-2xs text-[var(--text-secondary)]">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="hidden w-40 shrink-0 items-center justify-between md:flex">
+        <div>
+          <div className="mb-3 text-sm text-[var(--text-secondary)]">
+            成员 <span className="ml-2 font-semibold text-[var(--text-primary)]">{team.member_count}</span>
+          </div>
+          <div className="flex -space-x-2">
+            {team.members.slice(0, 4).map((member) => (
+              <div
+                key={member.id}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-secondary)]"
+                title={member.name}
+              >
+                <Bot className="h-4 w-4 text-[var(--text-secondary)]" />
+              </div>
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Description - Compact */}
-      <p className="mb-3 line-clamp-2 flex-1 text-xs leading-relaxed text-[var(--text-secondary)]">{team.description}</p>
-
-      {/* Stats - Compact */}
-      <div className="grid grid-cols-2 gap-2 mb-2.5">
-        <div className="flex items-center gap-1.5 rounded-md bg-[var(--surface-tertiary)] px-2 py-1.5">
-          <Bot className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-          <span className="text-ui-2xs font-medium text-[var(--text-secondary)]">{team.member_count} 位专家</span>
-        </div>
-        <div className="flex items-center gap-1.5 rounded-md bg-[var(--surface-tertiary)] px-2 py-1.5">
-          <Workflow className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-          <span className="text-ui-2xs font-medium text-[var(--text-secondary)]">{team.task_count} 个步骤</span>
-        </div>
-      </div>
-
-      {/* Member avatars - Compact */}
-      <div className="flex -space-x-1.5">
-        {team.members.slice(0, 4).map((member) => (
-          <div
-            key={member.id}
-            className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[var(--surface-primary)] bg-[var(--surface-tertiary)] transition-colors group-hover:border-[var(--surface-secondary)]"
-          >
-            <Bot className="h-3.5 w-3.5 text-[var(--text-secondary)]" />
+        <div>
+          <div className="mb-3 text-sm text-[var(--text-secondary)]">
+            任务 <span className="ml-2 font-semibold text-[var(--text-primary)]">{team.task_count}</span>
           </div>
-        ))}
-        {team.members.length > 4 && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[var(--surface-primary)] bg-[var(--surface-tertiary)] text-ui-2xs font-medium text-[var(--text-tertiary)] transition-colors group-hover:border-[var(--surface-secondary)]">
-            +{team.members.length - 4}
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-secondary)]">
+            <ChevronRight className="h-4 w-4 text-[var(--text-tertiary)] transition-transform group-hover:translate-x-0.5" />
           </div>
-        )}
+        </div>
       </div>
     </button>
   );
 }
 
-function ExpertTeamModal({
+function ExpertTeamDetailPanel({
   team,
   onClose,
   onEdit,
   onCopy,
   onLoaded,
 }: {
-  team: ExpertTeamSummary;
+  team: ExpertTeamSummary | null;
   onClose: () => void;
   onEdit: (team: ExpertTeamConfig) => void;
   onCopy: (team: ExpertTeamConfig) => void;
   onLoaded: (sessionId: string) => void;
 }) {
-  const { data } = useExpertTeamDetail(team.id);
+  const { data, isLoading } = useExpertTeamDetail(team?.id ?? null);
   const deleteTeam = useDeleteExpertTeam();
   const createSession = useCreateSession();
   const queryClient = useQueryClient();
   const settings = useSettingsStore();
   const detail = data?.team;
-  const editable = data?.editable ?? team.editable;
-  const origin = data?.origin ?? team.origin;
+  const editable = data?.editable ?? team?.editable ?? false;
+  const origin = data?.origin ?? team?.origin;
   const isRemote = origin === "remote";
-  const remoteVersion = data?.remote_version ?? team.remote_version;
-  const remoteChannel = data?.remote_channel ?? team.remote_channel;
-  const comingSoon = isExpertTeamComingSoon(team);
+  const remoteVersion = data?.remote_version ?? team?.remote_version;
+  const remoteChannel = data?.remote_channel ?? team?.remote_channel;
+  const comingSoon = team ? isExpertTeamComingSoon(team) : false;
 
   const start = async () => {
-    if (comingSoon) return;
+    if (!team || comingSoon) return;
     try {
       const session = await createSession.mutateAsync({
         directory: settings.workspaceDirectory,
@@ -803,7 +879,7 @@ function ExpertTeamModal({
   };
 
   const remove = async () => {
-    if (!editable) return;
+    if (!team || !editable) return;
     if (!window.confirm(`确定删除专家团「${team.name}」吗？`)) return;
     try {
       await deleteTeam.mutateAsync(team.id);
@@ -814,194 +890,193 @@ function ExpertTeamModal({
     }
   };
 
+  if (!team) {
+    return (
+      <aside className="min-h-0 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--surface-primary)] p-5">
+        <div className="flex h-full min-h-[360px] flex-col items-center justify-center text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--surface-tertiary)]">
+            <Users className="h-6 w-6 text-[var(--text-tertiary)]" />
+          </div>
+          <p className="text-sm font-medium text-[var(--text-secondary)]">选择一个专家团</p>
+          <p className="mt-1 max-w-64 text-ui-2xs leading-5 text-[var(--text-tertiary)]">
+            左侧列表会展示当前可用的专家团，选中后可查看成员、流程并召唤到新会话。
+          </p>
+        </div>
+      </aside>
+    );
+  }
+
+  const DetailIcon = teamIcon(team.icon);
+  const detailProcess = detail?.process ?? team.process;
+  const detailMembers = detail?.members ?? team.members;
+  const detailTasks = detail?.tasks ?? [];
+  const processCaption =
+    detailProcess === "workflow"
+      ? "工作流"
+      : detailProcess === "hierarchical"
+        ? "统筹调度"
+        : detailProcess === "sequential"
+          ? "顺序"
+          : "普通";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]">
-        {/* Modal Header - Enhanced design */}
-        <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-primary)] px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2.5 mb-2">
-                <h2 className="text-xl font-semibold text-[var(--text-primary)]">{team.name}</h2>
-                <span className="rounded-md bg-[var(--surface-tertiary)] px-2.5 py-1 text-ui-2xs font-medium text-[var(--text-secondary)]">
+    <aside className="min-h-0 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[0_18px_44px_-36px_rgba(15,23,42,0.28)] xl:h-[calc(100vh-180px)] xl:max-h-full">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <div className="border-b border-[var(--border-subtle)] bg-[var(--surface-primary)] px-4 py-4 2xl:px-5">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-[rgba(14,165,233,0.22)] bg-[var(--data-accent-soft)]">
+              <DetailIcon className="h-8 w-8 text-[var(--data-accent)]" />
+            </div>
+            <div className="min-w-0 flex-1 pt-0.5">
+              <div className="mb-2 flex items-start justify-between gap-3">
+                <h2 className="min-w-0 text-lg font-semibold leading-6 text-[var(--text-primary)]">{team.name}</h2>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="shrink-0 rounded-md p-1 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
+                  aria-label="关闭详情"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="rounded-full bg-[var(--data-accent-soft)] px-2.5 py-0.5 text-ui-2xs font-semibold text-[var(--data-accent)]">
                   {teamOriginLabel({ ...team, origin })}
                 </span>
-                <span
-                  className="rounded-md bg-[var(--surface-tertiary)] px-2.5 py-1 text-ui-2xs text-[var(--text-secondary)]"
-                  title={teamProcessDescription(detail?.process ?? team.process)}
-                >
-                  {teamProcessLabel(detail?.process ?? team.process)}
+                <span className="rounded-full bg-[rgba(34,197,94,0.12)] px-2.5 py-0.5 text-ui-2xs font-semibold text-[var(--color-success)]">
+                  {teamProcessLabel(detailProcess)}
                 </span>
                 {!editable && (
-                  <span className="rounded-md border border-[var(--border-subtle)] px-2.5 py-1 text-ui-2xs text-[var(--text-tertiary)]">
+                  <span className="rounded-full border border-[var(--border-subtle)] px-2.5 py-0.5 text-ui-2xs text-[var(--text-tertiary)]">
                     只读
                   </span>
                 )}
-                {comingSoon && (
-                  <span className="rounded-md border border-[var(--border-default)] bg-[var(--surface-secondary)] px-2.5 py-1 text-ui-2xs font-medium text-[var(--text-tertiary)]">
-                    即将上线
-                  </span>
-                )}
               </div>
-              <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{team.description}</p>
-              {detail?.skills && detail.skills.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  <span className="rounded-md bg-[var(--surface-tertiary)] px-2 py-1 text-ui-3xs text-[var(--text-tertiary)]">
-                    skills · {detail.skills.slice(0, 4).join(", ")}
-                  </span>
-                </div>
-              )}
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                <span className="rounded-md bg-[var(--surface-tertiary)] px-2 py-1 text-ui-3xs text-[var(--text-tertiary)]">
-                  {detail?.process === "hierarchical" ? "总控专家拆解任务并动态委派成员" : detail?.process === "workflow" ? `工作流 · 并发 ${detail.concurrency}` : detail?.process === "sequential" ? "顺序执行" : "普通专家团流程"}
-                </span>
-              </div>
-              {isRemote && (
-                <div className="mt-3 flex flex-wrap items-center gap-2.5 text-ui-2xs text-[var(--text-tertiary)]">
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-[var(--surface-tertiary)] px-2.5 py-1.5">
-                    <Globe2 className="h-3.5 w-3.5" />
-                    远程 manifest
-                  </span>
-                  {remoteVersion && (
-                    <span className="rounded-md bg-[var(--surface-tertiary)] px-2.5 py-1.5">
-                      版本 v{remoteVersion}
-                    </span>
-                  )}
-                  {remoteChannel && (
-                    <span className="rounded-md bg-[var(--surface-tertiary)] px-2.5 py-1.5">
-                      渠道 {remoteChannel}
-                    </span>
-                  )}
-                </div>
-              )}
             </div>
-            <button
-              onClick={onClose}
-              className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
-          {/* Tags - Enhanced */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {team.tags.map((tag) => (
-              <span key={tag} className="rounded-md bg-[var(--surface-tertiary)] px-2.5 py-1 text-ui-2xs text-[var(--text-secondary)]">
+
+          <p className="text-sm leading-7 text-[var(--text-secondary)]">{team.description}</p>
+
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {team.tags.slice(0, 5).map((tag) => (
+              <span key={tag} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-2 py-1 text-ui-2xs text-[var(--text-secondary)]">
                 {tag}
               </span>
             ))}
           </div>
-        </div>
 
-        {/* Modal Content - Compact layout */}
-        <div className="flex-1 overflow-y-auto bg-[var(--surface-chat)] px-5 py-4">
-          {/* Workflow Section */}
-          <div className="mb-5">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Workflow className="h-4 w-4 text-[var(--text-tertiary)]" />
-                <h3 className="text-sm font-semibold text-[var(--text-primary)]">协作流程</h3>
-              </div>
-              <span className="rounded-md bg-[var(--surface-tertiary)] px-2 py-0.5 text-ui-2xs text-[var(--text-tertiary)]">
-                {detail?.process === "workflow"
-                  ? `工作流 · 并发 ${detail.concurrency}`
-                  : detail?.process === "hierarchical"
-                    ? "统筹调度 · 总控专家派发任务"
-                    : "按顺序执行"}，最终由协调者汇总
-              </span>
-            </div>
-            <div className="space-y-2">
-              {(detail?.tasks ?? []).map((task, index) => {
-                const member = detail?.members.find((item) => item.id === task.member);
-                return (
-                  <div key={task.id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-2.5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--surface-tertiary)] text-ui-3xs font-semibold text-[var(--text-secondary)]">
-                        {index + 1}
-                      </span>
-                      <span className="text-xs font-semibold text-[var(--text-primary)]">{task.name}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 text-ui-3xs text-[var(--text-tertiary)]">
-                      <span className="rounded-md bg-[var(--surface-tertiary)] px-1.5 py-0.5">
-                        {member?.name ?? task.member} · {member?.role ?? "专家"}
-                      </span>
-                    </div>
-                    <p className="mt-1.5 line-clamp-2 text-ui-2xs leading-5 text-[var(--text-secondary)]">
-                      {taskDisplaySummary(task, member)}
-                    </p>
-                  </div>
-                );
-              })}
+          <div className="mt-5 border-t border-[var(--border-subtle)] pt-4">
+            <div className="grid grid-cols-[94px_1fr] gap-y-2 text-sm">
+              <span className="text-[var(--text-tertiary)]">协作流程</span>
+              <span className="font-medium text-[var(--text-primary)]">{processCaption}</span>
+              <span className="text-[var(--text-tertiary)]">成员数量</span>
+              <span className="font-medium text-[var(--text-primary)]">{detailMembers.length}</span>
+              <span className="text-[var(--text-tertiary)]">任务数量</span>
+              <span className="font-medium text-[var(--text-primary)]">{detailTasks.length || team.task_count}</span>
+              {isRemote && remoteVersion && (
+                <>
+                  <span className="text-[var(--text-tertiary)]">版本</span>
+                  <span className="font-medium text-[var(--text-primary)]">v{remoteVersion}{remoteChannel ? ` · ${remoteChannel}` : ""}</span>
+                </>
+              )}
             </div>
           </div>
+        </div>
 
-          {/* Members Section - Compact grid */}
-          <div className="mb-5">
-            <div className="mb-2 flex items-center gap-2">
-              <Users className="h-4 w-4 text-[var(--text-tertiary)]" />
-              <h3 className="text-sm font-semibold text-[var(--text-primary)]">专家成员</h3>
+        <div className="flex-1 overflow-y-auto bg-[var(--surface-primary)] px-4 py-4 scrollbar-auto 2xl:px-5">
+          {isLoading && (
+            <div className="mb-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-ui-2xs text-[var(--text-tertiary)]">
+              正在加载专家团详情…
             </div>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {(detail?.members ?? team.members).map((member) => {
+          )}
+
+          <section className="border-b border-[var(--border-subtle)] pb-5">
+            <div className="mb-3 text-sm font-semibold text-[var(--text-primary)]">协作流程</div>
+            <div className="space-y-3">
+              {detailTasks.length > 0 ? detailTasks.map((task, index) => {
+                const member = detailMembers.find((item) => item.id === task.member);
+                return (
+                  <div key={task.id} className="grid grid-cols-[26px_1fr] gap-3">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-ui-2xs font-semibold text-[var(--text-secondary)]">
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-[var(--text-primary)]">{task.name}</div>
+                      <div className="mt-1 truncate text-ui-2xs text-[var(--text-tertiary)]">
+                        {member?.name ?? task.member} · {member?.role ?? "专家"}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }) : (
+                <p className="text-ui-2xs text-[var(--text-tertiary)]">详情加载后展示任务顺序。</p>
+              )}
+            </div>
+          </section>
+
+          <section className="pt-5">
+            <div className="mb-3 text-sm font-semibold text-[var(--text-primary)]">专家成员</div>
+            <div className="space-y-4">
+              {detailMembers.map((member) => {
                 const summary = memberDisplaySummary(member);
                 return (
-                  <div key={member.id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-2.5">
-                    <div className="mb-1.5 flex items-center gap-2">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--surface-tertiary)]">
-                        <Bot className="h-3.5 w-3.5 text-[var(--text-secondary)]" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-xs font-semibold text-[var(--text-primary)]">{member.name}</div>
-                        <div className="truncate text-ui-3xs text-[var(--text-tertiary)]">{member.role}</div>
-                      </div>
+                  <div key={member.id} className="flex gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-secondary)]">
+                      <Bot className="h-4 w-4 text-[var(--text-secondary)]" />
                     </div>
-                    <p className="line-clamp-2 text-ui-2xs leading-5 text-[var(--text-secondary)]">{summary}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-center justify-between gap-2">
+                        <div className="truncate text-sm font-medium text-[var(--text-primary)]">{member.name}</div>
+                        <div className="shrink-0 text-ui-2xs text-[var(--text-tertiary)]">{member.role}</div>
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-ui-2xs leading-5 text-[var(--text-secondary)]">{summary}</p>
+                    </div>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </section>
 
-          {/* Help text - Compact */}
-          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2.5 text-xs leading-relaxed text-[var(--text-secondary)]">
+          <div className="mt-5 rounded-lg border border-[rgba(14,165,233,0.22)] bg-[rgba(14,165,233,0.06)] px-3 py-3 text-ui-2xs leading-5 text-[var(--data-accent)]">
             {comingSoon
               ? "视频生成专家团正在准备中，本版本暂不开放使用。"
-              : "点击召唤后会创建一个新会话，并在会话输入框中标记当前使用的专家团。"}
+              : "专家团由多位专家协作完成复杂分析任务，协调者负责进度控制和结果汇总。"}
           </div>
         </div>
 
-        {/* Modal Footer - Enhanced */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-subtle)] bg-[var(--surface-primary)] px-6 py-4">
-          <div className="flex items-center gap-2 text-ui-2xs text-[var(--text-tertiary)]">
-            <CheckCircle2 className="h-4 w-4 text-[var(--color-success)]" />
-            {comingSoon ? "该专家团暂未开放召唤" : "输出会进入一个新的 Codata 会话"}
-          </div>
-          <div className="flex items-center gap-2.5">
+        <div className="border-t border-[var(--border-subtle)] bg-[var(--surface-primary)] px-4 py-4 2xl:px-5">
+          <div className="flex items-center gap-2">
             {editable && detail && (
               <>
-                <Button variant="outline" onClick={() => onEdit(detail)} className="gap-2 font-medium">
+                <Button variant="outline" size="sm" onClick={() => onEdit(detail)} className="h-9 gap-2 rounded-md font-medium">
                   <Pencil className="h-4 w-4" />
                   修改
                 </Button>
-                <Button variant="outline" onClick={remove} disabled={deleteTeam.isPending} className="gap-2 font-medium">
+                <Button variant="outline" size="sm" onClick={remove} disabled={deleteTeam.isPending} className="h-9 gap-2 rounded-md border-red-200 text-red-600 hover:bg-red-50">
                   <Trash2 className="h-4 w-4" />
                   删除
                 </Button>
               </>
             )}
             {detail && !editable && !comingSoon && (
-              <Button variant="outline" onClick={() => onCopy(cloneTeamForCustom(detail))} className="gap-2 font-medium">
+              <Button variant="outline" size="sm" onClick={() => onCopy(cloneTeamForCustom(detail))} className="h-9 flex-1 gap-2 rounded-md font-medium">
                 <Copy className="h-4 w-4" />
                 复制为自定义
               </Button>
             )}
-            <Button onClick={start} disabled={comingSoon || createSession.isPending} className="gap-2 font-medium">
+            <Button
+              size="sm"
+              onClick={start}
+              disabled={comingSoon || createSession.isPending}
+              className="h-9 gap-2 rounded-md bg-[var(--data-accent)] font-semibold text-white hover:bg-[var(--data-accent-strong)]"
+            >
               {createSession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
               {comingSoon ? "即将上线" : "召唤"}
             </Button>
           </div>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }
 

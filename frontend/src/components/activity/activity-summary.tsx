@@ -57,7 +57,7 @@ export function ActivitySummary({ data }: ActivitySummaryProps) {
     <button
       type="button"
       onClick={() => data.sourceKey && toggleForMessage(data.sourceKey, data)}
-      className="flex items-center gap-2 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors py-1.5 group"
+      className="data-agent-card group flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-[var(--text-tertiary)] transition-colors hover:border-[var(--border-heavy)] hover:text-[var(--text-secondary)]"
     >
       {isCompleted ? (
         <CheckCircle2 className="h-3.5 w-3.5 text-[var(--tool-completed)]" />
@@ -66,7 +66,10 @@ export function ActivitySummary({ data }: ActivitySummaryProps) {
       ) : (
         <Wrench className="h-3.5 w-3.5" />
       )}
-      <span>{parts.join(" · ")}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-quaternary)]">
+        Agent run
+      </span>
+      <span className="min-w-0 flex-1 truncate">{parts.join(" · ")}</span>
       <ChevronRight
         className={`h-3 w-3 transition-transform duration-200 ${isActiveOpen ? "rotate-90" : ""}`}
       />

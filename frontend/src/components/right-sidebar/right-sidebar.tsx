@@ -141,12 +141,15 @@ function RightSidebarHeader() {
   const ActiveIcon = activeConfig.icon;
 
   return (
-    <div className="shrink-0 border-b border-[var(--border-default)] bg-[var(--surface-primary)]">
+    <div className="shrink-0 border-b border-[var(--border-subtle)] bg-[var(--surface-primary)]/88 backdrop-blur-sm">
       <div className="flex items-start gap-3 px-4 pb-3 pt-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-secondary)] text-[var(--text-secondary)]">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--data-accent-soft)] text-[var(--data-accent)]">
           <ActiveIcon className="h-[18px] w-[18px]" />
         </div>
         <div className="min-w-0 flex-1">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-quaternary)]">
+            Inspector
+          </div>
           <h2 className="truncate text-ui-title-sm font-semibold text-[var(--text-primary)]">
             {t(activeConfig.labelKey)}
           </h2>
@@ -159,7 +162,7 @@ function RightSidebarHeader() {
         </Button>
       </div>
       <div className="flex h-11 items-center gap-1 px-2">
-        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-none">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-lg bg-[var(--surface-secondary)] p-1 scrollbar-none">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const selected = activeTab === tab.id;
@@ -170,10 +173,10 @@ function RightSidebarHeader() {
                 disabled={tab.disabled}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs transition-colors",
+                  "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs transition-colors",
                   selected
-                    ? "bg-[var(--surface-tertiary)] text-[var(--text-primary)]"
-                    : "text-[var(--text-tertiary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-secondary)]",
+                    ? "bg-[var(--surface-primary)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]"
+                    : "text-[var(--text-tertiary)] hover:bg-[var(--surface-primary)]/70 hover:text-[var(--text-secondary)]",
                   tab.disabled && "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-[var(--text-tertiary)]",
                 )}
               >
@@ -219,7 +222,7 @@ function useCloseCurrentTab() {
 function EmptyTab({ title, description }: { title: string; description: string }) {
   return (
     <div className="flex h-full items-center justify-center px-6 text-center">
-      <div className="max-w-xs rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--surface-secondary)] px-5 py-6">
+      <div className="max-w-xs rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--surface-secondary)] px-5 py-6">
         <p className="text-sm font-medium text-[var(--text-secondary)]">{title}</p>
         <p className="mt-1 text-xs text-[var(--text-tertiary)]">{description}</p>
       </div>
@@ -322,7 +325,7 @@ export function RightSidebar() {
   if (isDesktop) {
     return (
       <motion.aside
-        className="fixed inset-y-0 right-0 z-[35] flex flex-col overflow-hidden border-l border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)]"
+        className="fixed inset-y-0 right-0 z-[35] flex flex-col overflow-hidden border-l border-[var(--border-subtle)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)]"
         style={{ width, top: topOffset }}
         initial={{ x: "100%" }}
         animate={{ x: 0 }}

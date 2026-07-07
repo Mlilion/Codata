@@ -6,9 +6,11 @@ import { motion } from "framer-motion";
 import { MessageContent } from "./message-content";
 import { MessageActions } from "./message-actions";
 import { CompactionPart } from "@/components/parts/compaction-part";
+import { CodataLogo } from "@/components/ui/codata-logo";
 import { api } from "@/lib/api";
 import { API } from "@/lib/constants";
 import { startStream } from "@/lib/session-stream-registry";
+import { useSidebarStore } from "@/stores/sidebar-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useChatSession, useChatStore } from "@/stores/chat-store";
 import { useActivityStore } from "@/stores/activity-store";
@@ -30,6 +32,7 @@ interface AssistantMessageProps {
 
 export function AssistantMessage({ message, combinedParts, onRegenerate, isNew = true, isLastMessage = false }: AssistantMessageProps) {
   const [hovered, setHovered] = useState(false);
+  const isCodata = useSidebarStore((s) => s.appMode) === "codata";
   const refreshForMessage = useActivityStore((s) => s.refreshForMessage);
   const parts = combinedParts ?? message.parts.map((p) => p.data as PartData);
   const mainParts = useMemo(
@@ -120,7 +123,7 @@ export function AssistantMessage({ message, combinedParts, onRegenerate, isNew =
     }
   }, [activityData, activityKey, refreshForMessage]);
 
-  return (
+  const content = (
     <>
       <div
         onMouseEnter={() => setHovered(true)}
@@ -166,6 +169,68 @@ export function AssistantMessage({ message, combinedParts, onRegenerate, isNew =
       )}
     </>
   );
+
+  if (!isCodata) return content;
+
+  return (
+    <div
+      className="group flex gap-3"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] shadow-[0_10px_24px_-22px_rgba(15,23,42,0.6)]">
+        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--data-accent-soft)]">
+          <CodataLogo size={16} />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="mb-2 flex items-center gap-2 text-[12px] font-medium text-[var(--text-secondary)]">
+          <span>Codata</span>
+          {activityData && (
+            <span className="text-[11px] font-normal text-[var(--text-quaternary)]">
+              已完成分析
+            </span>
+          )}
+        </div>
+        <motion.div
+          initial={isNew ? { opacity: 0, y: 6 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+            opacity: { duration: 0.2 },
+          }}
+        >
+          <MessageContent
+            parts={mainParts}
+            activityKey={activityKey}
+            expandLatestDataCard={isLastMessage}
+          />
+        </motion.div>
+
+        <div
+          className={`transition-opacity duration-150 ${hovered ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        >
+          <MessageActions
+            content={textContent}
+            onRegenerate={onRegenerate}
+            activityData={activityData}
+            activityKey={activityKey}
+            onResumeExpert={handleResumeExpert}
+          />
+        </div>
+
+        {compactionParts.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {compactionParts.map((part, index) => (
+              <CompactionPart key={`${activityKey}-compaction-${index}`} data={part} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -181,6 +246,7 @@ interface StreamingMessageProps {
 export const StreamingMessage = memo(function StreamingMessage({ sessionId = null, parts, streamingText, streamingReasoning }: StreamingMessageProps) {
   const { t } = useTranslation("chat");
   const isModelLoading = useChatSession(sessionId).isModelLoading;
+  const isCodata = useSidebarStore((s) => s.appMode) === "codata";
   const refreshForMessage = useActivityStore((s) => s.refreshForMessage);
   const openForMessage = useActivityStore((s) => s.openForMessage);
   const autoOpenedExpertPanelRef = useRef(false);
@@ -248,6 +314,25 @@ export const StreamingMessage = memo(function StreamingMessage({ sessionId = nul
 
   // No content yet — show blinking cursor to indicate "about to type"
   if (liveParts.length === 0) {
+    if (isCodata) {
+      return (
+        <div className="flex gap-3">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--data-accent-soft)]">
+              <CodataLogo size={16} />
+            </span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex items-center gap-2 text-[12px] font-medium text-[var(--text-secondary)]">
+              <span>Codata</span>
+              <span className="text-[11px] font-normal text-[var(--text-quaternary)]">正在分析</span>
+            </div>
+            <StreamingStage label={t("stageThinking")} />
+            <StreamingIndicator />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className={freshMountRef.current ? "animate-fade-in" : undefined}>
         <StreamingStage label={t("stageThinking")} />
@@ -277,7 +362,7 @@ export const StreamingMessage = memo(function StreamingMessage({ sessionId = nul
   if (hasRunningTool) stageLabel = t("stageWorkingWithTools");
   else if (!isActivelyStreaming && hasAnyTool) stageLabel = t("stageFinalizing");
 
-  return (
+  const streamingBody = (
     <div className={freshMountRef.current ? "animate-fade-in" : undefined}>
       {!hasAnyActivity && <StreamingStage label={isModelLoading ? t("stageThinking") : stageLabel} />}
       <MessageContent parts={liveParts} isStreaming />
@@ -286,6 +371,25 @@ export const StreamingMessage = memo(function StreamingMessage({ sessionId = nul
           <StreamingIndicator label={stageLabel} />
         </div>
       )}
+    </div>
+  );
+
+  if (!isCodata) return streamingBody;
+
+  return (
+    <div className="flex gap-3">
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)]">
+        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--data-accent-soft)]">
+          <CodataLogo size={16} />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="mb-2 flex items-center gap-2 text-[12px] font-medium text-[var(--text-secondary)]">
+          <span>Codata</span>
+          <span className="text-[11px] font-normal text-[var(--text-quaternary)]">正在分析</span>
+        </div>
+        {streamingBody}
+      </div>
     </div>
   );
 });
