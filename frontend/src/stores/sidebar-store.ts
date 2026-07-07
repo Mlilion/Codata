@@ -59,7 +59,7 @@ export const useSidebarStore = create<SidebarStore>()(
       isSearchModalOpen: false,
       organizeMode: "by-project",
       sortBy: "updated",
-      appMode: "chat",
+      appMode: "codata",
       width: SIDEBAR_WIDTH,
       setOpen: (open) => set({ isOpen: open }),
       toggle: () => set((s) => ({ isCollapsed: !s.isCollapsed })),
