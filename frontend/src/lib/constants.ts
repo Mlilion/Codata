@@ -357,6 +357,9 @@ export const API = {
   ANALYSIS: {
     RECOMMENDATIONS: "/api/analysis/recommendations",
   },
+  DATA_SOURCE: {
+    STATUS: "/api/data-source/status",
+  },
   DASHBOARD: {
     // Dashboards (named collections)
     DASHBOARDS: "/api/dashboards",
