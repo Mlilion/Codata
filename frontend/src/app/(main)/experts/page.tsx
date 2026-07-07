@@ -69,7 +69,7 @@ import type {
 import type { SessionResponse } from "@/types/session";
 import { useQueryClient } from "@tanstack/react-query";
 
-const CATEGORIES = ["全部", "数据分析", "内容创作", "技术工程", "办公文档", "研究咨询", "设计创意"];
+const CATEGORIES = ["全部", "综合分析", "经营诊断", "转化漏斗", "用户留存", "实验分析"];
 
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   code: Code2,
@@ -318,7 +318,7 @@ function createBlankTeam(): ExpertTeamConfig {
     concurrency: 2,
     inputs: [],
     tags: [],
-    category: "技术工程",
+    category: "综合分析",
     members: [
       {
         id: "planner",
@@ -1280,7 +1280,7 @@ function ExpertTeamEditor({
                         />
                       </Field>
                       <Field label="分类">
-                        <Input value={team.category} onChange={(event) => setField("category", event.target.value)} placeholder="技术工程" />
+                        <Input value={team.category} onChange={(event) => setField("category", event.target.value)} placeholder="综合分析" />
                       </Field>
                       <Field label="执行模式">
                         <select

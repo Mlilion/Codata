@@ -3,7 +3,7 @@ team:
   name: 留存与同期群分析专家团
   description: 按同期群切分用户,计算多周期留存,定位流失节点与生命周期拐点,交付带图表的留存分析报告。
   icon: line-chart
-  category: 数据分析
+  category: 用户留存
   tags: [数据分析, 留存, 同期群, cohort, 流失, datasage]
   version: "1.0"
   process: workflow

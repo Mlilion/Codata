@@ -3,7 +3,7 @@ team:
   name: A/B 实验分析专家团
   description: 校验实验分流与样本健康度,计算处理组与对照组的指标差异、提升幅度与统计显著性,交付可信的实验结论报告。
   icon: flask-conical
-  category: 数据分析
+  category: 实验分析
   tags: [数据分析, AB实验, 实验, 显著性, 统计, datasage]
   version: "1.0"
   process: workflow

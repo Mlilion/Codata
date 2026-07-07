@@ -3,7 +3,7 @@ team:
   name: 数据分析专家团
   description: 连接数据平台(datasage),完成数据发现、SQL 查询、指标口径核对、归因洞察与可视化,交付带图表的分析报告。
   icon: bar-chart-2
-  category: 数据分析
+  category: 综合分析
   tags: [数据分析, SQL, 指标, 归因, 可视化, datasage]
   version: "2.0"
   process: workflow

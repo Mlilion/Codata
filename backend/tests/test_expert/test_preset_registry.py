@@ -17,13 +17,6 @@ EXPECTED_PRESET_IDS = {
     "ops-daily-diagnosis",
     "retention-cohort",
     "ab-experiment",
-    "meeting-notes-actions",
-    "weekly-monthly-report",
-    "document-review-polish",
-    "presentation-briefing",
-    "research-competitive-analysis",
-    "sales-proposal",
-    "project-plan-risk",
 }
 
 

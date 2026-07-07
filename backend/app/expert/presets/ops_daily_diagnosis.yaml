@@ -3,7 +3,7 @@ team:
   name: 经营日报与异常归因专家团
   description: 每日监控核心经营指标,自动识别异动,按维度下钻归因,产出带图表的经营日报。
   icon: activity
-  category: 数据分析
+  category: 经营诊断
   tags: [数据分析, 经营日报, 异常归因, 监控, datasage]
   version: "1.0"
   process: workflow

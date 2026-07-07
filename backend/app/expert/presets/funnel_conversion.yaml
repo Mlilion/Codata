@@ -3,7 +3,7 @@ team:
   name: 漏斗与转化分析专家团
   description: 拆解多步转化漏斗,量化各环节转化率与流失,定位瓶颈并给出优化建议。
   icon: filter
-  category: 数据分析
+  category: 转化漏斗
   tags: [数据分析, 漏斗, 转化率, 流失, datasage]
   version: "1.0"
   process: workflow

@@ -31,7 +31,10 @@ class TestDataAnalysisPreset:
         reg.scan()
         team = reg.get("data-analysis-report")
         assert team is not None
-        assert team.category == "数据分析"
+        # Category is now a scenario label (综合分析); the "数据分析" tag is what
+        # marks it a data team (matches runner._is_data_analysis_team).
+        assert team.category == "综合分析"
+        assert "数据分析" in team.tags
         # Members query via run_query (not code_execute on files).
         all_tools = {t for m in team.members for t in m.tools}
         assert "run_query" in all_tools
