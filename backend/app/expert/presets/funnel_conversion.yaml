@@ -1,0 +1,137 @@
+team:
+  id: funnel-conversion
+  name: 漏斗与转化分析专家团
+  description: 拆解多步转化漏斗,量化各环节转化率与流失,定位瓶颈并给出优化建议。
+  icon: filter
+  category: 数据分析
+  tags: [数据分析, 漏斗, 转化率, 流失, datasage]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 10
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是漏斗转化分析专家团协调者。把漏斗定义、各环节转化率、流失定位和优化建议整合成报告。
+    数据来自 datasage —— 不要臆造;漏斗步骤和口径若不确定必须明确说明假设。
+  finalization:
+    mode: deliverable
+    member: reporter
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: markdown
+      title: 漏斗转化分析报告
+      filename_template: funnel-conversion.md
+      source: final_report
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: funnel_goal
+      description: 要分析的转化目标(如 注册→下单、加购→支付)。
+      required: true
+    - name: segment_focus
+      description: 重点细分(渠道/新老客/端等);没有则留空。
+      required: false
+      default: ""
+    - name: reporting_period
+      description: 分析周期,例如近 30 天。
+      required: false
+      default: ""
+  skills: [data-analysis, charting, report]
+  members:
+    - id: funnel_builder
+      name: 漏斗构建
+      role: SQL 与数据发现专家
+      goal: 确认漏斗各步骤对应的事件/表,构建可查询的漏斗定义。
+      role_ref: data/sql-query-expert
+      tools: [search, run_query, skill]
+      skills: [data-analysis]
+      icon: database
+    - id: conversion_analyst
+      name: 转化分析
+      role: 指标口径与趋势分析专家
+      goal: 计算各环节转化率与整体转化,识别流失最严重的环节。
+      role_ref: data/metric-caliber-expert
+      tools: [run_query, chart_spec, skill]
+      skills: [data-analysis, charting]
+      icon: bar-chart-2
+    - id: reporter
+      name: 建议与报告
+      role: 归因与业务洞察专家
+      goal: 定位瓶颈原因,给出可执行优化建议并撰写报告。
+      role_ref: data/attribution-analyst
+      tools: [run_query, chart_spec, write, present_file, artifact, skill]
+      skills: [report]
+      icon: file-text
+  tasks:
+    - id: build_funnel
+      name: 漏斗定义与数据确认
+      member: funnel_builder
+      task: |
+        确认漏斗各步骤对应的数据。
+
+        转化目标:
+        {{funnel_goal}}
+
+        细分:
+        {{segment_focus}}
+
+        周期:
+        {{reporting_period}}
+
+        步骤:用 search 找到相关事件表/指标,确认每一步的口径和过滤条件;必要时 run_query 试查验证。
+        输出:漏斗步骤定义(每步的事件/条件)、口径说明、数据风险。
+      expected_output: 可查询的漏斗定义。
+      output: funnel_def
+      context_policy: explicit
+      context_max_chars: 16000
+      timeout_seconds: 360
+      retry_count: 1
+    - id: analyze_conversion
+      name: 各环节转化率与流失
+      member: conversion_analyst
+      depends_on: [build_funnel]
+      context: [build_funnel]
+      task: |
+        计算漏斗各环节转化率与流失。
+
+        漏斗定义:
+        {{funnel_def}}
+
+        步骤:用 run_query 查每步人数/转化率与整体转化;用 chart_spec 出漏斗/转化图。按细分维度对比(若有)。
+        输出:各环节转化率、流失最严重的环节、细分差异、异常点。
+      expected_output: 转化率与流失分析(含图表)。
+      output: conversion
+      context_policy: explicit
+      context_max_chars: 20000
+      timeout_seconds: 420
+      retry_count: 1
+    - id: recommend
+      name: 瓶颈定位与优化建议报告
+      member: reporter
+      depends_on: [build_funnel, analyze_conversion]
+      context: [build_funnel, analyze_conversion]
+      task: |
+        定位瓶颈并给出优化建议,撰写报告。
+
+        漏斗定义:
+        {{funnel_def}}
+
+        转化分析:
+        {{conversion}}
+
+        报告包含:漏斗概览(配图)、关键瓶颈环节、可能原因、优化建议与优先级、风险与待确认。
+      expected_output: 可交付的漏斗转化分析报告。
+      output: final_report
+      context_policy: explicit
+      context_max_chars: 28000
+      timeout_seconds: 300
+      retry_count: 1

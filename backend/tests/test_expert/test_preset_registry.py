@@ -13,6 +13,10 @@ from app.tool.registry import ToolRegistry
 
 EXPECTED_PRESET_IDS = {
     "data-analysis-report",
+    "funnel-conversion",
+    "ops-daily-diagnosis",
+    "retention-cohort",
+    "ab-experiment",
     "meeting-notes-actions",
     "weekly-monthly-report",
     "document-review-polish",

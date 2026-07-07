@@ -1,0 +1,134 @@
+team:
+  id: ops-daily-diagnosis
+  name: 经营日报与异常归因专家团
+  description: 每日监控核心经营指标,自动识别异动,按维度下钻归因,产出带图表的经营日报。
+  icon: activity
+  category: 数据分析
+  tags: [数据分析, 经营日报, 异常归因, 监控, datasage]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 10
+  interaction_mode: auto
+  max_clarifying_questions: 3
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是经营日报专家团协调者。把核心指标现状、异动识别、归因下钻整合成一份简洁的经营日报。
+    数据来自连接的 datasage 数据平台 —— 不要臆造数据;异动的因果只说到数据能支持的程度,推断需标注。
+  finalization:
+    mode: deliverable
+    member: reporter
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: markdown
+      title: 经营日报
+      filename_template: ops-daily-diagnosis.md
+      source: final_report
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: metric_focus
+      description: 要监控的核心指标(如 GMV、DAU、订单量);没有则留空由专家判断。
+      required: false
+      default: ""
+    - name: reporting_period
+      description: 日报周期,例如昨日、近 7 天;默认昨日对比前一日。
+      required: false
+      default: ""
+  skills: [data-analysis, charting, report]
+  members:
+    - id: monitor
+      name: 指标监控
+      role: 指标口径与趋势分析专家
+      goal: 查询核心经营指标的当期值与环比,标出异动点。
+      role_ref: data/metric-caliber-expert
+      tools: [run_query, chart_spec, search, skill]
+      skills: [data-analysis, charting]
+      icon: bar-chart-2
+    - id: attributor
+      name: 异常归因
+      role: 归因与业务洞察专家
+      goal: 对异动指标按维度下钻,定位驱动因素与风险。
+      role_ref: data/attribution-analyst
+      tools: [run_query, chart_spec, skill]
+      skills: [data-analysis]
+      icon: lightbulb
+    - id: reporter
+      name: 日报撰写
+      role: 可视化与报告交付专家
+      goal: 汇总为面向管理层的经营日报,配关键图表。
+      role_ref: data/visualization-expert
+      tools: [run_query, chart_spec, write, present_file, artifact, skill]
+      skills: [report, charting]
+      icon: file-text
+  tasks:
+    - id: scan_metrics
+      name: 核心指标监控与异动识别
+      member: monitor
+      task: |
+        查询核心经营指标的当期值与环比/同比,识别异动。
+
+        用户需求:
+        {{user_input}}
+
+        关注指标:
+        {{metric_focus}}
+
+        周期:
+        {{reporting_period}}
+
+        步骤:先用 search 确认相关指标/表与口径,再用 run_query 查询当期与对比期,关键趋势用 chart_spec 出图。
+        输出:各核心指标现状、环比/同比、明显异动点(涨跌幅、方向)、需要归因的重点。
+      expected_output: 核心指标现状与异动清单。
+      output: metric_scan
+      context_policy: explicit
+      context_max_chars: 18000
+      timeout_seconds: 420
+      retry_count: 1
+    - id: attribute
+      name: 异动维度下钻归因
+      member: attributor
+      depends_on: [scan_metrics]
+      context: [scan_metrics]
+      task: |
+        对识别出的异动指标做维度下钻归因。
+
+        指标监控结果:
+        {{metric_scan}}
+
+        步骤:用 run_query 按关键维度(渠道/地区/产品/人群等)下钻,比较各维度对异动的贡献,必要时 chart_spec 出对比图。
+        输出:每个异动的归因结论(哪些维度/因素驱动)、风险提醒、需人工确认的问题。
+      expected_output: 异动归因结论。
+      output: attribution
+      context_policy: explicit
+      context_max_chars: 20000
+      timeout_seconds: 420
+      retry_count: 1
+    - id: write_daily
+      name: 生成经营日报
+      member: reporter
+      depends_on: [scan_metrics, attribute]
+      context: [scan_metrics, attribute]
+      task: |
+        生成经营日报。
+
+        指标监控:
+        {{metric_scan}}
+
+        异动归因:
+        {{attribution}}
+
+        日报包含:一句话结论、核心指标概览(配图)、异动与归因、风险与待确认。简洁、决策导向。
+      expected_output: 可交付的经营日报。
+      output: final_report
+      context_policy: explicit
+      context_max_chars: 28000
+      timeout_seconds: 300
+      retry_count: 1
