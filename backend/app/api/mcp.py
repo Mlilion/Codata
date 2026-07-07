@@ -10,7 +10,23 @@ from typing import Any
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
+from app.mcp.datasage_client import find_execute_sql_client
+
 router = APIRouter(prefix="/mcp")
+
+# Prefix-less router so the path resolves to /api/data-source/status (mounted
+# under /api in main.py) rather than under this module's /mcp prefix.
+data_source_router = APIRouter()
+
+
+@data_source_router.get("/data-source/status")
+async def data_source_status() -> dict[str, bool]:
+    """Whether an execute_sql-capable data source (datasage) is connected.
+
+    Drives the Codata empty-state onboarding — the frontend can tell whether an
+    execute_sql-capable data source is connected without running a query.
+    """
+    return {"connected": find_execute_sql_client() is not None}
 
 
 def _get_registry(request: Request):
