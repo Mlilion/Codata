@@ -561,6 +561,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
           title: meta.title || "数据分析报告",
           content: meta.content,
           identifier: meta.identifier,
+          filePath: meta.file_path || undefined,
         });
       }
     }

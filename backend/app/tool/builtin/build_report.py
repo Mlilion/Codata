@@ -16,6 +16,8 @@ scaffolding are guaranteed correct server-side.
 from __future__ import annotations
 
 import logging
+import re
+from pathlib import Path
 from typing import Any
 
 from app.report.renderer import render_report
@@ -23,6 +25,26 @@ from app.tool.base import ToolDefinition, ToolResult
 from app.tool.context import ToolContext
 
 log = logging.getLogger(__name__)
+
+
+def _report_output_dir(workspace: str | None) -> Path:
+    """Where report .html files are written.
+
+    - workspace set → {workspace}/codata_written/
+    - workspace unset → ~/.codata/reports/
+    The dir is created if missing.
+    """
+    if workspace:
+        out = Path(workspace).resolve() / "codata_written"
+    else:
+        out = Path.home() / ".codata" / "reports"
+    out.mkdir(parents=True, exist_ok=True)
+    return out
+
+
+def _safe_filename(identifier: str) -> str:
+    slug = re.sub(r"[^\w.-]+", "-", identifier).strip("-") or "report"
+    return f"{slug}.html"
 
 
 class BuildReportTool(ToolDefinition):
@@ -154,11 +176,22 @@ class BuildReportTool(ToolDefinition):
             log.exception("build_report render failed")
             return ToolResult(error=f"报告渲染失败: {e}")
 
-        # Return the same metadata shape the `artifact` tool emits so the frontend
-        # opens it in the preview panel as an HTML artifact (no file write needed —
-        # works for the read-only data agent).
+        # Write the report to disk so the frontend can open it directly in the
+        # system browser (desktop). Falls back gracefully if the write fails —
+        # the inline artifact content still renders in the preview panel.
+        file_path: str | None = None
+        try:
+            out = _report_output_dir(ctx.workspace) / _safe_filename(identifier)
+            out.write_text(html, encoding="utf-8")
+            file_path = str(out)
+        except Exception:  # noqa: BLE001
+            log.warning("build_report failed to write report file", exc_info=True)
+
+        where = f"已保存到 {file_path}," if file_path else ""
+        # Same metadata shape the `artifact` tool emits (frontend opens it in the
+        # preview panel) plus file_path so the panel's "本地打开" opens the saved file.
         return ToolResult(
-            output=f"报告「{title}」已生成,在右侧产物面板查看,可点「在浏览器打开」查看完整交互报告。",
+            output=f"报告「{title}」已生成,{where}在右侧产物面板查看,可点「本地打开」用浏览器打开完整交互报告。",
             title=title,
             metadata={
                 "command": "create",
@@ -166,5 +199,6 @@ class BuildReportTool(ToolDefinition):
                 "title": title,
                 "identifier": identifier,
                 "content": html,
+                "file_path": file_path,
             },
         )
