@@ -84,6 +84,10 @@ desktop-tauri/src-tauri/gen/schemas/
 backend/content-output/
 backend/codata_written/
 backend/output/saas-landing-page.html
+# Agent-generated artifacts that land in the backend cwd when workspaceDirectory
+# is unset (write tool resolves relative paths against the backend process cwd).
+backend/*.html
+backend/output/
 
 # === Certificates & keys ===
 *.pem
