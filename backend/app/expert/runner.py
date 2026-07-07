@@ -1415,9 +1415,18 @@ class ExpertTeamRunner:
                         directory=self.request.workspace or ".",
                         title=self.request.input.strip()[:60] or self.team.name,
                         slug=f"expert-team:{self.team.id}",
+                        # Expert teams are a Codata (data-analysis) capability, so
+                        # tag their sessions accordingly. This keeps them in the
+                        # Codata 历史查询 list and out of the plain chat history.
+                        app_mode="codata",
                     )
-                elif not session.slug:
-                    session.slug = f"expert-team:{self.team.id}"
+                else:
+                    if not session.slug:
+                        session.slug = f"expert-team:{self.team.id}"
+                    # Backfill mode for sessions pre-created via POST /sessions
+                    # (experts page) or legacy expert runs that left it null.
+                    if session.app_mode != "codata":
+                        session.app_mode = "codata"
                 await update_session_title(db, session.id, self.request.input.strip()[:60] or self.team.name)
                 user_msg = await create_message(
                     db,

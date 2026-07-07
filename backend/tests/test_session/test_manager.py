@@ -65,6 +65,31 @@ class TestSessionManager:
         assert {legacy.id, codata.id} <= ids
 
     @pytest.mark.asyncio
+    async def test_backfill_expert_session_mode(self, session_factory):
+        from app.main import _backfill_expert_session_mode
+
+        async with session_factory() as db:
+            async with db.begin():
+                legacy_expert = await create_session(
+                    db, title="expert legacy", slug="expert-team:data-analysis-report"
+                )  # app_mode NULL
+                plain_chat = await create_session(db, title="chat", slug="")
+                already = await create_session(
+                    db, title="expert tagged", slug="expert-team:funnel-conversion", app_mode="codata"
+                )
+            legacy_id, chat_id, already_id = legacy_expert.id, plain_chat.id, already.id
+
+        await _backfill_expert_session_mode(session_factory)
+
+        async with session_factory() as db:
+            # Legacy expert-team session now tagged codata (leaves chat history).
+            assert (await get_session(db, legacy_id)).app_mode == "codata"
+            # Plain chat session untouched.
+            assert (await get_session(db, chat_id)).app_mode is None
+            # Already-tagged session unchanged.
+            assert (await get_session(db, already_id)).app_mode == "codata"
+
+    @pytest.mark.asyncio
     async def test_update_title(self, db: AsyncSession):
         session = await create_session(db, title="Old")
         await update_session_title(db, session.id, "New")
