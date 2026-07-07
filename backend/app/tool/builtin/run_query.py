@@ -31,6 +31,11 @@ logger = logging.getLogger(__name__)
 POLL_INTERVAL_SECONDS = 2.0
 POLL_TIMEOUT_SECONDS = 60.0
 
+# Result-preview limits fed back to the LLM (metadata still carries full rows).
+PREVIEW_MAX_ROWS = 50
+PREVIEW_MAX_CELL_CHARS = 200
+PREVIEW_MAX_TOTAL_CHARS = 4000
+
 
 class RunQueryTool(ToolDefinition):
 
@@ -157,18 +162,59 @@ def _safe_json(text: str) -> Any | None:
         return None
 
 
+def _format_rows_preview(columns: list[str], rows: list[list], row_count: int) -> str:
+    """Render a compact Markdown-table preview of the result for the LLM.
+
+    The full result stays in metadata for the frontend; this text is what the
+    model actually sees, so it can summarise, cite numbers, and chart. Capped
+    on rows, cell width, and total chars to protect the context window.
+    """
+    cols = [str(c) for c in (columns or [])]
+    if not cols:
+        return ""
+
+    def _cell(v: Any) -> str:
+        s = "" if v is None else str(v)
+        if len(s) > PREVIEW_MAX_CELL_CHARS:
+            s = s[: PREVIEW_MAX_CELL_CHARS - 1] + "…"
+        return s.replace("|", "\\|").replace("\n", " ")
+
+    preview_rows = rows[:PREVIEW_MAX_ROWS]
+    lines = [
+        "| " + " | ".join(cols) + " |",
+        "| " + " | ".join("---" for _ in cols) + " |",
+    ]
+    for row in preview_rows:
+        cells = [_cell(row[i]) if i < len(row) else "" for i in range(len(cols))]
+        lines.append("| " + " | ".join(cells) + " |")
+    table = "\n".join(lines)
+
+    if len(table) > PREVIEW_MAX_TOTAL_CHARS:
+        table = table[:PREVIEW_MAX_TOTAL_CHARS] + "\n| …(预览已截断) |"
+    if row_count > len(preview_rows):
+        table += f"\n\n(数据集共 {row_count} 行，以上为前 {len(preview_rows)} 行预览；完整结果见数据面板)"
+    return table
+
+
 def _result_from_parsed(parsed: dict[str, Any], sql: str) -> ToolResult:
     """Wrap a parsed sql_result metadata dict into a ToolResult.
 
     metadata shape matches datasage_parser output → DataResultCard renders it.
+    output carries a readable row preview so the LLM can actually reason over
+    the data (summarise, cite numbers, pass rows to chart_spec).
     """
     meta = dict(parsed)
-    # Ensure the executed SQL is present (parser may have inferred it already).
     meta.setdefault("sql", sql)
-    row_count = meta.get("row_count", len(meta.get("rows", [])))
-    col_count = len(meta.get("columns", []))
-    return ToolResult(
-        output=f"查询成功:{row_count} 行 · {col_count} 列",
-        title="查询结果",
-        metadata=meta,
-    )
+    columns = meta.get("columns", [])
+    rows = meta.get("rows", [])
+    row_count = meta.get("row_count", len(rows))
+    col_count = len(columns)
+
+    header = f"查询成功:{row_count} 行 · {col_count} 列"
+    if row_count == 0:
+        output = "查询成功，但无数据行匹配"
+    else:
+        preview = _format_rows_preview(columns, rows, row_count)
+        output = f"{header}\n\n{preview}" if preview else header
+
+    return ToolResult(output=output, title="查询结果", metadata=meta)
