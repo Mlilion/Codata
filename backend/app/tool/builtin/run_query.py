@@ -169,7 +169,7 @@ def _format_rows_preview(columns: list[str], rows: list[list], row_count: int) -
     model actually sees, so it can summarise, cite numbers, and chart. Capped
     on rows, cell width, and total chars to protect the context window.
     """
-    cols = [str(c) for c in (columns or [])]
+    cols = [c.get("name", "") if isinstance(c, dict) else str(c) for c in (columns or [])]
     if not cols:
         return ""
 

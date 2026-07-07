@@ -147,6 +147,7 @@ class TestRunQuery:
         assert "channel" in r.output and "dau" in r.output
         assert "App" in r.output and "10" in r.output
         assert "2 行" in r.output
+        assert "{'name'" not in r.output and '{"name"' not in r.output
 
     async def test_empty_result_output(self, monkeypatch):
         client = _FakeClient({"execute_sql": [_sync_result([], ["channel", "dau"])]})
