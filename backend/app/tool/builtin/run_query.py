@@ -34,7 +34,10 @@ POLL_TIMEOUT_SECONDS = 60.0
 # Result-preview limits fed back to the LLM (metadata still carries full rows).
 PREVIEW_MAX_ROWS = 50
 PREVIEW_MAX_CELL_CHARS = 200
-PREVIEW_MAX_TOTAL_CHARS = 4000
+# Keep well under app/config.py's max_tool_output_chars (default 20_000), which
+# re-trims tool output in app/session/manager.py's trim_for_context — a larger
+# preview cap would let that second trim cut the table mid-row. 4000 is safe.
+PREVIEW_MAX_TOTAL_CHARS = min(4000, 20_000 // 5)  # defensive clamp
 
 
 class RunQueryTool(ToolDefinition):
