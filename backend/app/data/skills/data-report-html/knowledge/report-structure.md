@@ -24,8 +24,8 @@
 - 省略规则：无核心指标可展示时省略；轻报告保留。
 
 ## 4. 图表区（按需）
-- 内容：把关键数据画成内联 SVG（趋势折线、分类对比柱状、占比等）。遵循 `svg-charting-rules.md`。
-- 模板片段：`<section class="charts">` + `templates/` 下的 SVG 骨架。
+- 内容：把关键数据画成 echarts 交互图表（趋势折线、分类对比柱状、占比饼图等），保留 hover tooltip 与 legend 开关。遵循 `echarts-charting-rules.md`。
+- 模板片段：`<section class="charts">` 内每图一个 `.chart-block`（含图表容器 `<div class="chart">` + 离线兜底文案），图表在 `<body>` 末尾的 `<script>` 里 `echarts.init` 初始化。
 - 省略规则：轻报告 1-2 张即可；无适合可视化的数据时省略。
 
 ## 5. 数据明细表（按需）

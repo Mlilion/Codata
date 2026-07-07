@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><!-- 报告标题 --></title>
+<!-- 图表库:唯一允许的外部资源。图表渲染需要网络,离线时显示 .chart-fallback 文案。 -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <style>
   /* 自包含浅色主题。所有色值写死(单文件报告不能用运行时 CSS 变量渲染)。
      背景 #ffffff / #f8fafc；主文字 #111827；次文字 #6b7280；边框 #e5e7eb;
@@ -18,7 +20,7 @@
     -webkit-font-smoothing: antialiased;
   }
   .report {
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 32px 24px 64px;
   }
@@ -72,8 +74,11 @@
     border-radius: 10px;
     padding: 16px;
   }
-  .chart-block svg { width: 100%; height: auto; display: block; }
+  .chart-block .chart { width: 100%; }
+  .chart-block .chart-fallback { color: #6b7280; font-size: 13px; padding: 24px; text-align: center; }
   .chart-block .chart-caption { color: #6b7280; font-size: 12px; margin-top: 8px; }
+  /* 多图并排:宽屏两列,窄屏单列 */
+  .charts .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
 
   /* 5. 数据明细表 */
   .detail table {
@@ -160,14 +165,17 @@
     </div>
   </section>
 
-  <!-- ============ 4. 图表区(按需):内联 SVG,遵循 svg-charting-rules.md ============ -->
+  <!-- ============ 4. 图表区(按需):echarts 交互图,遵循 echarts-charting-rules.md ============ -->
   <section class="charts">
     <h2>趋势与分布</h2>
-    <!-- 每张图一个 .chart-block,把 templates/chart-*.svg 填好后内联进来:
+    <!-- 每张图一个 .chart-block(容器 + 离线兜底文案);多图可包在 .chart-grid 里并排:
     <div class="chart-block">
-      <svg viewBox="0 0 720 360"> ... </svg>
+      <div id="chart-trend" class="chart" style="height:380px;">
+        <div class="chart-fallback">图表需要网络加载 echarts,如未显示请检查网络连接。</div>
+      </div>
       <div class="chart-caption">图注/口径说明</div>
     </div>
+    图表在 <body> 末尾的 <script> 里用 echarts.init(...).setOption(...) 初始化,见文末。
     -->
   </section>
 
@@ -213,5 +221,21 @@
   <footer><!-- 由 Codata 生成 --></footer>
 
 </div>
+
+<!-- ============ 图表初始化:数据内联 + echarts.init。遵循 echarts-charting-rules.md ============ -->
+<script>
+  // 1) 内联查询结果数据(不联网取数):
+  //    const dates = [...]; const cost = [...]; const rev = [...];
+  //
+  // 2) 浅色主题(各图复用):
+  //    const axisStyle = { axisLine:{lineStyle:{color:"#e5e7eb"}}, axisLabel:{color:"#6b7280"}, splitLine:{lineStyle:{color:"#eceff3"}} };
+  //    const baseOption = { backgroundColor:"transparent", textStyle:{color:"#6b7280"}, tooltip:{trigger:"axis"}, grid:{left:56,right:24,top:40,bottom:40} };
+  //    series 配色按序取 8 色板: #4f8ff7 #f79f4f #4fcf8f #c77dff #f7746f #4fc4cf #f7c14f #8f9ff7
+  //
+  // 3) 每个图 init(用 window.echarts 守卫,CDN 未加载时保留兜底文案):
+  //    if (window.echarts) {
+  //      echarts.init(document.getElementById("chart-trend")).setOption({ ...baseOption, xAxis:{...}, yAxis:{...}, series:[...] });
+  //    }
+</script>
 </body>
 </html>
