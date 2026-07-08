@@ -1,30 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import QRCode from "qrcode";
 import {
   Check,
-  CheckCircle2,
-  ChevronDown,
   Copy,
   ExternalLink,
   Eye,
   EyeOff,
   Loader2,
+  MoreHorizontal,
   Power,
   PowerOff,
   QrCode,
   RefreshCw,
-  Settings2,
-  Unplug,
-  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   useAddChannel,
   useCancelFeishuQrRegistration,
@@ -48,13 +42,16 @@ import { apiErrorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { ChannelInfo, PlatformDef, PlatformFieldDef, PlatformGuideStep } from "@/types/channels";
 
-/* ------------------------------------------------------------------ */
-/* Tab content (embedded in Settings)                                  */
-/* ------------------------------------------------------------------ */
-
 export function RemoteTabContent() {
   return <ChannelsSection />;
 }
+
+const FEISHU_SCOPES = [
+  "im:chat:readonly",
+  "im:message:send",
+  "im:message:receive_v1",
+  "contact:user:readonly",
+];
 
 const FEISHU_SCOPES_JSON = JSON.stringify(
   {
@@ -76,38 +73,22 @@ const FEISHU_SCOPES_JSON = JSON.stringify(
   2,
 );
 
-const PLATFORMS: PlatformDef[] = [
-  {
-    id: "dingtalk",
-    name: "DingTalk",
-    icon: <DingTalkIcon size={20} />,
-    color: "text-[#0089FF]",
-    auth: "token",
-    help: "Create a bot at DingTalk Open Platform",
-    helpUrl: "https://open-dev.dingtalk.com",
-    fields: [
-      { key: "client_id", label: "Client ID / App Key", placeholder: "Enter DingTalk client ID or app key" },
-      { key: "client_secret", label: "Client Secret / App Secret", placeholder: "Enter DingTalk client secret or app secret", secret: true },
-    ],
-    guide: [
-      { titleKey: "platformGuide_dingtalk_1_title", bodyKey: "platformGuide_dingtalk_1_body", href: "https://open-dev.dingtalk.com" },
-      { titleKey: "platformGuide_dingtalk_2_title", bodyKey: "platformGuide_dingtalk_2_body" },
-      { titleKey: "platformGuide_dingtalk_3_title", bodyKey: "platformGuide_dingtalk_3_body" },
-    ],
-  },
+const PLATFORM_ORDER = ["feishu", "weixin", "wecom", "dingtalk", "telegram", "qq"];
+
+const PLATFORMS = ([
   {
     id: "feishu",
     name: "Feishu",
-    icon: <FeishuIcon size={20} />,
+    icon: <FeishuIcon size={28} />,
     color: "text-[#3370FF]",
     auth: "token",
     help: "Create an app at Feishu Open Platform",
     helpUrl: "https://open.feishu.cn/app",
     fields: [
-      { key: "app_id", label: "App ID", placeholder: "cli_xxxxx" },
-      { key: "app_secret", label: "App Secret", placeholder: "Enter app secret", secret: true },
-      { key: "verification_token", label: "Verification Token", placeholder: "Optional verification token", secret: true, required: false },
-      { key: "encrypt_key", label: "Encrypt Key", placeholder: "Optional encrypt key", secret: true, required: false },
+      { key: "app_id", label: "App ID", placeholder: "请输入 App ID" },
+      { key: "app_secret", label: "App Secret", placeholder: "请输入 App Secret", secret: true },
+      { key: "verification_token", label: "Verification Token", placeholder: "请输入 Verification Token", secret: true, required: false },
+      { key: "encrypt_key", label: "Encrypt Key", placeholder: "请输入 Encrypt Key", secret: true, required: false },
     ],
     guide: [
       { titleKey: "platformGuide_feishu_1_title", bodyKey: "platformGuide_feishu_1_body", href: "https://open.feishu.cn/app" },
@@ -118,12 +99,12 @@ const PLATFORMS: PlatformDef[] = [
   {
     id: "weixin",
     name: "WeChat",
-    icon: <WeChatIcon size={20} />,
+    icon: <WeChatIcon size={28} />,
     color: "text-[#07C160]",
     auth: "qr",
     help: "Use iLink QR login or paste a WeChat bot token",
     fields: [
-      { key: "token", label: "Bot Token", placeholder: "Paste WeChat bot token", secret: true, required: false },
+      { key: "token", label: "Bot Token", placeholder: "请输入 Bot Token", secret: true, required: false },
       { key: "base_url", label: "Base URL", placeholder: "https://ilinkai.weixin.qq.com", required: false },
       { key: "route_tag", label: "Route Tag", placeholder: "Optional route tag", required: false },
     ],
@@ -136,13 +117,13 @@ const PLATFORMS: PlatformDef[] = [
   {
     id: "wecom",
     name: "WeCom",
-    icon: <WeComIcon size={20} />,
+    icon: <WeComIcon size={28} />,
     color: "text-[#0082EF]",
     auth: "token",
     help: "Create an AI Bot at WeCom Admin Console",
     fields: [
-      { key: "bot_id", label: "Bot ID", placeholder: "Enter WeCom bot ID" },
-      { key: "secret", label: "Secret", placeholder: "Enter WeCom bot secret", secret: true },
+      { key: "bot_id", label: "Bot ID", placeholder: "Enter WeCom Bot ID" },
+      { key: "secret", label: "Secret", placeholder: "Enter WeCom Bot secret", secret: true },
       { key: "welcome_message", label: "Welcome Message", placeholder: "Optional welcome message", required: false },
     ],
     guide: [
@@ -151,25 +132,27 @@ const PLATFORMS: PlatformDef[] = [
     ],
   },
   {
-    id: "qq",
-    name: "QQ",
-    icon: <QQIcon size={20} />,
-    color: "text-[#12B7F5]",
+    id: "dingtalk",
+    name: "DingTalk",
+    icon: <DingTalkIcon size={28} />,
+    color: "text-[#0089FF]",
     auth: "token",
-    help: "Create a bot at QQ Open Platform",
-    helpUrl: "https://q.qq.com",
+    help: "Create a bot at DingTalk Open Platform",
+    helpUrl: "https://open-dev.dingtalk.com",
     fields: [
-      { key: "app_id", label: "App ID", placeholder: "Enter QQ app ID" },
-      { key: "secret", label: "Secret", placeholder: "Enter QQ app secret", secret: true },
+      { key: "client_id", label: "Client ID / App Key", placeholder: "Enter DingTalk Client ID" },
+      { key: "client_secret", label: "Client Secret / App Secret", placeholder: "Enter DingTalk Client Secret", secret: true },
     ],
     guide: [
-      { titleKey: "platformGuide_qq_1_title", bodyKey: "platformGuide_qq_1_body", href: "https://q.qq.com" },
+      { titleKey: "platformGuide_dingtalk_1_title", bodyKey: "platformGuide_dingtalk_1_body", href: "https://open-dev.dingtalk.com" },
+      { titleKey: "platformGuide_dingtalk_2_title", bodyKey: "platformGuide_dingtalk_2_body" },
+      { titleKey: "platformGuide_dingtalk_3_title", bodyKey: "platformGuide_dingtalk_3_body" },
     ],
   },
   {
     id: "telegram",
     name: "Telegram",
-    icon: <TelegramIcon size={20} />,
+    icon: <TelegramIcon size={28} />,
     color: "text-[#26A5E4]",
     auth: "token",
     help: "Get a token from @BotFather on Telegram",
@@ -180,179 +163,449 @@ const PLATFORMS: PlatformDef[] = [
       { titleKey: "platformGuide_telegram_2_title", bodyKey: "platformGuide_telegram_2_body" },
     ],
   },
-];
+  {
+    id: "qq",
+    name: "QQ",
+    icon: <QQIcon size={28} />,
+    color: "text-[#111827]",
+    auth: "token",
+    help: "Create a bot at QQ Open Platform",
+    helpUrl: "https://q.qq.com",
+    fields: [
+      { key: "app_id", label: "App ID", placeholder: "Enter QQ App ID" },
+      { key: "secret", label: "Secret", placeholder: "Enter QQ secret", secret: true },
+    ],
+    guide: [
+      { titleKey: "platformGuide_qq_1_title", bodyKey: "platformGuide_qq_1_body", href: "https://q.qq.com" },
+    ],
+  },
+] satisfies PlatformDef[]).sort((a, b) => PLATFORM_ORDER.indexOf(a.id) - PLATFORM_ORDER.indexOf(b.id));
 
 function ChannelsSection() {
-  const { t } = useTranslation("settings");
   const { data: channelsData, isLoading, refetch } = useChannels();
-  const [expandedPlatform, setExpandedPlatform] = useState<string | null>(null);
-  const channels = channelsData?.channels ?? {};
+  const [selectedPlatformId, setSelectedPlatformId] = useState<string>("feishu");
+  const [authMode, setAuthMode] = useState<"qr" | "manual">("qr");
+  const channels = useMemo(() => channelsData?.channels ?? {}, [channelsData?.channels]);
+  const gatewayRunning = channelsData?.gateway_running ?? false;
+  const selectedPlatform = PLATFORMS.find((platform) => platform.id === selectedPlatformId) ?? PLATFORMS[0];
+  const selectedChannel = channels[selectedPlatform.id];
+  const supportsQr = platformSupportsQr(selectedPlatform);
+
+  const groupedPlatforms = useMemo(() => {
+    const running = PLATFORMS.filter((platform) => channels[platform.id]?.status === "running");
+    const configured = PLATFORMS.filter((platform) => channels[platform.id]?.status === "configured");
+    const disabled = PLATFORMS.filter((platform) => channels[platform.id]?.status === "disabled");
+    const idle = PLATFORMS.filter((platform) => !channels[platform.id]);
+    return [
+      { id: "running", title: "已连接", platforms: running },
+      { id: "configured", title: "已配置", platforms: configured },
+      { id: "idle", title: "未配置", platforms: idle },
+      { id: "disabled", title: "已停用", platforms: disabled },
+    ];
+  }, [channels]);
+
   const configuredCount = Object.values(channels).filter((ch) => ch.status !== "disabled").length;
   const runningCount = Object.values(channels).filter((ch) => ch.status === "running").length;
 
+  useEffect(() => {
+    setAuthMode(supportsQr ? "qr" : "manual");
+  }, [selectedPlatform.id, supportsQr]);
+
+  const handleDone = () => {
+    void refetch();
+  };
+
   return (
-    <div className="space-y-5">
-      <section className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="space-y-1">
-            <h2 className="text-base font-semibold text-[var(--text-primary)]">{t("channelsTitle")}</h2>
-            <p className="text-xs leading-5 text-[var(--text-secondary)]">{t("channelsDesc")}</p>
+    <div className="flex h-full min-h-[720px] w-full gap-5 overflow-x-auto px-5 py-5 text-[#172033]">
+      <section className="flex w-[440px] shrink-0 flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.01em] text-[#101828]">消息渠道</h1>
+            <p className="mt-2 text-[13px] leading-5 text-[#63728a]">将 Codata 连接到消息平台</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+          <Button
+            variant="outline"
+            className="h-8 rounded-lg border-[#d8e2f0] px-3 text-[12px] text-[#344054] shadow-sm"
+            onClick={() => refetch()}
+            disabled={isLoading}
+          >
             <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
-            {t("channelRefresh", "Refresh")}
+            刷新
           </Button>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-3">
-          <SystemMetric label={t("channelSystem", "Channel System")} value={t("channelSystemBuiltIn", { count: configuredCount })} tone="neutral" />
-          <SystemMetric label={t("channelRunning", "Running")} value={String(runningCount)} tone="success" />
-          <SystemMetric label={t("channelSupported", "Supported")} value={String(PLATFORMS.length)} tone="accent" />
+        <div className="mt-5 grid h-11 grid-cols-[1.1fr_0.82fr_0.82fr_0.7fr] items-center rounded-lg border border-[#d8e2f0] bg-white px-3 text-[11px] shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
+          <span className="flex items-center gap-2 whitespace-nowrap font-medium text-[#1f2937]">
+            <span className={cn("h-2 w-2 rounded-full", gatewayRunning ? "bg-[#18b981]" : "bg-[#98a2b3]")} />
+            {gatewayRunning ? "网关运行中" : "网关未运行"}
+          </span>
+          <MetricDivider label="已配置" value={configuredCount} />
+          <MetricDivider label="运行中" value={runningCount} />
+          <MetricDivider label="支持" value={PLATFORMS.length} />
+        </div>
+
+        <div className="mt-5 flex-1 overflow-y-auto pr-1 scrollbar-auto">
+          {groupedPlatforms.map((group) => (
+            <ChannelGroup key={group.id} title={group.title} platforms={group.platforms} channels={channels} selectedId={selectedPlatform.id} onSelect={setSelectedPlatformId} />
+          ))}
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {PLATFORMS.map((platform) => {
-          const channel = channels[platform.id];
-          const isExpanded = expandedPlatform === platform.id;
-          return (
-            <PlatformCard
-              key={platform.id}
-              platform={platform}
-              channel={channel}
-              expanded={isExpanded}
-              onToggleExpanded={() => setExpandedPlatform(isExpanded ? null : platform.id)}
-              onDone={() => {
-                setExpandedPlatform(null);
-                refetch();
-              }}
-            />
-          );
-        })}
+      <section className="min-w-[560px] flex-1">
+        <ChannelDetailPanel
+          platform={selectedPlatform}
+          channel={selectedChannel}
+          authMode={supportsQr ? authMode : "manual"}
+          onAuthModeChange={setAuthMode}
+          onDone={handleDone}
+        />
       </section>
     </div>
   );
 }
 
-function SystemMetric({ label, value, tone }: { label: string; value: string; tone: "neutral" | "success" | "accent" }) {
-  const dotClass = tone === "success" ? "bg-emerald-500" : tone === "accent" ? "bg-blue-500" : "bg-[var(--text-tertiary)]";
+function MetricDivider({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3">
-      <div className="flex items-center gap-2">
-        <span className={cn("h-2 w-2 rounded-full", dotClass)} />
-        <span className="text-ui-3xs font-medium uppercase tracking-wide text-[var(--text-tertiary)]">{label}</span>
+    <span className="flex items-center justify-center gap-1.5 whitespace-nowrap border-l border-[#d8e2f0] font-medium text-[#1f2937]">
+      <span>{label}</span>
+      <span className="font-semibold">{value}</span>
+    </span>
+  );
+}
+
+function ChannelGroup({
+  title,
+  platforms,
+  channels,
+  selectedId,
+  onSelect,
+}: {
+  title: string;
+  platforms: PlatformDef[];
+  channels: Record<string, ChannelInfo>;
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
+  if (platforms.length === 0) return null;
+  const compact = title === "未配置";
+
+  return (
+    <div className="mb-5">
+      <div className="mb-2 text-[13px] font-semibold text-[#1f2937]">
+        {title} ({platforms.length})
       </div>
-      <div className="mt-1 text-sm font-medium text-[var(--text-primary)]">{value}</div>
+      <div className={cn("overflow-hidden rounded-lg border border-[#d8e2f0] bg-white", !compact && "space-y-0")}>
+        {platforms.map((platform, index) => (
+          <PlatformRow
+            key={platform.id}
+            platform={platform}
+            channel={channels[platform.id]}
+            selected={selectedId === platform.id}
+            separated={compact && index > 0}
+            onSelect={() => onSelect(platform.id)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-function PlatformCard({
+function PlatformRow({
   platform,
   channel,
-  expanded,
-  onToggleExpanded,
+  selected,
+  separated,
+  onSelect,
+}: {
+  platform: PlatformDef;
+  channel?: ChannelInfo;
+  selected: boolean;
+  separated?: boolean;
+  onSelect: () => void;
+}) {
+  const status = channel?.status ?? "idle";
+  const account = channel?.account || platformDefaultAccount(platform, status);
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        "flex h-[58px] w-full items-center gap-3 px-3 text-left transition-colors",
+        separated && "border-t border-[#e4eaf3]",
+        selected ? "border border-[#8bbcff] bg-[#eaf2ff] shadow-[inset_3px_0_0_#1677ff]" : "hover:bg-[#f8fbff]",
+      )}
+    >
+      <PlatformIcon platform={platform} size="sm" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-[14px] font-semibold text-[#172033]">{platformDisplayName(platform)}</span>
+          <ChannelStatusPill status={status} />
+        </div>
+        <div className="mt-1 truncate text-[12px] text-[#66758d]">{platformSubtitle(platform)}</div>
+      </div>
+      <div className="flex w-[92px] shrink-0 items-center justify-end gap-2">
+        {account && <span className="truncate text-[12px] text-[#53647c]">{account}</span>}
+        <RowAction status={status} />
+      </div>
+    </button>
+  );
+}
+
+function RowAction({ status }: { status: string }) {
+  if (status === "running") {
+    return (
+      <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#d8e2f0] bg-white text-[#53647c]">
+        <MoreHorizontal className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+  if (status === "configured") return <span className="rounded-lg border border-[#d8e2f0] bg-white px-2.5 py-1.5 text-[11px] font-medium text-[#344054]">编辑</span>;
+  if (status === "disabled") return <span className="rounded-lg border border-[#d8e2f0] bg-white px-2.5 py-1.5 text-[11px] font-medium text-[#344054]">重连</span>;
+  return <span className="rounded-lg border border-[#d8e2f0] bg-white px-2.5 py-1.5 text-[11px] font-medium text-[#344054]">连接</span>;
+}
+
+function ChannelDetailPanel({
+  platform,
+  channel,
+  authMode,
+  onAuthModeChange,
   onDone,
 }: {
   platform: PlatformDef;
   channel?: ChannelInfo;
-  expanded: boolean;
-  onToggleExpanded: () => void;
+  authMode: "qr" | "manual";
+  onAuthModeChange: (mode: "qr" | "manual") => void;
   onDone: () => void;
 }) {
-  const { t } = useTranslation("settings");
   const connected = channel?.status === "running";
-  const disabled = channel?.status === "disabled";
-  const configured = !!channel && !connected && !disabled;
-  const mode: "connect" | "edit" = disabled ? "edit" : "connect";
+  const supportsQr = platformSupportsQr(platform);
+  const formId = `channel-config-form-${platform.id}`;
+  const account = channel?.account || platformDefaultAccount(platform, channel?.status ?? "idle");
 
   return (
-    <div
-      className={cn(
-        "rounded-lg border bg-[var(--surface-primary)] transition-colors",
-        connected && "border-emerald-500/35 bg-emerald-500/5",
-        configured && "border-amber-500/35 bg-amber-500/5",
-        !connected && !configured && "border-[var(--border-default)]",
-        expanded && "md:col-span-2",
-      )}
-    >
-      <div className="flex min-h-[86px] items-center justify-between gap-3 p-4">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-secondary)]", platform.color)}>
-            {platform.icon}
-          </div>
+    <div className="flex min-h-[660px] flex-col overflow-hidden rounded-xl border border-[#d8e2f0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <div className="flex min-h-[86px] items-center justify-between gap-4 border-b border-[#d8e2f0] px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <PlatformIcon platform={platform} size="lg" />
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)]">{platform.name}</h3>
-              <ChannelStatusBadge status={channel?.status} />
+            <div className="flex min-w-0 items-center gap-2">
+              <h2 className="truncate text-[18px] font-semibold text-[#111827]">{platformDisplayName(platform)}</h2>
+              <ChannelStatusPill status={channel?.status ?? "idle"} />
             </div>
-            <p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--text-secondary)]">{t(`platformHelp_${platform.id}`, platform.help)}</p>
-            {channel?.account && (
-              <p className="mt-1 truncate text-ui-3xs text-[var(--text-tertiary)]">{channel.account}</p>
-            )}
+            <p className="mt-1.5 truncate text-[13px] text-[#53647c]">{platformSubtitle(platform)}</p>
           </div>
         </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          {connected ? (
-            <RemoveChannelButton channel={platform.id} onRemoved={onDone} />
-          ) : disabled ? (
-            <>
-              <ReconnectChannelButton channel={platform.id} onDone={onDone} />
-              <Button variant="outline" size="sm" className="h-8 px-2.5 text-ui-2xs" onClick={onToggleExpanded}>
-                <Settings2 className="h-3.5 w-3.5" />
-                {expanded ? t("channelCancel") : t("channelEdit")}
-              </Button>
-            </>
-          ) : (
-            <Button variant="outline" size="sm" className="h-8 px-2.5 text-ui-2xs" onClick={onToggleExpanded}>
-              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} />
-              {expanded ? t("channelCancel") : configured ? t("channelConfigure") : t("channelConnect")}
-            </Button>
-          )}
+        <div className="flex shrink-0 items-center gap-3">
+          {account && <span className="max-w-[180px] truncate text-[12px] font-medium text-[#53647c]">{account}</span>}
+          {connected ? <DisconnectChannelButton channel={platform.id} onDone={onDone} /> : null}
         </div>
       </div>
 
-      {expanded && (
-        <div className="border-t border-[var(--border-default)] p-4">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-            <ChannelForm platform={platform} mode={mode} onDone={onDone} />
-            <PlatformGuide platform={platform} />
-          </div>
+      <div className="flex h-11 items-end gap-5 border-b border-[#d8e2f0] px-5">
+        {supportsQr && (
+          <button
+            type="button"
+            onClick={() => onAuthModeChange("qr")}
+            className={cn(
+              "h-full border-b-2 px-5 text-[13px] font-semibold transition-colors",
+              authMode === "qr" ? "border-[#1677ff] text-[#1677ff]" : "border-transparent text-[#344054]",
+            )}
+          >
+            扫码创建
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => onAuthModeChange("manual")}
+          className={cn(
+            "h-full border-b-2 px-5 text-[13px] font-semibold transition-colors",
+            !supportsQr || authMode === "manual" ? "border-[#1677ff] text-[#1677ff]" : "border-transparent text-[#344054]",
+          )}
+        >
+          手动配置
+        </button>
+      </div>
+
+      <div className="grid flex-1 grid-cols-[minmax(230px,1fr)_minmax(230px,0.82fr)] gap-4 px-5 py-5">
+        <div className="min-w-0 space-y-5">
+          {supportsQr && authMode === "qr" ? (
+            <InlineQrSetupCard platform={platform} onDone={onDone} />
+          ) : null}
+          <CredentialConfigForm platform={platform} formId={formId} onDone={onDone} />
         </div>
-      )}
+        <PlatformGuide platform={platform} />
+      </div>
+
+      <div className="flex h-[60px] items-center justify-center gap-3 border-t border-[#d8e2f0] bg-white px-5">
+        <Button type="submit" form={formId} className="h-9 w-[140px] rounded-lg bg-[#1677ff] text-[13px] font-semibold text-white hover:bg-[#0f67db]">
+          保存并连接
+        </Button>
+        {connected ? (
+          <DisconnectChannelButton channel={platform.id} onDone={onDone} wide />
+        ) : (
+          <Button variant="outline" className="h-9 w-[130px] rounded-lg border-[#d8e2f0] text-[13px] font-semibold text-[#344054]" disabled>
+            断开
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
 
-function ChannelStatusBadge({ status }: { status?: string }) {
-  const { t } = useTranslation("settings");
-  if (status === "running") {
-    return <Badge className="h-5 px-2 text-ui-3xs" variant="success">{t("channelStatusRunning", "Connected")}</Badge>;
-  }
-  if (status === "configured") {
-    return <Badge className="h-5 px-2 text-ui-3xs" variant="warning">{t("channelStatusConfigured", "Configured")}</Badge>;
-  }
-  if (status === "disabled") {
-    return <Badge className="h-5 px-2 text-ui-3xs" variant="secondary">{t("channelStatusDisabled", "Disabled")}</Badge>;
-  }
-  return <Badge className="h-5 px-2 text-ui-3xs" variant="outline">{t("channelStatusIdle", "Not configured")}</Badge>;
+function InlineQrSetupCard({ platform, onDone }: { platform: PlatformDef; onDone: () => void }) {
+  if (platform.id === "feishu") return <FeishuInlineQrCard onDone={onDone} />;
+  return <WeixinInlineQrCard onDone={onDone} />;
 }
 
-function ChannelForm({ platform, mode, onDone }: { platform: PlatformDef; mode: "connect" | "edit"; onDone: () => void }) {
+function FeishuInlineQrCard({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation("settings");
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [scanUrl, setScanUrl] = useState<string | null>(null);
+  const startQr = useStartFeishuQrRegistration();
+  const cancelQr = useCancelFeishuQrRegistration();
+  const statusQuery = useFeishuQrStatus(sessionId);
+  const qrDataUrl = useQrDataUrl(scanUrl || "codata://feishu-bot-setup");
+
+  useEffect(() => {
+    if (statusQuery.data?.status === "confirmed") {
+      toast.success(t("channelFeishuQrConfirmed", "Feishu connected"));
+      setSessionId(null);
+      setScanUrl(null);
+      onDone();
+    }
+  }, [statusQuery.data?.status, onDone, t]);
+
+  const handleStart = async () => {
+    try {
+      if (sessionId) await cancelQr.mutateAsync(sessionId).catch(() => undefined);
+      const result = await startQr.mutateAsync({});
+      setSessionId(result.session_id);
+      setScanUrl(result.scan_url);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t("channelFeishuQrStartFailed", "Failed to start Feishu registration")));
+    }
+  };
+
+  return (
+    <QrSetupCard
+      title="企业自建应用（推荐）"
+      description="扫描二维码，创建飞书应用并授权"
+      qrDataUrl={qrDataUrl}
+      isStarting={startQr.isPending}
+      onStart={handleStart}
+      copyLabel="复制飞书权限"
+    />
+  );
+}
+
+function WeixinInlineQrCard({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation("settings");
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [scanUrl, setScanUrl] = useState<string | null>(null);
+  const startQr = useStartWeixinQrLogin();
+  const cancelQr = useCancelWeixinQrLogin();
+  const statusQuery = useWeixinQrStatus(sessionId);
+  const qrDataUrl = useQrDataUrl(scanUrl || "codata://weixin-bot-setup");
+
+  useEffect(() => {
+    if (statusQuery.data?.status === "confirmed") {
+      toast.success(t("channelQrConfirmed", "WeChat connected"));
+      setSessionId(null);
+      setScanUrl(null);
+      onDone();
+    }
+  }, [statusQuery.data?.status, onDone, t]);
+
+  const handleStart = async () => {
+    try {
+      if (sessionId) await cancelQr.mutateAsync(sessionId).catch(() => undefined);
+      const result = await startQr.mutateAsync({});
+      setSessionId(result.session_id);
+      setScanUrl(result.scan_url);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t("channelQrStartFailed", "Failed to start QR login")));
+    }
+  };
+
+  return (
+    <QrSetupCard
+      title="扫码登录（推荐）"
+      description="扫描二维码，连接微信服务号"
+      qrDataUrl={qrDataUrl}
+      isStarting={startQr.isPending}
+      onStart={handleStart}
+      copyLabel="复制连接信息"
+    />
+  );
+}
+
+function QrSetupCard({
+  title,
+  description,
+  qrDataUrl,
+  isStarting,
+  onStart,
+  copyLabel,
+}: {
+  title: string;
+  description: string;
+  qrDataUrl: string | null;
+  isStarting: boolean;
+  onStart: () => void;
+  copyLabel: string;
+}) {
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(FEISHU_SCOPES_JSON);
+    toast.success("已复制");
+  };
+
+  return (
+    <div className="flex min-h-[276px] flex-col items-center rounded-lg border border-[#d8e2f0] bg-[#fbfdff] px-5 py-5 text-center">
+      <div className="text-[14px] font-semibold text-[#1f2937]">{title}</div>
+      <p className="mt-2 text-[12px] text-[#66758d]">{description}</p>
+      <div className="mt-4 flex h-[118px] w-[118px] items-center justify-center rounded-lg border border-[#d8e2f0] bg-white p-2">
+        {qrDataUrl ? (
+          // QR codes are generated as client-only data URLs, so Next image optimization does not apply.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={qrDataUrl} alt="channel qr code" className="h-full w-full" />
+        ) : (
+          <QrCode className="h-10 w-10 text-[#98a2b3]" />
+        )}
+      </div>
+      <Button className="mt-4 h-8 w-[168px] rounded-lg bg-white text-[12px] font-semibold text-[#1677ff] ring-1 ring-[#1677ff] hover:bg-[#f2f7ff]" onClick={onStart} disabled={isStarting}>
+        {isStarting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <QrCode className="h-3.5 w-3.5" />}
+        扫描二维码创建
+      </Button>
+      <button type="button" className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-medium text-[#1677ff]" onClick={handleCopy}>
+        <Copy className="h-3.5 w-3.5" />
+        {copyLabel}
+      </button>
+    </div>
+  );
+}
+
+function CredentialConfigForm({ platform, formId, onDone }: { platform: PlatformDef; formId: string; onDone: () => void }) {
   const { t } = useTranslation("settings");
   const [values, setValues] = useState<Record<string, string>>({});
   const [showSecret, setShowSecret] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const addChannel = useAddChannel();
 
-  const handleSubmit = async () => {
+  useEffect(() => {
+    setValues({});
+    setShowSecret({});
+    setError(null);
+  }, [platform.id]);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setError(null);
     const body: Record<string, unknown> = { channel: platform.id };
     for (const field of platform.fields || []) {
       const value = values[field.key]?.trim() ?? "";
       const required = field.required !== false && !(platform.id === "weixin" && platform.auth === "qr");
-      if (!value && required && mode === "connect") {
+      if (!value && required) {
         setError(t("channelFieldRequired", { field: fieldLabel(t, platform.id, field) }));
         return;
       }
@@ -373,59 +626,29 @@ function ChannelForm({ platform, mode, onDone }: { platform: PlatformDef; mode: 
   };
 
   return (
-    <div className="space-y-4">
-      {platform.id === "feishu" && <FeishuQrPanel onConnected={onDone} />}
-
-      {platform.id === "weixin" && platform.auth === "qr" && (
-        <WeixinQrPanel
-          baseUrl={values.base_url}
-          routeTag={values.route_tag}
-          onConnected={onDone}
-        />
-      )}
-
-      <div className="space-y-2 rounded-lg border border-[var(--border-default)] p-3">
-        <div>
-          <div className="text-xs font-medium text-[var(--text-primary)]">
-            {platform.auth === "qr" ? t("channelManualConfig", "Manual configuration") : t("channelCredentialConfig", "Credential configuration")}
-          </div>
-          <p className="mt-1 text-ui-2xs leading-5 text-[var(--text-tertiary)]">
-            {platform.auth === "qr"
-              ? t("channelManualConfigDesc", "Use this if QR login is unavailable or you already have an iLink token.")
-              : t("channelCredentialConfigDesc", "Credentials are saved in the local channel configuration. Disconnect before editing a running channel.")}
-          </p>
-        </div>
-
-        <div className="space-y-[10px]">
-          {platform.fields?.map((field) => (
-            <FieldInput
-              key={field.key}
-              platformId={platform.id}
-              field={field}
-              value={values[field.key] || ""}
-              showSecret={!!showSecret[field.key]}
-              onToggleSecret={() => setShowSecret((current) => ({ ...current, [field.key]: !current[field.key] }))}
-              onChange={(value) => setValues((current) => ({ ...current, [field.key]: value }))}
-            />
-          ))}
-        </div>
-
-        {error && <p className="text-ui-2xs text-red-500">{error}</p>}
-
-        <Button size="sm" className="h-8 w-full text-ui-2xs" onClick={handleSubmit} disabled={addChannel.isPending}>
-          {addChannel.isPending ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {t("channelConnecting")}
-            </>
-          ) : mode === "edit" ? (
-            t("channelSaveAndConnect")
-          ) : (
-            t("channelConnect")
-          )}
-        </Button>
+    <form id={formId} className="space-y-2.5" onSubmit={handleSubmit}>
+      <div className="text-[13px] font-semibold text-[#1f2937]">凭证配置</div>
+      <div className="space-y-2.5">
+        {platform.fields?.map((field) => (
+          <FieldInput
+            key={field.key}
+            platformId={platform.id}
+            field={field}
+            value={values[field.key] || ""}
+            showSecret={!!showSecret[field.key]}
+            onToggleSecret={() => setShowSecret((current) => ({ ...current, [field.key]: !current[field.key] }))}
+            onChange={(value) => setValues((current) => ({ ...current, [field.key]: value }))}
+          />
+        ))}
       </div>
-    </div>
+      {error && <p className="text-[12px] text-red-500">{error}</p>}
+      {addChannel.isPending && (
+        <div className="flex items-center gap-2 text-[12px] text-[#66758d]">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          正在连接
+        </div>
+      )}
+    </form>
   );
 }
 
@@ -446,21 +669,21 @@ function FieldInput({
 }) {
   const { t } = useTranslation("settings");
   return (
-    <label className="block space-y-1">
-      <span className="text-ui-3xs font-medium text-[var(--text-tertiary)]">{fieldLabel(t, platformId, field)}</span>
+    <label className="block">
+      <span className="mb-1 block text-[12px] font-medium text-[#53647c]">{fieldLabel(t, platformId, field)}</span>
       <span className="relative block">
         <Input
           type={field.secret && !showSecret ? "password" : "text"}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder={t(`fieldPlaceholder_${platformId}_${field.key}`, field.placeholder)}
+          placeholder={field.placeholder}
           autoComplete="one-time-code"
-          className={cn("h-8 text-xs", field.secret && "pr-9")}
+          className={cn("h-8 rounded-md border-[#d8e2f0] bg-white text-[12px] placeholder:text-[#98a2b3]", field.secret && "pr-9")}
         />
         {field.secret && (
           <button
             type="button"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[#98a2b3] hover:text-[#344054]"
             onClick={onToggleSecret}
           >
             {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -468,290 +691,6 @@ function FieldInput({
         )}
       </span>
     </label>
-  );
-}
-
-function fieldLabel(t: ReturnType<typeof useTranslation<"settings">>["t"], platformId: string, field: PlatformFieldDef) {
-  return t(`fieldLabel_${platformId}_${field.key}`, t(`fieldLabel_${field.key}`, field.label));
-}
-
-function useQrDataUrl(scanUrl: string | null) {
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!scanUrl) {
-      setQrDataUrl(null);
-      return;
-    }
-    let cancelled = false;
-    QRCode.toDataURL(scanUrl, { width: 256, margin: 2, errorCorrectionLevel: "M" })
-      .then((url) => {
-        if (!cancelled) setQrDataUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setQrDataUrl(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [scanUrl]);
-
-  return qrDataUrl;
-}
-
-function WeixinQrPanel({ baseUrl, routeTag, onConnected }: { baseUrl?: string; routeTag?: string; onConnected: () => void }) {
-  const { t } = useTranslation("settings");
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [scanUrl, setScanUrl] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const startQr = useStartWeixinQrLogin();
-  const cancelQr = useCancelWeixinQrLogin();
-  const statusQuery = useWeixinQrStatus(sessionId);
-  const qrStatus = statusQuery.data?.status;
-  const qrDataUrl = useQrDataUrl(scanUrl);
-
-  useEffect(() => {
-    if (qrStatus === "confirmed") {
-      toast.success(t("channelQrConfirmed", "WeChat connected"));
-      setSessionId(null);
-      setDialogOpen(false);
-      onConnected();
-    }
-  }, [qrStatus, onConnected, t]);
-
-  const handleStart = async () => {
-    try {
-      if (sessionId) await cancelQr.mutateAsync(sessionId).catch(() => undefined);
-      const result = await startQr.mutateAsync({
-        base_url: baseUrl?.trim() || undefined,
-        route_tag: routeTag?.trim() || undefined,
-      });
-      setSessionId(result.session_id);
-      setScanUrl(result.scan_url);
-      setDialogOpen(true);
-    } catch (err) {
-      toast.error(apiErrorMessage(err, t("channelQrStartFailed", "Failed to start QR login")));
-    }
-  };
-
-  const handleCancel = async () => {
-    if (sessionId) await cancelQr.mutateAsync(sessionId).catch(() => undefined);
-    setSessionId(null);
-    setDialogOpen(false);
-  };
-
-  const statusText =
-    qrStatus === "scanned"
-      ? t("channelQrScanned", "Scanned. Confirm on your phone.")
-      : qrStatus === "expired"
-        ? t("channelQrExpired", "QR code expired. Refresh to try again.")
-        : qrStatus === "error"
-          ? statusQuery.data?.message || t("channelQrError", "QR login failed")
-          : t("channelQrWaiting", "Open WeChat and scan the QR code.");
-
-  return (
-    <ChannelQrPanel
-      accentClass="text-[#07C160]"
-      containerClass="border-[#07C160]/25 bg-[#07C160]/5"
-      title={t("channelWeixinQrTitle", "WeChat QR login")}
-      description={t("channelWeixinQrDesc", "Scan to obtain an iLink bot token and start the WeChat channel.")}
-      actionLabel={t("channelScanLogin", "Scan login")}
-      qrAlt={t("channelWeixinQrAlt", "WeChat login QR code")}
-      status={qrStatus}
-      statusText={statusText}
-      scanUrl={scanUrl}
-      qrDataUrl={qrDataUrl}
-      dialogOpen={dialogOpen}
-      isStarting={startQr.isPending}
-      onStart={handleStart}
-      onDialogOpenChange={(open) => {
-        if (open) setDialogOpen(true);
-        else void handleCancel();
-      }}
-    />
-  );
-}
-
-function FeishuQrPanel({ onConnected }: { onConnected: () => void }) {
-  const { t } = useTranslation("settings");
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [scanUrl, setScanUrl] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const startQr = useStartFeishuQrRegistration();
-  const cancelQr = useCancelFeishuQrRegistration();
-  const statusQuery = useFeishuQrStatus(sessionId);
-  const qrStatus = statusQuery.data?.status;
-  const providerStatus = statusQuery.data?.provider_status;
-  const qrDataUrl = useQrDataUrl(scanUrl);
-
-  useEffect(() => {
-    if (qrStatus === "confirmed") {
-      toast.success(t("channelFeishuQrConfirmed", "Feishu connected"));
-      setSessionId(null);
-      setDialogOpen(false);
-      onConnected();
-    }
-  }, [qrStatus, onConnected, t]);
-
-  const handleStart = async () => {
-    try {
-      if (sessionId) await cancelQr.mutateAsync(sessionId).catch(() => undefined);
-      const result = await startQr.mutateAsync({});
-      setSessionId(result.session_id);
-      setScanUrl(result.scan_url);
-      setDialogOpen(true);
-    } catch (err) {
-      toast.error(apiErrorMessage(err, t("channelFeishuQrStartFailed", "Failed to start Feishu registration")));
-    }
-  };
-
-  const handleCancel = async () => {
-    if (sessionId) await cancelQr.mutateAsync(sessionId).catch(() => undefined);
-    setSessionId(null);
-    setDialogOpen(false);
-  };
-
-  const statusText =
-    qrStatus === "expired"
-      ? t("channelQrExpired", "QR code expired. Refresh to try again.")
-      : qrStatus === "error"
-        ? statusQuery.data?.message || t("channelFeishuQrError", "Feishu registration failed")
-        : providerStatus === "slow_down"
-          ? t("channelFeishuQrSlowDown", "Polling slowed down automatically.")
-          : providerStatus === "domain_switched"
-            ? t("channelFeishuQrDomainSwitched", "Switched to the Lark domain.")
-            : t("channelFeishuQrWaiting", "Use Feishu to scan and complete app creation.");
-
-  return (
-    <ChannelQrPanel
-      accentClass="text-[#3370FF]"
-      containerClass="border-[#3370FF]/25 bg-[#3370FF]/5"
-      title={t("channelFeishuQrTitle", "Create Feishu Bot by QR")}
-      description={t("channelFeishuQrDesc", "Codata creates a PersonalAgent app after you scan, then saves App ID and App Secret automatically.")}
-      actionLabel={t("channelFeishuQrAction", "Scan to create")}
-      qrAlt={t("channelFeishuQrAlt", "Feishu app registration QR code")}
-      status={qrStatus}
-      statusText={statusText}
-      scanUrl={scanUrl}
-      qrDataUrl={qrDataUrl}
-      dialogOpen={dialogOpen}
-      isStarting={startQr.isPending}
-      onStart={handleStart}
-      onDialogOpenChange={(open) => {
-        if (open) setDialogOpen(true);
-        else void handleCancel();
-      }}
-    />
-  );
-}
-
-function ChannelQrPanel({
-  accentClass,
-  containerClass,
-  title,
-  description,
-  actionLabel,
-  qrAlt,
-  status,
-  statusText,
-  scanUrl,
-  qrDataUrl,
-  dialogOpen,
-  isStarting,
-  onStart,
-  onDialogOpenChange,
-}: {
-  accentClass: string;
-  containerClass: string;
-  title: string;
-  description: string;
-  actionLabel: string;
-  qrAlt: string;
-  status?: string;
-  statusText: string;
-  scanUrl: string | null;
-  qrDataUrl: string | null;
-  dialogOpen: boolean;
-  isStarting: boolean;
-  onStart: () => void | Promise<void>;
-  onDialogOpenChange: (open: boolean) => void;
-}) {
-  const { t } = useTranslation("settings");
-  const statusIcon =
-    status === "confirmed" ? (
-      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-    ) : status === "scanned" ? (
-      <CheckCircle2 className="h-4 w-4 text-blue-500" />
-    ) : status === "expired" || status === "error" ? (
-      <XCircle className="h-4 w-4 text-red-500" />
-    ) : (
-      <Loader2 className="h-4 w-4 animate-spin text-[var(--text-tertiary)]" />
-    );
-
-  return (
-    <div className={cn("rounded-lg border p-3", containerClass)}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg bg-white shadow-[var(--shadow-sm)]", accentClass)}>
-            <QrCode className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="text-xs font-medium text-[var(--text-primary)]">{title}</div>
-            <p className="mt-1 text-ui-2xs leading-5 text-[var(--text-secondary)]">{description}</p>
-          </div>
-        </div>
-        <Button size="sm" className="h-8 text-ui-2xs" onClick={onStart} disabled={isStarting}>
-          {isStarting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <QrCode className="h-3.5 w-3.5" />}
-          {actionLabel}
-        </Button>
-      </div>
-
-      <Dialog open={dialogOpen} onOpenChange={onDialogOpenChange}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <QrCode className={cn("h-4 w-4", accentClass)} />
-              {title}
-            </DialogTitle>
-            <DialogDescription>{statusText}</DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col items-center gap-4 py-2">
-            <div className="flex h-[256px] w-[256px] items-center justify-center rounded-xl bg-white p-3 shadow-[var(--shadow-sm)]">
-              {qrDataUrl ? (
-                // QR codes are generated as client-only data URLs, so Next image optimization does not apply.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={qrDataUrl} alt={qrAlt} className="h-full w-full" />
-              ) : (
-                <div className="px-4 text-center text-xs text-slate-500">
-                  {scanUrl ? t("channelQrGenerating", "Generating QR code...") : t("channelQrNoCode", "No QR code")}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
-              {statusIcon}
-              <span>{statusText}</span>
-            </div>
-
-            <div className="flex w-full gap-2">
-              <Button variant="outline" size="sm" className="h-8 flex-1 text-ui-2xs" onClick={onStart} disabled={isStarting}>
-                <RefreshCw className="h-3.5 w-3.5" />
-                {t("channelQrRefresh", "Refresh")}
-              </Button>
-              {scanUrl && (
-                <Button variant="outline" size="sm" className="h-8 flex-1 text-ui-2xs" asChild>
-                  <a href={scanUrl} target="_blank" rel="noreferrer">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    {t("channelOpenLink", "Open link")}
-                  </a>
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
   );
 }
 
@@ -768,77 +707,69 @@ function PlatformGuide({ platform }: { platform: PlatformDef }) {
   };
 
   return (
-    <aside className="space-y-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] p-3">
-      <div>
-        <div className="text-xs font-medium text-[var(--text-primary)]">{t("channelSetupGuide", "Setup guide")}</div>
-        <p className="mt-1 text-ui-2xs leading-5 text-[var(--text-tertiary)]">{t(`platformHelp_${platform.id}`, platform.help)}</p>
-      </div>
+    <aside className="min-w-0 rounded-lg border border-[#d8e2f0] bg-[#fbfdff] p-4">
+      <div className="text-[14px] font-semibold text-[#1f2937]">配置引导</div>
+      <p className="mt-1.5 text-[12px] text-[#66758d]">{platformSubtitle(platform)}</p>
 
-      {guide.length > 0 && (
-        <div className="space-y-3">
-          {guide.map((step: PlatformGuideStep, index) => (
-            <div key={step.titleKey} className="grid grid-cols-[20px_1fr] gap-2">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--surface-primary)] text-ui-3xs font-semibold text-[var(--text-secondary)]">
-                {index + 1}
-              </span>
-              <div>
-                <div className="text-ui-2xs font-medium text-[var(--text-primary)]">{t(step.titleKey)}</div>
-                <p className="mt-0.5 text-ui-3xs leading-5 text-[var(--text-secondary)]">{t(step.bodyKey)}</p>
-                {step.href && (
-                  <a href={step.href} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-ui-3xs text-[var(--brand-primary)] hover:underline">
-                    {t("channelOpenConsole", "Open console")}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
+      <div className="mt-5 space-y-5">
+        {platform.id === "feishu" ? (
+          <>
+            <GuideStep index={1} title="创建飞书应用" body="扫描二维码或进入飞书开放平台创建自建应用。">
+              <a href={platform.helpUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-[#1677ff]">
+                打开控制台
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </GuideStep>
+            <GuideStep index={2} title="配置机器人" body="在应用中添加机器人，并设置消息与事件订阅。" />
+            <GuideStep index={3} title="授权权限" body="复制以下权限范围并在飞书应用中完成授权。">
+              <div className="mt-2 min-w-0 overflow-hidden rounded-md border border-[#d8e2f0] bg-white p-2.5 font-mono text-[11px] leading-5 text-[#344054]">
+                <div className="flex min-w-0 items-start gap-2">
+                  <div className="min-w-0 flex-1 overflow-x-auto pr-1">
+                    {FEISHU_SCOPES.map((scope) => (
+                      <div key={scope} className="whitespace-nowrap">
+                        {scope}
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button" className="shrink-0 rounded p-1 text-[#66758d] hover:bg-[#eef4ff]" onClick={handleCopyScopes}>
+                    {copied ? <Check className="h-4 w-4 text-[#18b981]" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {platform.id === "feishu" && (
-        <Button variant="outline" size="sm" className="h-8 w-full text-ui-2xs" onClick={handleCopyScopes}>
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          {copied ? t("channelCopied", "Copied") : t("channelCopyFeishuScopes", "Copy Feishu scopes")}
-        </Button>
-      )}
-
-      {platform.helpUrl && (
-        <Button variant="outline" size="sm" className="h-8 w-full text-ui-2xs" asChild>
-          <a href={platform.helpUrl} target="_blank" rel="noreferrer">
-            <ExternalLink className="h-3.5 w-3.5" />
-            {t("channelDocumentation", "Documentation")}
-          </a>
-        </Button>
-      )}
+            </GuideStep>
+            <GuideStep index={4} title="填写凭证" body="将 App ID、App Secret、Token 和 Encrypt Key 填入左侧表单并保存连接。" />
+          </>
+        ) : (
+          guide.map((step: PlatformGuideStep, index) => (
+            <GuideStep key={step.titleKey} index={index + 1} title={t(step.titleKey)} body={t(step.bodyKey)}>
+              {step.href && (
+                <a href={step.href} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-[#1677ff]">
+                  打开控制台
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
+            </GuideStep>
+          ))
+        )}
+      </div>
     </aside>
   );
 }
 
-function ReconnectChannelButton({ channel, onDone }: { channel: string; onDone: () => void }) {
-  const { t } = useTranslation("settings");
-  const addChannel = useAddChannel();
-
-  const handleReconnect = async () => {
-    try {
-      const result = await addChannel.mutateAsync({ channel });
-      toast.success(result.message || t("channelConnected", "Channel connected"));
-    } catch (err) {
-      toast.error(apiErrorMessage(err, t("channelConnectFailed", "Failed to connect channel")));
-    } finally {
-      setTimeout(onDone, 500);
-    }
-  };
-
+function GuideStep({ index, title, body, children }: { index: number; title: string; body: string; children?: ReactNode }) {
   return (
-    <Button variant="outline" size="sm" className="h-8 px-2.5 text-ui-2xs" disabled={addChannel.isPending} onClick={handleReconnect}>
-      {addChannel.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Power className="h-3.5 w-3.5" />}
-      {t("channelConnect")}
-    </Button>
+    <div className="grid min-w-0 grid-cols-[20px_minmax(0,1fr)] gap-3">
+      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e8f1ff] text-[11px] font-semibold text-[#1677ff]">{index}</span>
+      <div className="min-w-0">
+        <div className="text-[12px] font-semibold text-[#1f2937]">{title}</div>
+        <p className="mt-1.5 text-[12px] leading-5 text-[#66758d]">{body}</p>
+        {children}
+      </div>
+    </div>
   );
 }
 
-function RemoveChannelButton({ channel, onRemoved }: { channel: string; onRemoved: () => void }) {
+function DisconnectChannelButton({ channel, onDone, wide }: { channel: string; onDone: () => void; wide?: boolean }) {
   const { t } = useTranslation("settings");
   const removeChannel = useRemoveChannel();
 
@@ -846,7 +777,7 @@ function RemoveChannelButton({ channel, onRemoved }: { channel: string; onRemove
     try {
       const result = await removeChannel.mutateAsync({ channel });
       toast.info(result.message || t("channelRemoved"));
-      setTimeout(onRemoved, 500);
+      setTimeout(onDone, 500);
     } catch (err) {
       toast.error(apiErrorMessage(err, t("channelDisconnectFailed", "Failed to disconnect channel")));
     }
@@ -855,15 +786,108 @@ function RemoveChannelButton({ channel, onRemoved }: { channel: string; onRemove
   return (
     <Button
       variant="outline"
-      size="sm"
-      className="h-8 px-2.5 text-ui-2xs text-red-500 hover:bg-red-500/10"
-      aria-label={t("channelDisconnect")}
+      className={cn(
+        "h-8 rounded-lg border-[#d8e2f0] text-[12px] font-semibold text-[#344054] hover:bg-red-50 hover:text-red-500",
+        wide ? "w-[130px]" : "px-4",
+      )}
       disabled={removeChannel.isPending}
       onClick={handleRemove}
     >
-      {removeChannel.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PowerOff className="h-3.5 w-3.5" />}
-      <span className="hidden sm:inline">{t("channelDisconnect")}</span>
-      <Unplug className="h-3.5 w-3.5 sm:hidden" />
+      {removeChannel.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : wide ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5 text-red-500" />}
+      断开
     </Button>
   );
+}
+
+function ChannelStatusPill({ status }: { status?: string }) {
+  if (status === "running") return <span className="shrink-0 rounded-md bg-[#dff8ed] px-2 py-0.5 text-[11px] font-semibold text-[#16a36a]">已连接</span>;
+  if (status === "configured") return <span className="shrink-0 rounded-md bg-[#eaf2ff] px-2 py-0.5 text-[11px] font-semibold text-[#1677ff]">已配置</span>;
+  if (status === "disabled") return <span className="shrink-0 rounded-md bg-[#eef2f7] px-2 py-0.5 text-[11px] font-semibold text-[#66758d]">已停用</span>;
+  return <span className="shrink-0 rounded-md bg-[#eef2f7] px-2 py-0.5 text-[11px] font-semibold text-[#66758d]">未配置</span>;
+}
+
+function PlatformIcon({ platform, size }: { platform: PlatformDef; size: "sm" | "lg" }) {
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-lg bg-[#f5f8fc]",
+        platform.color,
+        size === "lg" ? "h-11 w-11" : "h-9 w-9",
+      )}
+    >
+      {platform.icon}
+    </span>
+  );
+}
+
+function platformSupportsQr(platform: PlatformDef): boolean {
+  return platform.id === "feishu" || platform.id === "weixin";
+}
+
+function platformDisplayName(platform: PlatformDef): string {
+  switch (platform.id) {
+    case "feishu":
+      return "飞书";
+    case "weixin":
+      return "微信";
+    case "wecom":
+      return "企业微信";
+    case "dingtalk":
+      return "钉钉";
+    default:
+      return platform.name;
+  }
+}
+
+function platformSubtitle(platform: PlatformDef): string {
+  switch (platform.id) {
+    case "feishu":
+      return "与飞书机器人连接";
+    case "weixin":
+      return "与微信服务号连接";
+    case "wecom":
+      return "与企业微信机器人连接";
+    case "dingtalk":
+      return "与钉钉机器人连接";
+    case "telegram":
+      return "与 Telegram Bot 连接";
+    case "qq":
+      return "与 QQ 机器人连接";
+    default:
+      return platform.help;
+  }
+}
+
+function platformDefaultAccount(platform: PlatformDef, status: string): string {
+  if (status === "running" && platform.id === "feishu") return "codata-bot";
+  if (status === "configured" && platform.id === "weixin") return "Codata 服务号";
+  return "";
+}
+
+function fieldLabel(_t: ReturnType<typeof useTranslation<"settings">>["t"], _platformId: string, field: PlatformFieldDef) {
+  return field.label;
+}
+
+function useQrDataUrl(scanUrl: string | null) {
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!scanUrl) {
+      setQrDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(scanUrl, { width: 256, margin: 1, errorCorrectionLevel: "M" })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [scanUrl]);
+
+  return qrDataUrl;
 }
