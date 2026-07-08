@@ -61,6 +61,27 @@ export function usePluginToggle() {
   });
 }
 
+export interface CreateSkillInput {
+  name: string;
+  description: string;
+  instructions: string;
+  overwrite?: boolean;
+}
+
+export function useCreateSkill() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateSkillInput) =>
+      api.post<{ success: boolean; slug: string; skills: SkillInfo[] }>(
+        API.SKILLS.CREATE,
+        data,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.skills });
+    },
+  });
+}
+
 export function useSkillToggle() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -27,6 +27,7 @@ export interface SessionResponse {
   slug: string | null;
   directory: string | null;
   title: string | null;
+  app_mode?: "chat" | "codata" | null;
   version: number;
   summary_additions: number;
   summary_deletions: number;

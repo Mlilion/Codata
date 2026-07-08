@@ -94,12 +94,12 @@ export function ReasoningPart({ texts, toolParts = [], isStreaming, onDurationCh
   if (!combinedText && toolParts.length === 0) return null;
 
   return (
-    <div>
+    <div className="data-agent-card overflow-hidden rounded-lg">
       {/* Trigger */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors py-1"
+        className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-secondary)]"
       >
         <ChevronRight
           className={cn(
@@ -107,8 +107,18 @@ export function ReasoningPart({ texts, toolParts = [], isStreaming, onDurationCh
             isOpen && "rotate-90",
           )}
         />
-        <CodataLogo size={14} className={cn(isStreaming && "shimmer-icon")} />
-        <span className={cn(isStreaming && "shimmer-text")}>{label}</span>
+        <CodataLogo size={16} className={cn(isStreaming && "shimmer-icon")} />
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-quaternary)]">
+          Agent run
+        </span>
+        <span className={cn("min-w-0 flex-1 truncate text-left", isStreaming && "shimmer-text")}>{label}</span>
+        {isStreaming && (
+          <span className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--data-accent)] opacity-40" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--data-accent)] opacity-70" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--data-accent)]" />
+          </span>
+        )}
       </button>
 
       {/* Collapsible content with framer-motion */}
@@ -124,7 +134,7 @@ export function ReasoningPart({ texts, toolParts = [], isStreaming, onDurationCh
             }}
             className="overflow-hidden"
           >
-            <div className="border-l-2 border-[var(--border-heavy)] pl-4 ml-1 mt-1.5 mb-1 space-y-2">
+            <div className="space-y-3 border-t border-[var(--border-subtle)] bg-[var(--surface-secondary)]/45 px-4 py-3">
               {/* Reasoning text */}
               {combinedText && (
                 <div className="prose prose-sm max-w-none text-[var(--text-secondary)] leading-relaxed [&_p]:my-2 [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-sm [&_strong]:text-[var(--text-primary)] [&_hr]:border-[var(--border-default)] [&_hr]:my-3">
@@ -136,7 +146,7 @@ export function ReasoningPart({ texts, toolParts = [], isStreaming, onDurationCh
 
               {/* Tool calls inside thinking */}
               {toolParts.length > 0 && (
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   {toolParts.map((tool) => (
                     <ToolLine key={tool.call_id} tool={tool} />
                   ))}
@@ -166,7 +176,7 @@ function ToolLine({ tool }: { tool: ToolPart }) {
   }
 
   return (
-    <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
+    <div className="flex items-center gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-xs text-[var(--text-tertiary)]">
       {isRunning ? (
         <Loader2 className="h-3 w-3 animate-spin" />
       ) : isError ? (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Database, ChevronDown, ChevronRight, Maximize2, Loader2 } from "lucide-react";
+import { Columns3, Database, ChevronDown, ChevronRight, Maximize2, Loader2, Table2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useArtifactStore } from "@/stores/artifact-store";
 import {
@@ -44,7 +44,7 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
   const isRunning = data.state.status === "running" || data.state.status === "pending";
   if (isRunning) {
     return (
-      <div className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-3 text-sm text-[var(--text-tertiary)]">
+      <div className="data-agent-card flex items-center gap-2.5 rounded-lg px-4 py-3 text-sm text-[var(--text-tertiary)]">
         <Loader2 className="h-4 w-4 animate-spin" />
         <span className="shimmer-text">正在查询…</span>
       </div>
@@ -61,7 +61,7 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
   if (!artifact && job) {
     const failed = /fail|error/i.test(job.status);
     return (
-      <div className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-3">
+      <div className="data-agent-card flex items-center gap-2.5 rounded-lg px-4 py-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-tertiary)]">
           {failed ? (
             <Database className="h-4 w-4 text-[var(--color-destructive)]" />
@@ -99,23 +99,25 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
       : "SQL";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)]">
+    <div className="data-agent-card overflow-hidden rounded-lg">
       {/* Header row — click to toggle */}
-      <div className="flex items-center gap-2.5 px-3 py-2.5">
+      <div className="flex items-center gap-2.5 px-3.5 py-3">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
           aria-expanded={open}
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-tertiary)]">
-            <Database className="h-4 w-4 text-[var(--brand-primary)]" />
-          </span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--data-accent-soft)]">
+              <Database className="h-4 w-4 text-[var(--data-accent)]" />
+            </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium text-[var(--text-primary)]">
               {artifact.title}
             </span>
-            <span className="block text-xs text-[var(--text-tertiary)]">{summary}</span>
+            <span className="block text-xs text-[var(--text-tertiary)]">
+              {summary} · 查询结果
+            </span>
           </span>
           {open ? (
             <ChevronDown className="h-4 w-4 shrink-0 text-[var(--text-tertiary)]" />
@@ -139,8 +141,22 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
 
       {/* Expanded body — the shared tabbed renderer */}
       {open && (
-        <div className="h-[420px] border-t border-[var(--border-default)] bg-[var(--surface-primary)]">
+        <div className="border-t border-[var(--border-default)] bg-[var(--surface-primary)]">
+          <div className="flex h-10 items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--surface-secondary)]/65 px-3">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 py-1 text-[11px] text-[var(--text-secondary)]">
+              <Table2 className="h-3.5 w-3.5 text-[var(--data-accent)]" />
+              {rowCount.toLocaleString()} rows
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 py-1 text-[11px] text-[var(--text-secondary)]">
+              <Columns3 className="h-3.5 w-3.5" />
+              {colCount} columns
+            </span>
+            <span className="min-w-2 flex-1" />
+            <span className="text-[11px] text-[var(--text-quaternary)]">Result preview</span>
+          </div>
+          <div className="h-[360px]">
           <SqlResultRenderer artifact={artifact} />
+          </div>
         </div>
       )}
     </div>

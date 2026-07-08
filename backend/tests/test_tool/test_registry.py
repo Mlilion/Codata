@@ -21,7 +21,7 @@ class TestToolRegistry:
                     "glob", "grep", "question", "todo", "task",
                     "web_fetch", "web_search", "invalid",
                     "plan", "submit_plan", "artifact", "present_file", "skill",
-                    "create_expert_teams", "baoyu_image_generate", "baoyu_publish"}
+                    "create_expert_teams", "run_query", "chart_spec"}
         assert expected <= tool_ids
 
     def test_get_by_id(self, registry: ToolRegistry):

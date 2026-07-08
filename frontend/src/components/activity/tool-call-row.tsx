@@ -103,8 +103,8 @@ export function ToolCallRow({ tool }: { tool: ToolPart }) {
   const moreCount = sources.length - MAX_VISIBLE_SOURCES;
 
   return (
-    <div className="relative pl-7">
-      <div className="absolute left-0 top-1 flex items-center justify-center">
+    <div className="relative rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-2 pl-9">
+      <div className="absolute left-3 top-2.5 flex items-center justify-center">
         {isRunning ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--text-tertiary)]" />
         ) : isError ? (
@@ -119,8 +119,8 @@ export function ToolCallRow({ tool }: { tool: ToolPart }) {
         onClick={() => setIsOpen(!isOpen)}
         className="group flex w-full items-center gap-2 text-left"
       >
-        <ToolIcon className="h-3.5 w-3.5 shrink-0 text-[var(--text-tertiary)]" />
-        <span className="flex-1 truncate text-xs text-[var(--text-secondary)] transition-colors group-hover:text-[var(--text-primary)]">
+        <ToolIcon className="h-3.5 w-3.5 shrink-0 text-[var(--data-accent)]" />
+        <span className="min-w-0 flex-1 truncate text-xs font-medium text-[var(--text-secondary)] transition-colors group-hover:text-[var(--text-primary)]">
           {title}
         </span>
         {elapsed && (
@@ -137,7 +137,7 @@ export function ToolCallRow({ tool }: { tool: ToolPart }) {
       </button>
 
       {visibleSources.length > 0 && (
-        <div className="mt-1.5 ml-5 flex flex-wrap gap-1.5">
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
           {visibleSources.map((source) => (
             <span
               key={source.url}
@@ -165,7 +165,7 @@ export function ToolCallRow({ tool }: { tool: ToolPart }) {
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="mb-1 mt-1.5 ml-5 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)]">
+            <div className="mb-1 mt-2 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)]">
               {Object.keys(tool.state.input).length > 0 && (
                 <div className="border-b border-[var(--border-default)]">
                   <p className="bg-[var(--surface-tertiary)] px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">

@@ -102,7 +102,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Ensure all models are registered with Base.metadata before create_all
     from app.memory import workspace_memory_model as _ws_memory_models  # noqa: F401 — registers WorkspaceMemory
-    from app.models import vimax_task_run as _vimax_task_run_models  # noqa: F401 — registers ViMaxTaskRun
     from app.models import dashboard as _dashboard_models  # noqa: F401 — registers Dashboard
     from app.models import dashboard_item as _dashboard_item_models  # noqa: F401 — registers DashboardItem
     from app.models import analysis_memory as _analysis_memory_models  # noqa: F401 — registers AnalysisMemory
@@ -114,6 +113,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Ensure a default dashboard exists and orphan items are assigned to it.
     await _ensure_default_dashboard(session_factory)
+
+    # Tag legacy expert-team sessions as codata so they leave chat history.
+    await _backfill_expert_session_mode(session_factory)
 
     app.state.engine = engine
     app.state.session_factory = session_factory
@@ -491,11 +493,10 @@ def _register_builtin_tools(
     """Register all built-in tools."""
     from app.tool.builtin.apply_patch import ApplyPatchTool
     from app.tool.builtin.artifact import ArtifactTool
-    from app.tool.builtin.baoyu_image_generate import BaoyuImageGenerateTool
-    from app.tool.builtin.baoyu_publish import BaoyuPublishTool
     from app.tool.builtin.bash import BashTool
     from app.tool.builtin.chart_spec import ChartSpecTool
     from app.tool.builtin.run_query import RunQueryTool
+    from app.tool.builtin.build_report import BuildReportTool
     from app.tool.builtin.code_execute import CodeExecuteTool
     from app.tool.builtin.create_expert_teams import CreateExpertTeamsTool
     from app.tool.builtin.edit import EditTool
@@ -510,7 +511,6 @@ def _register_builtin_tools(
     from app.tool.builtin.skill import SkillTool
     from app.tool.builtin.task import TaskTool
     from app.tool.builtin.todo import TodoTool
-    from app.tool.builtin.vimax_generate_video import ViMaxGenerateVideoTool
     from app.tool.builtin.web_fetch import WebFetchTool
     from app.tool.builtin.web_search import WebSearchTool
     from app.tool.builtin.write import WriteTool
@@ -521,9 +521,8 @@ def _register_builtin_tools(
         GlobTool, GrepTool, QuestionTool, TodoTool,
         TaskTool, WebFetchTool, WebSearchTool, InvalidTool,
         PlanTool, SubmitPlanTool, ArtifactTool, PresentFileTool,
-        CreateExpertTeamsTool, ViMaxGenerateVideoTool,
-        BaoyuImageGenerateTool, BaoyuPublishTool, ChartSpecTool,
-        RunQueryTool,
+        CreateExpertTeamsTool, ChartSpecTool,
+        RunQueryTool, BuildReportTool,
     ]:
         registry.register(tool_cls())
 
@@ -631,6 +630,33 @@ async def _ensure_default_dashboard(session_factory) -> None:
                 )
     except Exception:
         logger.warning("Default dashboard backfill skipped", exc_info=True)
+
+
+async def _backfill_expert_session_mode(session_factory) -> None:
+    """Tag existing expert-team sessions with app_mode="codata".
+
+    Idempotent: safe on every startup. Expert teams are a Codata capability, so
+    their sessions (slug "expert-team:*") belong in the Codata 历史查询 list, not
+    plain chat history. New runs set this in ExpertTeamRunner._prepare_session;
+    this migrates sessions created before that fix.
+    """
+    from sqlalchemy import update as sa_update
+    from app.models.session import Session
+
+    try:
+        async with session_factory() as db:
+            async with db.begin():
+                await db.execute(
+                    sa_update(Session)
+                    .where(Session.slug.like("expert-team:%"))
+                    .where(
+                        (Session.app_mode.is_(None))
+                        | (Session.app_mode != "codata")
+                    )
+                    .values(app_mode="codata")
+                )
+    except Exception:
+        logger.warning("Expert-team session mode backfill skipped", exc_info=True)
 
 
 def _find_frontend_dir() -> Path | None:

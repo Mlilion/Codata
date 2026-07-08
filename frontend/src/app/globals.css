@@ -5,23 +5,23 @@
 :root {
   /* Surface */
   --surface-primary: #FFFFFF;
-  --surface-secondary: #F6F6F6;
-  --surface-tertiary: #EFEFEF;
-  --surface-chat: #FFFFFF;
+  --surface-secondary: #F8FAFD;
+  --surface-tertiary: #EEF3F9;
+  --surface-chat: #FCFDFF;
 
   /* Text */
-  --text-primary: #1A1C1F;
-  --text-secondary: #5F6368;
-  --text-tertiary: #8A8F98;
-  --text-quaternary: #A8ADB5;
-  --text-accent: #339CFF;
+  --text-primary: #152033;
+  --text-secondary: #526174;
+  --text-tertiary: #8291A5;
+  --text-quaternary: #A8B3C2;
+  --text-accent: #0B76F6;
 
   /* Border */
-  --border-default: #E3E4E7;
-  --border-heavy: #D2D5DA;
-  --border-subtle: rgba(26, 28, 31, 0.08);
-  --border-hover: #C5CAD1;
-  --border-focus: #339CFF;
+  --border-default: #DDE5F0;
+  --border-heavy: #C8D4E4;
+  --border-subtle: rgba(21, 32, 51, 0.085);
+  --border-hover: #B8C7DA;
+  --border-focus: #0B76F6;
 
   /* Code block surfaces (light theme uses dark code blocks like ChatGPT/Claude) */
   --code-block-bg: #2F2F2F;
@@ -32,55 +32,61 @@
   --code-block-success: #4EC9B0;
 
   /* Brand */
-  --brand-primary: #339CFF;
-  --brand-primary-hover: #238EFF;
+  --brand-primary: #0B76F6;
+  --brand-primary-hover: #075ED1;
   --brand-primary-text: #FFFFFF;
-  --accent-primary: #339CFF;
+  --accent-primary: #0B76F6;
+  --data-accent: #0B76F6;
+  --data-accent-strong: #075ED1;
+  --data-accent-soft: rgba(11, 118, 246, 0.10);
+  --data-panel: rgba(255, 255, 255, 0.86);
+  --data-panel-solid: #FFFFFF;
+  --data-rail: rgba(11, 118, 246, 0.22);
 
   /* Semantic */
-  --color-success: #22C55E;
-  --color-warning: #EAB308;
+  --color-success: #12B981;
+  --color-warning: #F59E0B;
   --color-destructive: #EF4444;
 
   /* Sidebar */
-  --sidebar-bg: #F7F7F8;
+  --sidebar-bg: #F8FAFD;
   /* Translucent bg over macOS vibrancy / unpredictable wallpapers. Light mode
      needs high alpha so dark text stays readable regardless of what's behind. */
-  --sidebar-translucent-bg: rgba(247, 247, 248, 0.88);
-  --sidebar-hover: #EEEEF0;
-  --sidebar-active: #E7E9ED;
-  --sidebar-active-shadow: 0 1px 2px rgba(26, 28, 31, 0.05);
-  --sidebar-active-border: rgba(26, 28, 31, 0.05);
+  --sidebar-translucent-bg: rgba(248, 250, 253, 0.92);
+  --sidebar-hover: #EEF4FC;
+  --sidebar-active: #E8F1FF;
+  --sidebar-active-shadow: 0 8px 24px -22px rgba(11, 118, 246, 0.55);
+  --sidebar-active-border: rgba(11, 118, 246, 0.16);
 
   /* User message bubble */
-  --user-bubble-bg: #F4F5F7;
+  --user-bubble-bg: #F3F7FD;
 
   /* Ring */
-  --ring: #339CFF;
+  --ring: #0B76F6;
 
   /* Radius */
   --radius: 0.625rem;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 1px 2px rgba(21, 32, 51, 0.05);
+  --shadow-md: 0 12px 30px -24px rgba(21, 32, 51, 0.38), 0 2px 6px -4px rgba(21, 32, 51, 0.18);
+  --shadow-lg: 0 24px 60px -42px rgba(21, 32, 51, 0.42), 0 8px 20px -16px rgba(21, 32, 51, 0.22);
 
   /* Switch */
   --switch-checked: #171717;
 
   /* Tool colors */
-  --tool-pending: #EAB308;
-  --tool-running: #171717;
-  --tool-completed: #22C55E;
+  --tool-pending: #F59E0B;
+  --tool-running: #0B76F6;
+  --tool-completed: #12B981;
   --tool-error: #EF4444;
 
   /* Prose — content styling */
-  --prose-body: #212121;
-  --prose-link: #2563EB;
-  --prose-accent: #3B82F6;
-  --prose-blockquote-bg: rgba(59, 130, 246, 0.04);
-  --prose-marker: #A3A3A3;
+  --prose-body: #1F2937;
+  --prose-link: #0B76F6;
+  --prose-accent: #0B76F6;
+  --prose-blockquote-bg: rgba(11, 118, 246, 0.05);
+  --prose-marker: #9AA8BA;
 
   /* Typography scale */
   --ui-font-size-base: 13px;
@@ -135,10 +141,16 @@
   --code-block-success: #55d6a6;
 
   /* Brand */
-  --brand-primary: #339CFF;
-  --brand-primary-hover: #4AA8FF;
+  --brand-primary: #2F8CFF;
+  --brand-primary-hover: #63A8FF;
   --brand-primary-text: #FFFFFF;
-  --accent-primary: #4AA8FF;
+  --accent-primary: #63A8FF;
+  --data-accent: #4A9DFF;
+  --data-accent-strong: #79B7FF;
+  --data-accent-soft: rgba(74, 157, 255, 0.14);
+  --data-panel: rgba(32, 32, 32, 0.78);
+  --data-panel-solid: #202020;
+  --data-rail: rgba(56, 189, 248, 0.18);
 
   /* Semantic */
   --color-success: #3ed08f;
@@ -158,10 +170,10 @@
   --user-bubble-bg: #232323;
 
   /* Ring */
-  --ring: #339CFF;
+  --ring: #4A9DFF;
 
   /* Switch */
-  --switch-checked: #339CFF;
+  --switch-checked: #4A9DFF;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18);
@@ -1203,4 +1215,53 @@ pre code {
 .dashboard-grid .react-grid-item.react-draggable-dragging {
   z-index: 10;
   cursor: grabbing;
+}
+
+/* ─── Data Agent Workbench ─── */
+.data-agent-surface {
+  background: var(--surface-chat);
+}
+
+.data-agent-panel {
+  border: 1px solid var(--border-default);
+  background: color-mix(in srgb, var(--surface-primary) 94%, transparent);
+  box-shadow: 0 12px 30px -28px rgba(21, 32, 51, 0.45);
+}
+
+.data-agent-card {
+  border: 1px solid var(--border-default);
+  background: var(--data-panel-solid);
+  box-shadow: 0 12px 28px -26px rgba(21, 32, 51, 0.38);
+}
+
+.data-agent-card .prose {
+  font-size: 13.5px;
+  line-height: 1.72;
+}
+
+.data-agent-card .prose h1,
+.data-agent-card .prose h2,
+.data-agent-card .prose h3 {
+  letter-spacing: 0;
+}
+
+.data-agent-card .prose pre,
+.data-agent-card .prose-table-wrapper {
+  border-radius: 8px;
+}
+
+.data-agent-card .prose-table-wrapper {
+  background: var(--surface-primary);
+}
+
+.data-agent-active-rail {
+  box-shadow: inset 2px 0 0 var(--data-accent);
+}
+
+.data-agent-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 18%, transparent);
 }

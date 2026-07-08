@@ -5,8 +5,8 @@ import { useSidebarStore, type AppMode } from "@/stores/sidebar-store";
 import { cn } from "@/lib/utils";
 
 const MODES: { id: AppMode; label: string; icon: typeof MessageSquare }[] = [
-  { id: "chat", label: "Chat", icon: MessageSquare },
   { id: "codata", label: "Codata", icon: BarChart3 },
+  { id: "chat", label: "Chat", icon: MessageSquare },
 ];
 
 /**

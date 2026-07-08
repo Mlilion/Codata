@@ -3,23 +3,23 @@
 import { Suspense, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
-import { SquarePen } from "lucide-react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { SettingsSidebar } from "@/components/settings/settings-sidebar";
 import { CodataSidebar } from "@/components/codata/codata-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { SearchCommandDialog } from "@/components/layout/search-command-dialog";
 import { RightSidebar } from "@/components/right-sidebar/right-sidebar";
 import { usePlanReviewStore } from "@/stores/plan-review-store";
 import { ConnectionStatus } from "@/components/layout/connection-status";
 import { RouteProgressBar } from "@/components/layout/route-progress-bar";
 import { SplashScreen } from "@/components/layout/splash-screen";
 import { TitleBar } from "@/components/desktop/title-bar";
-import { WindowTopIcons } from "@/components/layout/window-top-icons";
+import {
+  WindowTopIcons,
+  WINDOW_TOP_ICONS_WIDTH_MAC,
+  WINDOW_TOP_ICONS_WIDTH_OTHER,
+} from "@/components/layout/window-top-icons";
 import { UpdateBanner } from "@/components/desktop/update-banner";
-import { Button } from "@/components/ui/button";
-import { CodataLogo } from "@/components/ui/codata-logo";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useSettingsHasHydrated } from "@/stores/settings-store";
 import { useAutoDetectProvider } from "@/hooks/use-auto-detect-provider";
@@ -31,7 +31,6 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useRightSidebarStore } from "@/stores/right-sidebar-store";
 import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
 import { desktopAPI } from "@/lib/tauri-api";
-import { useTranslation } from "react-i18next";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 function useIsDesktop() {
@@ -47,12 +46,11 @@ function useIsDesktop() {
 }
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const { t } = useTranslation("common");
   const router = useRouter();
   const pathname = usePathname();
   const isCollapsed = useSidebarStore((s) => s.isCollapsed);
   const appMode = useSidebarStore((s) => s.appMode);
-  const toggleSidebar = useSidebarStore((s) => s.toggle);
+  const setAppMode = useSidebarStore((s) => s.setAppMode);
   const sidebarWidth = useSidebarStore((s) => s.width);
   const rightSidebarIsOpen = useRightSidebarStore((s) => s.isOpen);
   const rightSidebarWidth = useRightSidebarStore((s) => s.width);
@@ -140,17 +138,27 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const isChatPage = pathname?.startsWith("/c/") ?? false;
   const isSettingsPage = pathname?.startsWith("/settings") ?? false;
+  const isCodataWorkspacePage =
+    (pathname?.startsWith("/experts") || pathname?.startsWith("/dashboard")) ?? false;
+  useEffect(() => {
+    if (isCodataWorkspacePage && appMode !== "codata") {
+      setAppMode("codata");
+    }
+  }, [appMode, isCodataWorkspacePage, setAppMode]);
   // Codata mode swaps the sidebar (unless on settings, which owns its own nav).
-  const isCodataMode = appMode === "codata" && !isSettingsPage;
+  const isCodataMode = (appMode === "codata" || isCodataWorkspacePage) && !isSettingsPage;
   const isActiveChat = isChatPage && pathname !== "/c/new";
+  const effectiveSidebarWidth = isCodataMode ? Math.min(sidebarWidth, 270) : sidebarWidth;
   // Settings replaces the sidebar with its own; always keep the gutter.
   const marginLeft =
-    isDesktop && (isSettingsPage || !isCollapsed) ? sidebarWidth : 0;
+    isDesktop && (isSettingsPage || !isCollapsed) ? effectiveSidebarWidth : 0;
   const marginRight = isDesktop && isActiveChat && rightSidebarIsOpen ? rightSidebarWidth : 0;
 
   // macOS uses native traffic lights overlay — page headers extend to the top.
   // Windows/Linux keep the custom title bar as a real 32px row.
   const titleBarPadding = IS_DESKTOP && !isMac ? TITLE_BAR_HEIGHT : 0;
+  const shouldReserveCollapsedTopButton =
+    isDesktop && isCollapsed && !isChatPage && !isSettingsPage;
 
   if (!settingsHydrated) {
     return (
@@ -210,50 +218,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       {/* Mobile nav drawer */}
       <MobileNav />
-
-      {/* Collapsed quick actions for non-chat pages */}
-      {isDesktop && isCollapsed && !isChatPage && !isSettingsPage && (
-        <TooltipProvider delayDuration={200}>
-          <div
-            className="fixed z-40 flex items-center gap-1 rounded-xl bg-[var(--surface-primary)]/80 backdrop-blur-sm px-1 py-0.5"
-            style={{
-              top: isMac ? 16 : titleBarPadding + 8,
-              left: isMac ? 91 : 12,
-            }}
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
-                  onClick={toggleSidebar}
-                  aria-label={t("openSidebar")}
-                >
-                  <CodataLogo size={18} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">{t("openSidebar")}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
-                  asChild
-                  aria-label={t("newChat")}
-                >
-                  <Link href="/c/new">
-                    <SquarePen className="h-[18px] w-[18px]" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">{t("newChat")}</TooltipContent>
-            </Tooltip>
-          </div>
-        </TooltipProvider>
-      )}
+      <SearchCommandDialog />
 
       {/* Main content area */}
       <motion.main
@@ -264,7 +229,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             ? " rounded-tl-xl rounded-bl-xl border-l border-t border-b border-[var(--border-subtle)]"
             : ""
         }`}
-        style={{ paddingTop: titleBarPadding }}
+        style={{
+          paddingTop: titleBarPadding,
+          paddingLeft: shouldReserveCollapsedTopButton
+            ? isMac
+              ? WINDOW_TOP_ICONS_WIDTH_MAC
+              : WINDOW_TOP_ICONS_WIDTH_OTHER
+            : 0,
+        }}
         initial={false}
         animate={{ marginLeft, marginRight }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}

@@ -2,14 +2,15 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Copy, Pencil, Check, Plus, RotateCcw } from "lucide-react";
+import { Copy, Pencil, Check, Plus, RotateCcw, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { FileChip } from "@/components/chat/file-chip";
 import { FileMentionPopup } from "@/components/chat/file-mention-popup";
 import { uploadFile, browseFiles, attachByPath, ingestFiles } from "@/lib/upload";
+import { useSidebarStore } from "@/stores/sidebar-store";
 import type { FileSearchResult } from "@/lib/upload";
 import type { FileAttachment } from "@/types/chat";
-import { extractTextFromPartResponses } from "@/lib/utils";
+import { cn, extractTextFromPartResponses } from "@/lib/utils";
 import type { MessageResponse, FilePart as FilePartType } from "@/types/message";
 
 /**
@@ -51,6 +52,7 @@ export function UserMessage({ message, isNew = true, onEditAndResend, isGenerati
   const [uploading, setUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isCodata = useSidebarStore((s) => s.appMode) === "codata";
 
   // @mention state
   const [mentionActive, setMentionActive] = useState(false);
@@ -307,6 +309,76 @@ export function UserMessage({ message, isNew = true, onEditAndResend, isGenerati
     );
   }
 
+  if (isCodata) {
+    return (
+      <motion.div
+        className="flex items-start gap-3"
+        initial={isNew ? { opacity: 0, y: 6 } : false}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+          opacity: { duration: 0.2 },
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] shadow-[0_10px_26px_-24px_rgba(21,32,51,0.55)]">
+          <UserRound className="h-4.5 w-4.5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-1.5 flex items-center gap-2 text-[12px]">
+            <span className="font-semibold text-[var(--text-primary)]">You</span>
+            <span className="text-[var(--text-tertiary)]">9:41 AM</span>
+          </div>
+          <div className="inline-block max-w-[820px] rounded-lg bg-[var(--user-bubble-bg)] px-4 py-2.5 text-left shadow-[0_10px_24px_-24px_rgba(21,32,51,0.45)]">
+            {text && (
+              <div className="whitespace-pre-wrap break-words text-[14px] leading-6 text-[var(--text-primary)]">
+                {text}
+              </div>
+            )}
+            {fileParts.length > 0 && (
+              <div className={`flex flex-wrap gap-1.5 ${text ? "mt-3" : ""}`}>
+                {fileParts.map((fp) => (
+                  <FileChip key={fp.file_id} file={fp} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div
+            className={cn(
+              "mt-1 flex items-center gap-0.5 pl-1 transition-opacity duration-150",
+              hovered ? "opacity-100" : "pointer-events-none opacity-0",
+            )}
+          >
+            {text && (
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
+                aria-label={copied ? "Copied" : "Copy message"}
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-[var(--color-success)]" /> : <Copy className="h-3.5 w-3.5" />}
+              </button>
+            )}
+            {onEditAndResend && !isGenerating && (
+              <button
+                type="button"
+                onClick={handleStartEdit}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
+                aria-label="Edit message"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       className="flex flex-col items-end"
@@ -321,9 +393,13 @@ export function UserMessage({ message, isNew = true, onEditAndResend, isGenerati
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="max-w-[85%] sm:max-w-[70%] rounded-2xl bg-[var(--user-bubble-bg)] px-4 py-2.5 shadow-[var(--shadow-sm)] border border-[var(--border-default)]">
+      <div
+        className={cn(
+          "max-w-[85%] rounded-2xl border border-[var(--border-default)] bg-[var(--user-bubble-bg)] px-4 py-2.5 shadow-[var(--shadow-sm)] sm:max-w-[70%]",
+        )}
+      >
         {text && (
-          <div className="text-[13px] text-[var(--text-primary)] whitespace-pre-wrap break-words leading-relaxed">
+          <div className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-[var(--text-primary)]">
             {text}
           </div>
         )}
@@ -338,7 +414,11 @@ export function UserMessage({ message, isNew = true, onEditAndResend, isGenerati
 
       {/* Action icons — always in DOM to avoid layout shift, opacity-only toggle */}
       <div
-        className={`flex items-center gap-0.5 mt-1 mr-1 transition-opacity duration-150 ${hovered ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={cn(
+          "mt-1 flex items-center gap-0.5 transition-opacity duration-150",
+          isCodata ? "self-end pr-1" : "mr-1",
+          hovered ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
       >
         {text && (
           <button

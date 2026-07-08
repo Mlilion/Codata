@@ -7,7 +7,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarHeader } from "./sidebar-header";
 import { SessionList } from "./session-list";
 import { SidebarFooter } from "./sidebar-footer";
-import { SearchCommandDialog } from "./search-command-dialog";
 import { SidebarResizeHandle } from "./sidebar-resize-handle";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useIsMacOS } from "@/hooks/use-platform";
@@ -48,7 +47,6 @@ export function Sidebar() {
         <SidebarFooter />
         {!isCollapsed && <SidebarResizeHandle />}
       </motion.aside>
-      <SearchCommandDialog />
     </TooltipProvider>
   );
 }

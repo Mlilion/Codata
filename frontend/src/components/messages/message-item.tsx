@@ -23,8 +23,8 @@ export const MessageItem = memo(function MessageItem({ message, onRegenerate, on
   const role = (message.data as { role: string }).role;
 
   return (
-    <div className="px-4 py-3">
-      <div className="mx-auto max-w-3xl xl:max-w-4xl">
+    <div className="px-5 py-3">
+      <div className="mx-auto max-w-5xl">
         {role === "user" ? (
           <UserMessage
             message={message}

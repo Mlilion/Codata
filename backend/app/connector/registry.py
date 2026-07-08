@@ -126,8 +126,18 @@ class ConnectorRegistry:
         description: str = "",
         category: str = "custom",
     ) -> ConnectorInfo:
-        """Add a user-defined custom connector."""
-        if id in self._connectors:
+        """Add a user-defined custom connector.
+
+        A user connector may claim an empty-url ``builtin`` seed placeholder
+        (the seed exists only to be discoverable — the real URL is supplied
+        here), replacing it. Any other id collision is rejected.
+        """
+        existing = self._connectors.get(id)
+        if existing is not None and not (
+            existing.type == "remote"
+            and existing.source == "builtin"
+            and not existing.url
+        ):
             raise ValueError(f"Connector '{id}' already exists")
 
         connector = ConnectorInfo(
@@ -173,6 +183,33 @@ class ConnectorRegistry:
 
         return True
 
+    def _register_seed_connectors(self) -> None:
+        """Register catalog entries flagged ``seed`` into ``self._connectors``.
+
+        Unlike the rest of the catalog (which only *enriches* connectors already
+        referenced by a plugin or added by the user), seed connectors are meant
+        to surface as discoverable cards on their own — even with an empty URL
+        that the user fills in later.
+
+        Ids already present are skipped, so user custom / plugin connectors and
+        already-connected connectors always win over the seed.
+        """
+        for cid, entry in self._catalog.items():
+            if not entry.get("seed"):
+                continue
+            if cid in self._connectors:
+                continue
+            self._connectors[cid] = ConnectorInfo(
+                id=cid,
+                name=entry.get("name", cid.replace("-", " ").title()),
+                url=entry.get("url", ""),
+                type=entry.get("type", "remote"),
+                description=entry.get("description", ""),
+                category=entry.get("category", "other"),
+                enabled=cid in self._persisted_state.get("enabled", []),
+                source="builtin",
+            )
+
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
@@ -193,6 +230,10 @@ class ConnectorRegistry:
                     enabled=cid in self._persisted_state.get("enabled", []),
                     source="custom",
                 )
+
+        # Register seed connectors (discoverable catalog cards) — after custom
+        # restore so user connectors with the same id win.
+        self._register_seed_connectors()
 
         # Inject credentials into local connectors that need them
         self._inject_local_credentials()

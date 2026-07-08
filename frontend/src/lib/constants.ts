@@ -264,6 +264,7 @@ export const API = {
     CUSTOM_ENDPOINT_ITEM: (id: string) => `/api/config/custom/${id}` as const,
     OLLAMA: "/api/config/ollama",
     LOCAL_PROVIDER: "/api/config/local",
+    DEFAULT_MODEL: "/api/config/default-model",
   },
   FTS: {
     INDEX: (workspace: string, sessionId?: string) =>
@@ -289,6 +290,7 @@ export const API = {
   TOOLS: "/api/tools",
   SKILLS: {
     LIST: "/api/skills",
+    CREATE: "/api/skills",
     DETAIL: (name: string) => `/api/skills/${encodeURIComponent(name)}` as const,
     ENABLE: (name: string) => `/api/skills/${name}/enable` as const,
     DISABLE: (name: string) => `/api/skills/${name}/disable` as const,
@@ -355,6 +357,9 @@ export const API = {
   },
   ANALYSIS: {
     RECOMMENDATIONS: "/api/analysis/recommendations",
+  },
+  DATA_SOURCE: {
+    STATUS: "/api/data-source/status",
   },
   DASHBOARD: {
     // Dashboards (named collections)

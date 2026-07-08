@@ -59,7 +59,7 @@ export const useSidebarStore = create<SidebarStore>()(
       isSearchModalOpen: false,
       organizeMode: "by-project",
       sortBy: "updated",
-      appMode: "chat",
+      appMode: "codata",
       width: SIDEBAR_WIDTH,
       setOpen: (open) => set({ isOpen: open }),
       toggle: () => set((s) => ({ isCollapsed: !s.isCollapsed })),
@@ -95,12 +95,15 @@ export const useSidebarStore = create<SidebarStore>()(
         collapsedProjects: s.collapsedProjects,
         organizeMode: s.organizeMode,
         sortBy: s.sortBy,
-        appMode: s.appMode,
         width: s.width,
       }),
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<SidebarStore>) };
-        return { ...merged, width: clampWidth(merged.width ?? SIDEBAR_WIDTH) };
+        return {
+          ...merged,
+          appMode: current.appMode,
+          width: clampWidth(merged.width ?? SIDEBAR_WIDTH),
+        };
       },
     },
   ),

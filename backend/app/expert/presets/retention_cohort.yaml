@@ -1,0 +1,137 @@
+team:
+  id: retention-cohort
+  name: 留存与同期群分析专家团
+  description: 按同期群切分用户,计算多周期留存,定位流失节点与生命周期拐点,交付带图表的留存分析报告。
+  icon: line-chart
+  category: 用户留存
+  tags: [数据分析, 留存, 同期群, cohort, 流失, datasage]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 10
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是留存分析专家团协调者。把同期群定义、留存矩阵、流失节点和改进建议整合成报告。
+    数据来自 datasage —— 不要臆造;同期群与留存口径若不确定必须明确说明假设,小样本同期群要标注不可靠。
+  finalization:
+    mode: deliverable
+    member: reporter
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: html
+      title: 留存与同期群分析报告
+      filename_template: retention-cohort.html
+      source: final_report
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: retention_goal
+      description: 要分析的留存对象与目标(如 新注册用户次日/7 日留存、首单用户复购)。
+      required: true
+    - name: cohort_basis
+      description: 同期群的划分口径(注册日/首单日/首次活跃日等);没有则留空由专家判断。
+      required: false
+      default: ""
+    - name: reporting_period
+      description: 分析周期,例如近 8 周的同期群。
+      required: false
+      default: ""
+  skills: [data-analysis, charting, report, data-report-html]
+  members:
+    - id: data_explorer
+      name: 数据发现
+      role: SQL 与数据发现专家
+      goal: 确认用户行为事件表、时间字段与留存口径,构建可查询的同期群定义。
+      role_ref: data/sql-query-expert
+      tools: [search, run_query, skill]
+      skills: [data-analysis]
+      icon: database
+    - id: retention_analyst
+      name: 留存分析
+      role: 留存与同期群分析专家
+      goal: 构建留存矩阵,计算多周期留存率,定位流失最陡的节点与群体差异。
+      role_ref: data/retention-cohort-analyst
+      tools: [run_query, chart_spec, skill]
+      skills: [data-analysis, charting]
+      icon: line-chart
+    - id: reporter
+      name: 建议与报告
+      role: 可视化与报告交付专家
+      goal: 汇总留存发现,给出改进留存的可执行建议并撰写报告。
+      role_ref: data/visualization-expert
+      tools: [run_query, chart_spec, write, present_file, artifact, build_report, skill]
+      skills: [report, charting]
+      icon: file-text
+  tasks:
+    - id: define_cohort
+      name: 同期群与留存口径确认
+      member: data_explorer
+      task: |
+        确认同期群与留存分析所需的数据。
+
+        留存目标:
+        {{retention_goal}}
+
+        同期群口径:
+        {{cohort_basis}}
+
+        周期:
+        {{reporting_period}}
+
+        步骤:用 search 找到用户行为/事件表与相关注册指标,确认划分同期群的时间点、判定"活跃/留存"的口径与过滤条件;必要时 run_query 试查验证。
+        输出:同期群定义、留存口径说明、可用时间粒度、数据风险。
+      expected_output: 可查询的同期群与留存定义。
+      output: cohort_def
+      context_policy: explicit
+      context_max_chars: 16000
+      timeout_seconds: 360
+      retry_count: 1
+    - id: analyze_retention
+      name: 留存矩阵与流失节点
+      member: retention_analyst
+      depends_on: [define_cohort]
+      context: [define_cohort]
+      task: |
+        计算留存矩阵并定位流失节点。
+
+        同期群定义:
+        {{cohort_def}}
+
+        步骤:用 run_query 按同期群 × 周期计算留存率,构建留存矩阵;用 chart_spec 出留存趋势/对比图。对比不同同期群差异,标出流失最陡的节点。
+        输出:留存矩阵、关键周期留存率、流失节点、群体差异、异常与小样本提示。
+      expected_output: 留存矩阵与流失分析(含图表)。
+      output: retention
+      context_policy: explicit
+      context_max_chars: 20000
+      timeout_seconds: 480
+      retry_count: 1
+    - id: recommend
+      name: 留存改进建议报告
+      member: reporter
+      depends_on: [define_cohort, analyze_retention]
+      context: [define_cohort, analyze_retention]
+      task: |
+        基于留存分析给出改进建议并撰写报告。
+
+        同期群定义:
+        {{cohort_def}}
+
+        留存分析:
+        {{retention}}
+
+        报告包含:留存概览(配图)、关键流失节点、可能原因、改进留存的建议与优先级、风险与待确认问题。区分事实/推断/建议。
+      expected_output: 可交付的留存与同期群分析报告。
+      output: final_report
+      context_policy: explicit
+      context_max_chars: 28000
+      timeout_seconds: 300
+      retry_count: 1

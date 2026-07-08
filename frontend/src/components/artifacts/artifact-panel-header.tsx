@@ -1,6 +1,6 @@
 "use client";
 
-import { X, ChevronLeft, ChevronRight, Code, FileText, FileSpreadsheet, Globe, Image, LayoutDashboard, GitBranch, Presentation, Film, Database } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Code, FileText, FileSpreadsheet, Globe, Image, LayoutDashboard, GitBranch, Presentation, Film, Database, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useArtifactStore } from "@/stores/artifact-store";
 import type { ArtifactType } from "@/types/artifact";
@@ -33,6 +33,8 @@ export function ArtifactPanelHeader({ showClose = true }: { showClose?: boolean 
   const versionHistory = useArtifactStore((s) => s.versionHistory);
   const activeVersionIndex = useArtifactStore((s) => s.activeVersionIndex);
   const goToVersion = useArtifactStore((s) => s.goToVersion);
+  const isMaximized = useArtifactStore((s) => s.isMaximized);
+  const toggleMaximized = useArtifactStore((s) => s.toggleMaximized);
 
   if (!activeArtifact) return null;
 
@@ -114,6 +116,16 @@ export function ArtifactPanelHeader({ showClose = true }: { showClose?: boolean 
             </Button>
           </>
         )}
+        {/* Maximize / restore */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={toggleMaximized}
+          title={isMaximized ? "还原" : "全屏"}
+        >
+          {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </Button>
         {/* Close */}
         {showClose && (
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={close}>

@@ -2,7 +2,13 @@
 
 import { useState, useCallback } from "react";
 import { useTranslation } from 'react-i18next';
-import { Share2, Loader2, PanelRightClose, PanelRightOpen } from "lucide-react";
+import {
+  Folder,
+  Loader2,
+  PanelRightClose,
+  PanelRightOpen,
+  Share2,
+} from "lucide-react";
 import { HeaderModelDropdown } from "@/components/selectors/header-model-dropdown";
 import { ContextIndicator } from "@/components/chat/context-indicator";
 import { SessionStats } from "@/components/chat/session-stats";
@@ -20,6 +26,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { API, IS_DESKTOP } from "@/lib/constants";
 import { isRemoteMode } from "@/lib/remote-connection";
+import { cn } from "@/lib/utils";
 
 interface ChatHeaderProps {
   sessionId?: string;
@@ -29,6 +36,7 @@ interface ChatHeaderProps {
 export function ChatHeader({ sessionId, showModelSelector = true }: ChatHeaderProps) {
   const { t } = useTranslation('chat');
   const isCollapsed = useSidebarStore((s) => s.isCollapsed);
+  const appMode = useSidebarStore((s) => s.appMode);
   const { messages } = useMessages(sessionId);
   const isMac = useIsMacOS();
   const remote = isRemoteMode();
@@ -126,7 +134,12 @@ export function ChatHeader({ sessionId, showModelSelector = true }: ChatHeaderPr
   return (
     <TooltipProvider delayDuration={200}>
       <header
-        className="relative z-10 flex h-13 items-center gap-1 pr-3 backdrop-blur-sm"
+        className={cn(
+          "relative z-10 flex h-13 items-center gap-2 border-b border-[var(--border-subtle)] pr-3 backdrop-blur-sm",
+          appMode === "codata"
+            ? "bg-[var(--surface-chat)]/82"
+            : "bg-[var(--surface-chat)]/70",
+        )}
         style={{ paddingLeft: leftPad }}
       >
         {/* Sidebar toggle + new chat live in the global WindowTopIcons bar
@@ -135,6 +148,12 @@ export function ChatHeader({ sessionId, showModelSelector = true }: ChatHeaderPr
 
         <div className="flex items-center gap-2 min-w-0 shrink-0">
           {showModelSelector && <HeaderModelDropdown />}
+          {appMode === "codata" && (
+            <span className="hidden h-8 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 text-ui-caption text-[var(--text-tertiary)] xl:inline-flex">
+              <Folder className="h-3.5 w-3.5" />
+              workspace
+            </span>
+          )}
           <SessionStats sessionId={sessionId} />
         </div>
 

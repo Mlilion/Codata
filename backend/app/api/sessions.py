@@ -52,7 +52,7 @@ _BULLET_FILENAME_PATTERN = re.compile(
 )
 
 FileVisibility = Literal["deliverable", "draft", "intermediate", "hidden"]
-_DELIVERABLE_TOOLS = {"artifact", "baoyu_image_generate", "present_file"}
+_DELIVERABLE_TOOLS = {"artifact", "present_file"}
 _DRAFT_TOOLS = {"write", "edit"}
 _INTERMEDIATE_TOOLS = {"bash", "code_execute"}
 
@@ -202,8 +202,6 @@ def _file_visibility(
     resolved = str(Path(file_path).resolve())
     if resolved in presented_paths:
         return "deliverable"
-    if tool_id == "vimax_generate_video":
-        return "deliverable" if (file_part_metadata or {}).get("vimax_role") == "final_video" else "intermediate"
     if tool_id in _DELIVERABLE_TOOLS:
         return "deliverable"
     if tool_id in _DRAFT_TOOLS:
@@ -435,7 +433,7 @@ async def get_session_files(
             **{
                 key: value
                 for key, value in (file_part_metadata.get(resolved) or {}).items()
-                if key in {"relative_path", "vimax_kind", "vimax_role"}
+                if key in {"relative_path"}
             },
         }
         files.append(payload)

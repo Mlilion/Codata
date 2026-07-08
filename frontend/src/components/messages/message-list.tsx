@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useEffect, useState } from "react";
-import { ArrowDown, Loader2 } from "lucide-react";
+import { ArrowDown, Database, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useScrollAnchor } from "@/hooks/use-scroll-anchor";
 import { MessageItem } from "./message-item";
@@ -290,12 +290,12 @@ export function MessageList({
     // to avoid a jarring skeleton → content transition during page navigation
     if (isGenerating || !!streamId) {
       return (
-        <div ref={scrollRef} className="relative flex-1 overflow-y-auto overscroll-contain scrollbar-auto">
+        <div ref={scrollRef} className="data-agent-surface relative flex-1 overflow-y-auto overscroll-contain scrollbar-auto">
           {/* Show optimistic user bubble during loading so it doesn't flash
               away between navigation and message fetch completion */}
           {pendingUserText && (
             <div className="px-4 py-3">
-              <div className="mx-auto max-w-3xl xl:max-w-4xl">
+              <div className="mx-auto max-w-5xl">
                 <div className="flex justify-end">
                   <div className="max-w-[85%] sm:max-w-[70%] rounded-2xl bg-[var(--user-bubble-bg)] px-4 py-2.5 shadow-[var(--shadow-sm)] border border-[var(--border-default)]">
                     <div className="text-[13px] text-[var(--text-primary)] whitespace-pre-wrap break-words leading-relaxed">
@@ -314,7 +314,7 @@ export function MessageList({
             </div>
           )}
           <div className="px-4 py-5">
-            <div className="mx-auto max-w-3xl xl:max-w-4xl">
+            <div className="mx-auto max-w-5xl">
               <StreamingMessage
                 sessionId={sessionId ?? null}
                 parts={streamingParts}
@@ -331,7 +331,7 @@ export function MessageList({
     return (
       <div className="flex-1 overflow-y-auto p-4">
         <div
-          className="mx-auto max-w-3xl xl:max-w-4xl space-y-6 animate-fade-in"
+          className="mx-auto max-w-5xl space-y-6 animate-fade-in"
           style={{ animationDelay: "150ms", animationFillMode: "backwards" }}
         >
           {/* User message skeleton — right aligned */}
@@ -359,7 +359,7 @@ export function MessageList({
 
   return (
     <div className="relative flex-1 overflow-hidden">
-      <div ref={scrollRef} className="h-full overflow-y-auto overscroll-contain scrollbar-auto">
+      <div ref={scrollRef} className="data-agent-surface h-full overflow-y-auto overscroll-contain scrollbar-auto">
         {/* Top sentinel for reverse infinite scroll */}
         <div ref={topSentinelRef} className="h-px" />
         {isFetchingPreviousPage && (
@@ -369,8 +369,16 @@ export function MessageList({
         )}
 
         {messages.length === 0 && !isGenerating ? (
-          <div className="flex items-center justify-center h-full text-[var(--text-tertiary)] text-sm">
-            No messages yet
+          <div className="flex h-full items-center justify-center px-6 text-sm text-[var(--text-tertiary)]">
+            <div className="data-agent-card max-w-xl rounded-xl px-6 py-7 text-center">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--data-accent-soft)] text-[var(--data-accent)]">
+                <Database className="h-4 w-4" />
+              </div>
+              <p className="text-ui-title-sm font-semibold text-[var(--text-primary)]">Start a data analysis</p>
+              <p className="mt-1 text-ui-body text-[var(--text-tertiary)]">
+                Ask Codata to inspect schemas, write SQL, run queries, explain anomalies, and pin charts to dashboards.
+              </p>
+            </div>
           </div>
         ) : (
           <>
@@ -432,8 +440,8 @@ export function MessageList({
                 Hidden once the DB-fetched messages include the same text to
                 avoid duplicates after page navigation. */}
             {showPendingBubble && (
-              <div className="px-4 py-5">
-                <div className="mx-auto max-w-3xl xl:max-w-4xl">
+              <div className="px-5 py-5">
+                <div className="mx-auto max-w-5xl">
                   <motion.div
                     className="flex justify-end"
                     initial={{ opacity: 0, y: 6 }}
@@ -465,8 +473,8 @@ export function MessageList({
             {/* Currently streaming message — kept visible briefly after
                 generation finishes so DB messages can mount first. */}
             {(isGenerating || !!streamId || showStreamingFallback) && (
-              <div className="px-4 py-5">
-                <div className="mx-auto max-w-3xl xl:max-w-4xl">
+              <div className="px-5 py-5">
+                <div className="mx-auto max-w-5xl">
                   <StreamingMessage
                     sessionId={sessionId ?? null}
                     parts={streamingParts}
