@@ -549,6 +549,22 @@ export async function startStream(sessionId: string, streamId: string): Promise<
         });
       }
     }
+
+    // build_report returns the rendered HTML report as an artifact via metadata
+    // (structured-data-in, HTML-out) — open it in the preview panel.
+    if (data.tool === "build_report" && data.metadata) {
+      const meta = data.metadata as Record<string, string>;
+      if (meta.content && meta.identifier) {
+        useArtifactStore.getState().openArtifact({
+          id: data.call_id,
+          type: (meta.type || "html") as ArtifactType,
+          title: meta.title || "数据分析报告",
+          content: meta.content,
+          identifier: meta.identifier,
+          filePath: meta.file_path || undefined,
+        });
+      }
+    }
   });
 
   client.on(SSE_EVENTS.TOOL_METADATA, (data) => {

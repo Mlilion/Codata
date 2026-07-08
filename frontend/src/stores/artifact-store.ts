@@ -15,6 +15,8 @@ interface ArtifactStore {
   activeIndex: number;
   /** Current panel width in pixels (user-resizable). */
   panelWidth: number;
+  /** Whether the panel is maximized to fill the window (transient, not persisted). */
+  isMaximized: boolean;
   /** Version history per identifier. Key = identifier, Value = Artifact[] (chronological). */
   versionHistory: Map<string, Artifact[]>;
   /** Active version index within the current artifact's version history. -1 if N/A. */
@@ -34,6 +36,8 @@ interface ArtifactStore {
   clearAll: () => void;
   /** Set the panel width (for resize). */
   setWidth: (width: number) => void;
+  /** Toggle maximize (panel fills the window). */
+  toggleMaximized: () => void;
   /** Pending fix request message (to be picked up by ChatForm). */
   fixRequest: string | null;
   /** Request a fix by sending error context to the chat input. */
@@ -48,6 +52,7 @@ export const useArtifactStore = create<ArtifactStore>((set, get) => ({
   artifacts: [],
   activeIndex: -1,
   panelWidth: typeof window !== "undefined" ? Math.round(window.innerWidth / 2) : ARTIFACT_PANEL_WIDTH,
+  isMaximized: false,
   versionHistory: new Map(),
   activeVersionIndex: -1,
   fixRequest: null,
@@ -142,7 +147,7 @@ export const useArtifactStore = create<ArtifactStore>((set, get) => ({
     } catch {
       // Right sidebar store may not be available during SSR
     }
-    set({ isOpen: false });
+    set({ isOpen: false, isMaximized: false });
   },
 
   goNext: () => {
@@ -201,6 +206,8 @@ export const useArtifactStore = create<ArtifactStore>((set, get) => ({
     }),
 
   setWidth: (width) => set({ panelWidth: Math.max(360, Math.min(Math.round(window.innerWidth * 0.75), width)) }),
+
+  toggleMaximized: () => set((s) => ({ isMaximized: !s.isMaximized })),
 
   requestFix: (message) => set({ fixRequest: message }),
   clearFixRequest: () => set({ fixRequest: null }),

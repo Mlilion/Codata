@@ -3,9 +3,6 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from 'react-i18next';
 import {
-  ChevronRight,
-  Circle,
-  Database,
   Folder,
   Loader2,
   PanelRightClose,
@@ -149,19 +146,6 @@ export function ChatHeader({ sessionId, showModelSelector = true }: ChatHeaderPr
             (desktop non-remote) so they stay at the window's left edge across
             sidebar states. */}
 
-        {appMode === "codata" && (
-          <div className="flex min-w-0 shrink items-center gap-1.5 pr-1 text-ui-caption">
-            <span className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 font-medium text-[var(--text-secondary)]">
-              <Database className="h-3.5 w-3.5 text-[var(--data-accent)]" />
-              Data Agent
-            </span>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[var(--text-quaternary)]" />
-            <span className="hidden max-w-[220px] truncate text-[var(--text-primary)] md:block">
-              Analysis workspace
-            </span>
-          </div>
-        )}
-
         <div className="flex items-center gap-2 min-w-0 shrink-0">
           {showModelSelector && <HeaderModelDropdown />}
           {appMode === "codata" && (
@@ -234,12 +218,6 @@ export function ChatHeader({ sessionId, showModelSelector = true }: ChatHeaderPr
 
         {/* Context usage indicator — desktop only */}
         {!remote && sessionId && <ContextIndicator sessionId={sessionId} />}
-        {appMode === "codata" && (
-          <span className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 py-1 text-[11px] font-medium text-[var(--text-tertiary)] lg:inline-flex">
-            <Circle className="h-2 w-2 fill-[var(--color-success)] text-[var(--color-success)]" />
-            warehouse
-          </span>
-        )}
       </header>
     </TooltipProvider>
   );

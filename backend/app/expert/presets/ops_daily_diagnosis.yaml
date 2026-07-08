@@ -27,9 +27,9 @@ team:
     tools: [write, present_file, artifact]
     deliverable:
       required: true
-      type: markdown
+      type: html
       title: 经营日报
-      filename_template: ops-daily-diagnosis.md
+      filename_template: ops-daily-diagnosis.html
       source: final_report
       presentation: both
       tools: [write, present_file, artifact]
@@ -42,7 +42,7 @@ team:
       description: 日报周期,例如昨日、近 7 天;默认昨日对比前一日。
       required: false
       default: ""
-  skills: [data-analysis, charting, report]
+  skills: [data-analysis, charting, report, data-report-html]
   members:
     - id: monitor
       name: 指标监控
@@ -65,7 +65,7 @@ team:
       role: 可视化与报告交付专家
       goal: 汇总为面向管理层的经营日报,配关键图表。
       role_ref: data/visualization-expert
-      tools: [run_query, chart_spec, write, present_file, artifact, skill]
+      tools: [run_query, chart_spec, write, present_file, artifact, build_report, skill]
       skills: [report, charting]
       icon: file-text
   tasks:

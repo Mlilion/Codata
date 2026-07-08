@@ -52,7 +52,7 @@ export function ArtifactPanelContent() {
       if (!artifact.content && artifact.filePath) {
         return <FilePreviewRenderer filePath={artifact.filePath} content={artifact.content} language={artifact.language} />;
       }
-      return <HtmlRenderer content={artifact.content} title={artifact.title} />;
+      return <HtmlRenderer content={artifact.content} title={artifact.title} filePath={artifact.filePath} />;
     case "react":
       return <ReactRenderer code={artifact.content} title={artifact.title} />;
     case "docx":

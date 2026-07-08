@@ -137,32 +137,10 @@ function RightSidebarHeader() {
     ],
     [artifactBadge, hasActivity, hasExpert, planData, workspaceBadge],
   );
-  const activeConfig = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
-  const ActiveIcon = activeConfig.icon;
-
   return (
-    <div className="shrink-0 border-b border-[var(--border-subtle)] bg-[var(--surface-primary)]/88 backdrop-blur-sm">
-      <div className="flex items-start gap-3 px-4 pb-3 pt-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--data-accent-soft)] text-[var(--data-accent)]">
-          <ActiveIcon className="h-[18px] w-[18px]" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-quaternary)]">
-            Inspector
-          </div>
-          <h2 className="truncate text-ui-title-sm font-semibold text-[var(--text-primary)]">
-            {t(activeConfig.labelKey)}
-          </h2>
-          <p className="mt-0.5 truncate text-ui-caption text-[var(--text-tertiary)]">
-            {t(activeConfig.descKey)}
-          </p>
-        </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={closeCurrentTab}>
-          <PanelRightClose className="h-4 w-4" />
-        </Button>
-      </div>
-      <div className="flex h-11 items-center gap-1 px-2">
-        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-lg bg-[var(--surface-secondary)] p-1 scrollbar-none">
+    <div className="shrink-0 border-b border-[var(--border-subtle)] bg-[var(--surface-primary)]/94 backdrop-blur-sm">
+      <div className="flex h-14 items-stretch gap-2 px-3">
+        <div className="flex min-w-0 flex-1 items-stretch gap-1 overflow-x-auto scrollbar-none">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const selected = activeTab === tab.id;
@@ -173,17 +151,17 @@ function RightSidebarHeader() {
                 disabled={tab.disabled}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs transition-colors",
+                  "relative inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-2.5 text-xs font-medium transition-colors",
                   selected
-                    ? "bg-[var(--surface-primary)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]"
-                    : "text-[var(--text-tertiary)] hover:bg-[var(--surface-primary)]/70 hover:text-[var(--text-secondary)]",
-                  tab.disabled && "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-[var(--text-tertiary)]",
+                    ? "border-[var(--data-accent)] text-[var(--data-accent)]"
+                    : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]",
+                  tab.disabled && "cursor-not-allowed opacity-35 hover:text-[var(--text-tertiary)]",
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
                 <span>{t(tab.labelKey)}</span>
                 {!!tab.badge && (
-                  <span className="ml-0.5 rounded-full bg-[var(--surface-primary)] px-1.5 py-0.5 text-[10px] leading-none text-[var(--text-tertiary)]">
+                  <span className="ml-0.5 rounded-full bg-[var(--surface-tertiary)] px-1.5 py-0.5 text-[10px] leading-none text-[var(--text-tertiary)]">
                     {tab.badge}
                   </span>
                 )}
@@ -191,6 +169,9 @@ function RightSidebarHeader() {
             );
           })}
         </div>
+        <Button variant="ghost" size="icon" className="my-auto h-8 w-8 shrink-0" onClick={closeCurrentTab}>
+          <PanelRightClose className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );

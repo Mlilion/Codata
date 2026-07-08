@@ -95,7 +95,7 @@ export function Landing({ directoryParam = null, skillParam = null }: LandingPro
         <div className="flex-1 overflow-y-auto">
           {displayText && (
             <div className="px-4 py-3">
-              <div className="mx-auto max-w-3xl xl:max-w-4xl">
+              <div className="mx-auto max-w-5xl">
                 <motion.div
                   className="flex justify-end"
                   initial={{ opacity: 0, y: 10 }}
@@ -121,7 +121,7 @@ export function Landing({ directoryParam = null, skillParam = null }: LandingPro
 
           {/* Streaming assistant message — same component used in chat-view */}
           <div className="px-4 py-5">
-            <div className="mx-auto max-w-3xl xl:max-w-4xl">
+            <div className="mx-auto max-w-5xl">
               <StreamingMessage
                 sessionId={null}
                 parts={streamingParts}
@@ -249,7 +249,7 @@ export function Landing({ directoryParam = null, skillParam = null }: LandingPro
                     </h2>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {recommendations.map((rec) => (
+                    {recommendations.slice(0, 3).map((rec) => (
                       <button
                         key={rec}
                         type="button"

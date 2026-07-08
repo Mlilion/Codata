@@ -101,16 +101,16 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
   return (
     <div className="data-agent-card overflow-hidden rounded-lg">
       {/* Header row — click to toggle */}
-      <div className="flex items-center gap-2.5 px-3 py-2.5">
+      <div className="flex items-center gap-2.5 px-3.5 py-3">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
           aria-expanded={open}
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--data-accent-soft)]">
-            <Database className="h-4 w-4 text-[var(--data-accent)]" />
-          </span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--data-accent-soft)]">
+              <Database className="h-4 w-4 text-[var(--data-accent)]" />
+            </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium text-[var(--text-primary)]">
               {artifact.title}
@@ -154,7 +154,7 @@ export function DataResultCard({ data, defaultOpen = false }: DataResultCardProp
             <span className="min-w-2 flex-1" />
             <span className="text-[11px] text-[var(--text-quaternary)]">Result preview</span>
           </div>
-          <div className="h-[420px]">
+          <div className="h-[360px]">
           <SqlResultRenderer artifact={artifact} />
           </div>
         </div>

@@ -56,6 +56,21 @@ class TestDataAnalysisPreset:
             assert rr.get(ref) is not None, ref
 
 
+class TestReportDeliverable:
+    def test_presets_deliver_html_report(self):
+        reg = ExpertTeamRegistry(presets_dir=PRESETS_DIR)
+        reg.scan()
+        for tid in ("data-analysis-report", "funnel-conversion", "ops-daily-diagnosis",
+                    "retention-cohort", "ab-experiment"):
+            team = reg.get(tid)
+            assert team is not None, tid
+            deliverable = team.finalization.deliverable
+            assert deliverable is not None, tid
+            assert deliverable.type == "html", tid
+            # skill 引用到位
+            assert "data-report-html" in team.skills, tid
+
+
 class TestAnalysisMemoryInExpert:
     def test_data_team_flagged(self):
         reg = ExpertTeamRegistry(presets_dir=PRESETS_DIR)

@@ -27,9 +27,9 @@ team:
     tools: [write, present_file, artifact]
     deliverable:
       required: true
-      type: markdown
+      type: html
       title: 留存与同期群分析报告
-      filename_template: retention-cohort.md
+      filename_template: retention-cohort.html
       source: final_report
       presentation: both
       tools: [write, present_file, artifact]
@@ -45,7 +45,7 @@ team:
       description: 分析周期,例如近 8 周的同期群。
       required: false
       default: ""
-  skills: [data-analysis, charting, report]
+  skills: [data-analysis, charting, report, data-report-html]
   members:
     - id: data_explorer
       name: 数据发现
@@ -68,7 +68,7 @@ team:
       role: 可视化与报告交付专家
       goal: 汇总留存发现,给出改进留存的可执行建议并撰写报告。
       role_ref: data/visualization-expert
-      tools: [run_query, chart_spec, write, present_file, artifact, skill]
+      tools: [run_query, chart_spec, write, present_file, artifact, build_report, skill]
       skills: [report, charting]
       icon: file-text
   tasks:
