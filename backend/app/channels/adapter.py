@@ -108,6 +108,8 @@ class AgentAdapter:
             get_stream_manager,
             get_tool_registry,
         )
+        from app.config import get_settings
+        from app.provider.resolve import resolve_default_model
         from app.schemas.chat import PromptRequest
         from app.session.manager import create_session
         from app.session.processor import run_generation
@@ -130,14 +132,16 @@ class AgentAdapter:
         job = stream_manager.create_job(stream_id=stream_id, session_id=session_id)
         job.interactive = False  # Auto-approve permissions in headless mode
 
-        # Pick the best available model
-        model_id = self._resolve_best_model(provider_registry)
+        # Use the user's configured default model (falls back to a heuristic
+        # when unset). Headless: no browser to supply a per-request selection.
+        model_id, provider_id = resolve_default_model(provider_registry, get_settings())
 
         prompt = PromptRequest(
             session_id=session_id,
             text=msg.content,
             agent="build",
             model=model_id,
+            provider_id=provider_id,
         )
 
         logger.info(
@@ -238,21 +242,3 @@ class AgentAdapter:
             new_session.slug = channel_user_key
             await db.commit()
             return new_session.id
-
-    @staticmethod
-    def _resolve_best_model(registry) -> str | None:
-        """Pick the best model for channel responses."""
-        all_models = registry.all_models()
-        if not all_models:
-            return None
-
-        # Anthropic > paid > free
-        anth = [m for m in all_models if m.provider_id == "anthropic"]
-        if anth:
-            return anth[0].id
-
-        paid = [m for m in all_models if m.pricing and (m.pricing.prompt > 0 or m.pricing.completion > 0)]
-        if paid:
-            return paid[0].id
-
-        return all_models[0].id

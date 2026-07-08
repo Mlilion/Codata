@@ -264,6 +264,7 @@ export const API = {
     CUSTOM_ENDPOINT_ITEM: (id: string) => `/api/config/custom/${id}` as const,
     OLLAMA: "/api/config/ollama",
     LOCAL_PROVIDER: "/api/config/local",
+    DEFAULT_MODEL: "/api/config/default-model",
   },
   FTS: {
     INDEX: (workspace: string, sessionId?: string) =>

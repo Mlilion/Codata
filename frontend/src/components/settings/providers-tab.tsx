@@ -259,11 +259,22 @@ function ProviderListView({
       ? UNAVAILABLE_DEFAULT_MODEL_VALUE
       : AUTOMATIC_MODEL_VALUE;
 
+  // Mirror the default model to the backend so headless paths (channels,
+  // scheduler, OpenAI-compat API) use the same model the user picked here.
+  const syncDefaultModelToServer = (model: string | null, providerId: string | null) => {
+    void api
+      .put(API.CONFIG.DEFAULT_MODEL, { model, provider_id: providerId })
+      .catch((err) => {
+        console.warn("Failed to sync default model to server:", err);
+      });
+  };
+
   const changeDefaultModel = (value: string) => {
     const parsed = parseModelSelectValue(value);
 
     if (!parsed) {
       setDefaultModel(null, null);
+      syncDefaultModelToServer(null, null);
       const automaticModel =
         chooseAutomaticModel(activeProviderModels) ??
         chooseAutomaticModel(selectableModels);
@@ -284,6 +295,7 @@ function ProviderListView({
     setDefaultModel(model.id, model.provider_id);
     setSelectedModel(model.id, model.provider_id);
     setActiveProvider(activeProviderForProviderId(model.provider_id));
+    syncDefaultModelToServer(model.id, model.provider_id);
   };
 
   const selectModelSource = useMutation({

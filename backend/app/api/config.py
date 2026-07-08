@@ -780,6 +780,65 @@ async def update_custom_endpoint(
         model_count=len(models), status="connected" if enabled else "disabled", base_url=base_url
     )
 
+# ── Default model (server-side mirror of the UI selection) ──────────────────
+
+
+class DefaultModelStatus(BaseModel):
+    """Currently persisted default model for headless paths."""
+
+    model: str | None = None
+    provider_id: str | None = None
+
+
+class DefaultModelUpdate(BaseModel):
+    """Set (or clear, when model is null/empty) the default model."""
+
+    model: str | None = None
+    provider_id: str | None = None
+
+
+@router.get("/config/default-model", response_model=DefaultModelStatus)
+async def get_default_model(settings: SettingsDep) -> DefaultModelStatus:
+    """Return the persisted default model used by headless paths."""
+    return DefaultModelStatus(
+        model=settings.default_model or None,
+        provider_id=settings.default_provider_id or None,
+    )
+
+
+@router.put("/config/default-model", response_model=DefaultModelStatus)
+async def set_default_model(
+    body: DefaultModelUpdate, settings: SettingsDep, registry: ProviderRegistryDep,
+) -> DefaultModelStatus:
+    """Persist the UI's default model so channels/scheduler/API can use it.
+
+    A null/empty model clears the setting ("Automatic" — fall back to heuristic).
+    """
+    model = (body.model or "").strip()
+    provider_id = (body.provider_id or "").strip()
+
+    if not model:
+        settings.default_model = ""
+        settings.default_provider_id = ""
+        _remove_env_key("CODATA_DEFAULT_MODEL")
+        _remove_env_key("CODATA_DEFAULT_PROVIDER_ID")
+        return DefaultModelStatus()
+
+    # Validate the model exists in the registry before persisting.
+    if registry.resolve_model(model, provider_id or None) is None:
+        raise HTTPException(400, f"Model '{model}' is not available")
+
+    settings.default_model = model
+    settings.default_provider_id = provider_id
+    _update_env_file("CODATA_DEFAULT_MODEL", model)
+    if provider_id:
+        _update_env_file("CODATA_DEFAULT_PROVIDER_ID", provider_id)
+    else:
+        _remove_env_key("CODATA_DEFAULT_PROVIDER_ID")
+
+    return DefaultModelStatus(model=model, provider_id=provider_id or None)
+
+
 # ── Local OpenAI-compatible endpoint ────────────────────────────────────────
 
 @router.get("/config/local", response_model=LocalProviderStatus)
