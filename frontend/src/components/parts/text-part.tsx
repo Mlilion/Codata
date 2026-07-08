@@ -341,21 +341,11 @@ export const TextPart = memo(function TextPart({ data, isStreaming, sources = []
 
   if (!data.text) return null;
 
-  // While streaming, render the growing text as plain pre-wrapped text instead
-  // of re-parsing the whole markdown document on every 60ms flush (O(n) per
-  // flush → visibly choppy as the message grows). Full markdown renders once
-  // streaming finishes. Prose typography still applies so the switch is
-  // near-seamless; only inline emphasis/headings/lists appear at completion.
-  if (isStreaming) {
-    return (
-      <div className="prose max-w-none streaming-cursor">
-        <p className="whitespace-pre-wrap">{data.text}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="prose max-w-none">
+    <div className={cn(
+      "prose max-w-none",
+      isStreaming && "streaming-cursor",
+    )}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={rehypePlugins}
