@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
+  ChartColumn,
   Plus,
   Search,
   Users,
@@ -33,17 +33,16 @@ const SECTIONS: {
   id: string;
   label: string;
   icon: LucideIcon;
-  hint: string;
   href?: string;
 }[] = [
-  { id: "dashboards", label: "看板", icon: LayoutDashboard, hint: "已保存的图表集合", href: "/dashboard" },
-  { id: "experts", label: "专家团", icon: Users, hint: "复杂分析工作流", href: "/experts" },
+  { id: "dashboards", label: "看板", icon: ChartColumn, href: "/dashboard" },
+  { id: "experts", label: "专家团", icon: Users, href: "/experts" },
 ];
 const CODATA_SIDEBAR_WIDTH = 270;
 
 function SidebarGroupLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-2 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-quaternary)]">
+    <div className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-quaternary)]">
       {children}
     </div>
   );
@@ -56,6 +55,7 @@ function NavRow({
   label,
   hint,
   badge,
+  tag,
 }: {
   href?: string;
   active?: boolean;
@@ -63,12 +63,13 @@ function NavRow({
   label: string;
   hint?: string;
   badge?: number;
+  tag?: string;
 }) {
   const content = (
     <>
       <span
         className={cn(
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+          "flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
           active
             ? "bg-[var(--data-accent-soft)] text-[var(--data-accent)]"
             : "bg-[var(--surface-primary)] text-[var(--text-tertiary)]",
@@ -77,7 +78,14 @@ function NavRow({
         <Icon className="h-3.5 w-3.5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-ui-body font-medium">{label}</span>
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="block min-w-0 truncate text-ui-body font-medium">{label}</span>
+          {tag && (
+            <span className="shrink-0 rounded-md bg-[var(--data-accent-soft)] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[var(--data-accent)]">
+              {tag}
+            </span>
+          )}
+        </span>
         {hint && <span className="block truncate text-ui-caption text-[var(--text-tertiary)]">{hint}</span>}
       </span>
       {typeof badge === "number" && badge > 0 && (
@@ -88,7 +96,7 @@ function NavRow({
     </>
   );
   const className = cn(
-    "group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors",
+    "group flex w-full items-center gap-2 rounded-md px-2 py-1 text-left transition-colors",
     active
       ? "data-agent-active-rail bg-[var(--data-accent-soft)] text-[var(--text-primary)]"
       : "text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]",
@@ -149,7 +157,6 @@ export function CodataSidebar() {
                 active={active}
                 icon={section.icon}
                 label={section.label}
-                hint={section.hint}
                 badge={section.id === "dashboards" ? dashboardCount : undefined}
               />
             );
@@ -158,6 +165,7 @@ export function CodataSidebar() {
           {(dashboards ?? []).length > 0 && (
             <>
               <SidebarGroupLabel>看板</SidebarGroupLabel>
+              <div className="space-y-0.5">
               {(dashboards ?? []).slice(0, 6).map((b) => {
                 const boardHref = `/dashboard/${b.id}`;
                 return (
@@ -165,11 +173,12 @@ export function CodataSidebar() {
                     key={b.id}
                     href={boardHref}
                     active={pathname === boardHref}
-                    icon={LayoutDashboard}
+                    icon={ChartColumn}
                     label={b.name}
                   />
                 );
               })}
+              </div>
             </>
           )}
 
@@ -182,13 +191,15 @@ export function CodataSidebar() {
             ) : (
               codataSessions.slice(0, 8).map((s) => {
                 const href = `/c/${s.id}`;
+                const expertSession = isExpertTeamSession(s.slug, s.title);
                 return (
                   <NavRow
                     key={s.id}
                     href={href}
                     active={pathname === href}
-                    icon={Search}
+                    icon={expertSession ? Users : Search}
                     label={s.title || "未命名分析"}
+                    tag={expertSession ? "专家团" : undefined}
                   />
                 );
               })
@@ -199,4 +210,8 @@ export function CodataSidebar() {
       </motion.aside>
     </TooltipProvider>
   );
+}
+
+function isExpertTeamSession(slug?: string | null, title?: string | null): boolean {
+  return slug?.startsWith("expert-team") === true || title?.startsWith("专家团") === true;
 }
