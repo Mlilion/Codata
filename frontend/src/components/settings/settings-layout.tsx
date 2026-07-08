@@ -56,6 +56,14 @@ export default function SettingsPageClient({ initialTab }: SettingsPageClientPro
   const activeLabel = t(`settings:${activeTabMeta.labelKey}`);
   const activeDescription = t(`settings:${activeTabMeta.descKey}`);
 
+  if (activeTab === "remote") {
+    return (
+      <div className="flex-1 overflow-y-auto bg-[#fbfdff] scrollbar-auto">
+        <RemoteTabContent />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto scrollbar-auto">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
@@ -104,7 +112,6 @@ export default function SettingsPageClient({ initialTab }: SettingsPageClientPro
           {activeTab === "providers" && <ProvidersTab />}
           {activeTab === "permissions" && <PermissionsTab />}
           {activeTab === "plugins" && <PluginsTabContent />}
-          {activeTab === "remote" && <RemoteTabContent />}
           {activeTab === "usage" && <UsageTab />}
           {activeTab === "memory" && <MemoryTab />}
           {activeTab === "about" && <AboutTab />}
