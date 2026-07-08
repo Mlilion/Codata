@@ -23,9 +23,11 @@ from app.dependencies import (
     IndexManagerDep,
     ProviderRegistryDep,
     SessionFactoryDep,
+    SettingsDep,
     StreamManagerDep,
     ToolRegistryDep,
 )
+from app.provider.resolve import resolve_default_model
 from app.schemas.chat import PromptRequest
 from app.session.manager import create_session, get_session
 from app.session.processor import run_generation
@@ -91,26 +93,6 @@ def _resolve_agent(model: str) -> str:
     if model.startswith(_MODEL_PREFIX):
         return model[len(_MODEL_PREFIX):]
     return "build"
-
-
-def _resolve_default_model(registry: ProviderRegistryDep) -> str | None:
-    """Pick the best model for external API calls.
-
-    Priority: Anthropic > paid models > free models.
-    """
-    all_models = registry.all_models()
-    if not all_models:
-        return None
-
-    anth = [m for m in all_models if m.provider_id == "anthropic"]
-    if anth:
-        return anth[0].id
-
-    paid = [m for m in all_models if m.pricing and (m.pricing.prompt > 0 or m.pricing.completion > 0)]
-    if paid:
-        return paid[0].id
-
-    return all_models[0].id
 
 
 def _extract_prompt(messages: list[ChatMessage]) -> tuple[str, str | None]:
@@ -336,6 +318,7 @@ async def chat_completions(
     agent_registry: AgentRegistryDep,
     tool_registry: ToolRegistryDep,
     index_manager: IndexManagerDep,
+    settings: SettingsDep,
 ):
     """OpenAI-compatible chat completions endpoint.
 
@@ -367,8 +350,8 @@ async def chat_completions(
     # Non-interactive: permissions auto-approve in headless mode
     job.interactive = False
 
-    # Use the user's best model (subscription > anthropic > paid > free)
-    model_id = _resolve_default_model(provider_registry)
+    # Use the user's configured default model (falls back to a heuristic).
+    model_id, provider_id = resolve_default_model(provider_registry, settings)
     logger.info("OpenAI-compat: agent=%s, model=%s", agent, model_id)
 
     prompt_request = PromptRequest(
@@ -376,6 +359,7 @@ async def chat_completions(
         text=user_text,
         agent=agent,
         model=model_id,
+        provider_id=provider_id,
     )
 
     coro = run_generation(

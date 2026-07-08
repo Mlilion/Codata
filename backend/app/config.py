@@ -50,6 +50,13 @@ class Settings(BaseSettings):
     # Disabled providers are not registered even if their API key is set.
     disabled_providers: str = ""  # CODATA_DISABLED_PROVIDERS
 
+    # --- Default model (server-side mirror of the UI's default model) ---
+    # Headless paths (channels, scheduler, OpenAI-compat API) have no browser
+    # context, so they read the user's preferred model from here instead of
+    # guessing from the registry. Empty = "Automatic" (fall back to heuristic).
+    default_model: str = ""         # CODATA_DEFAULT_MODEL
+    default_provider_id: str = ""   # CODATA_DEFAULT_PROVIDER_ID
+
     # --- Database ---
     database_url: str = "sqlite+aiosqlite:///./data/codata.db"
 

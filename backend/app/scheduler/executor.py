@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.models.scheduled_task import ScheduledTask
 from app.models.task_run import TaskRun
+from app.provider.resolve import resolve_default_model
 from app.schemas.chat import PromptRequest
 from app.session.processor import run_generation
 from app.streaming.manager import GenerationJob
@@ -84,6 +85,7 @@ async def execute_scheduled_task(
                 "prompt": task.prompt,
                 "agent": task.agent,
                 "model": task.model,
+                "provider_id": None,
                 "workspace": task.workspace,
                 "timeout": task.timeout_seconds or 1800,
                 "loop_max_iterations": task.loop_max_iterations,
@@ -91,9 +93,14 @@ async def execute_scheduled_task(
                 "loop_stop_marker": task.loop_stop_marker or DEFAULT_STOP_MARKER,
             }
 
-    # 1b. If no model specified, pick the best available
+    # 1b. If no model specified, use the user's configured default model.
     if not task_snapshot["model"]:
-        task_snapshot["model"] = _resolve_default_model(app_state)
+        registry = getattr(app_state, "provider_registry", None)
+        settings = getattr(app_state, "settings", None)
+        if registry is not None and settings is not None:
+            model_id, provider_id = resolve_default_model(registry, settings)
+            task_snapshot["model"] = model_id
+            task_snapshot["provider_id"] = provider_id
 
     # Route to loop or single-shot execution
     if task_snapshot["loop_max_iterations"]:
@@ -323,6 +330,7 @@ async def _run_session(
         session_id=session_id,
         text=task_snapshot["prompt"],
         model=task_snapshot["model"],
+        provider_id=task_snapshot.get("provider_id"),
         agent=task_snapshot["agent"],
         workspace=task_snapshot.get("workspace"),
     )
@@ -386,23 +394,3 @@ def _set_session_title(
             logger.debug("Could not set session title: %s", e)
 
     asyncio.ensure_future(_inner())
-
-
-def _resolve_default_model(app_state: Any) -> str | None:
-    """Pick the best default model for scheduled tasks.
-
-    Priority: paid models > free models.
-    """
-    registry = getattr(app_state, "provider_registry", None)
-    if registry is None:
-        return None
-
-    all_models = registry.all_models()
-    if not all_models:
-        return None
-
-    paid = [m for m in all_models if m.pricing.prompt > 0 or m.pricing.completion > 0]
-    if paid:
-        return paid[0].id
-
-    return all_models[0].id
