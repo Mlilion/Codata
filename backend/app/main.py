@@ -506,6 +506,7 @@ def _register_builtin_tools(
     from app.tool.builtin.invalid import InvalidTool
     from app.tool.builtin.plan import PlanTool
     from app.tool.builtin.present_file import PresentFileTool
+    from app.tool.builtin.read_knowledge import ReadKnowledgeTool
     from app.tool.builtin.question import QuestionTool
     from app.tool.builtin.submit_plan import SubmitPlanTool
     from app.tool.builtin.read import ReadTool
@@ -524,6 +525,7 @@ def _register_builtin_tools(
         PlanTool, SubmitPlanTool, ArtifactTool, PresentFileTool,
         CreateExpertTeamsTool, ChartSpecTool,
         RunQueryTool, BuildReportTool,
+        ReadKnowledgeTool,
     ]:
         registry.register(tool_cls())
 
