@@ -19,6 +19,7 @@ from app.api import files as files_api
 from app.api import expert_roles as expert_roles_api
 from app.api import expert_teams as expert_teams_api
 from app.api import google_auth as google_auth_api
+from app.api import knowledge as knowledge_api
 from app.api import mcp as mcp_api
 from app.api import messages as messages_api
 from app.api import models as models_api
@@ -48,6 +49,7 @@ api_router.include_router(fts_api.router, tags=["fts"])
 api_router.include_router(mcp_api.router, tags=["mcp"])
 api_router.include_router(mcp_api.data_source_router, tags=["data-source"])
 api_router.include_router(connectors_api.router, tags=["connectors"])
+api_router.include_router(knowledge_api.router, tags=["knowledge"])
 api_router.include_router(google_auth_api.router, tags=["google"])
 api_router.include_router(plugins_api.router, tags=["plugins"])
 api_router.include_router(automations_api.router, tags=["automations"])
