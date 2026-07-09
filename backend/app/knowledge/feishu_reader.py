@@ -70,7 +70,11 @@ async def read_feishu_doc(client, doc_type: str, token: str) -> str:
     tool = _rawcontent_tool_name(client)
     if tool is None:
         raise RuntimeError("飞书 MCP 未提供文档读取工具")
-    result = await client.call_tool(tool, {"document_id": token})
+    # lark-openapi-mcp's rawContent tool nests the doc id under a top-level
+    # ``path`` object (verified against its inputSchema: required ["path"],
+    # path.document_id). A flat {"document_id": ...} fails schema validation
+    # before the request ever reaches Feishu.
+    result = await client.call_tool(tool, {"path": {"document_id": token}})
     from app.mcp.datasage_client import extract_text
 
     return extract_text(result)
