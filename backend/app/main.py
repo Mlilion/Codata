@@ -105,6 +105,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from app.models import dashboard as _dashboard_models  # noqa: F401 — registers Dashboard
     from app.models import dashboard_item as _dashboard_item_models  # noqa: F401 — registers DashboardItem
     from app.models import analysis_memory as _analysis_memory_models  # noqa: F401 — registers AnalysisMemory
+    from app.models import knowledge_entry as _knowledge_entry_models  # noqa: F401 — registers KnowledgeEntry
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
