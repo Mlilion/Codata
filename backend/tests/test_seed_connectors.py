@@ -19,6 +19,27 @@ def _fresh_registry() -> ConnectorRegistry:
     return ConnectorRegistry(project_dir=tmp)
 
 
+# A synthetic empty-url remote seed used to exercise the "claim placeholder"
+# mechanism without depending on any real catalog entry (the shipped catalog
+# has no empty-url seed right now — datasage carries a preset URL and the
+# feishu knowledge-base seed is currently hidden). Injecting it into the
+# registry's catalog keeps these mechanism tests independent of product data.
+_TEST_SEED_ID = "test-empty-seed"
+_TEST_SEED_CATALOG = {
+    "name": "Test Empty Seed",
+    "url": "",
+    "description": "empty-url remote seed for tests",
+    "category": "custom",
+    "seed": True,
+}
+
+
+def _registry_with_test_seed() -> ConnectorRegistry:
+    reg = _fresh_registry()
+    reg._catalog[_TEST_SEED_ID] = dict(_TEST_SEED_CATALOG)
+    return reg
+
+
 def test_seed_registers_datasage():
     reg = _fresh_registry()
     assert reg.get("datasage") is None  # not present before seeding
@@ -48,48 +69,47 @@ def test_seed_appears_in_status():
 def test_seed_does_not_overwrite_existing_connector():
     """A user custom connector with the same id must win over an empty-url seed.
 
-    Uses feishu, whose seed has no preset URL, so register_custom is allowed to
-    claim the placeholder.
+    Uses a synthetic empty-url seed (see _TEST_SEED_CATALOG), so register_custom
+    is allowed to claim the placeholder.
     """
-    reg = _fresh_registry()
+    reg = _registry_with_test_seed()
     reg.register_custom(
-        id="feishu",
-        name="My feishu",
-        url="https://my.feishu.example/mcp",
+        id=_TEST_SEED_ID,
+        name="My seed",
+        url="https://my.example/mcp",
         description="custom",
-        category="knowledge",
+        category="custom",
     )
 
     reg._register_seed_connectors()
 
-    conn = reg.get("feishu")
+    conn = reg.get(_TEST_SEED_ID)
     assert conn is not None
     # Claiming an empty-url seed keeps it a builtin (URL just filled in).
     assert conn.source == "builtin"
-    assert conn.url == "https://my.feishu.example/mcp"
+    assert conn.url == "https://my.example/mcp"
 
 
 def test_user_can_claim_empty_url_seed():
     """After seeding, a user submitting a real URL claims the seed placeholder.
 
     Claiming only fills in the URL — the connector stays a builtin (no
-    "custom" badge), it is not demoted to a user custom connector. Uses feishu,
-    whose seed ships with an empty URL.
+    "custom" badge), it is not demoted to a user custom connector.
     """
-    reg = _fresh_registry()
+    reg = _registry_with_test_seed()
     reg._register_seed_connectors()
-    assert reg.get("feishu").url == ""
+    assert reg.get(_TEST_SEED_ID).url == ""
 
     conn = reg.register_custom(
-        id="feishu",
-        name="feishu",
-        url="https://prod.feishu.example/mcp",
-        category="knowledge",
+        id=_TEST_SEED_ID,
+        name="seed",
+        url="https://prod.example/mcp",
+        category="custom",
     )
 
     assert conn.source == "builtin"
-    assert conn.url == "https://prod.feishu.example/mcp"
-    assert reg.get("feishu").url == "https://prod.feishu.example/mcp"
+    assert conn.url == "https://prod.example/mcp"
+    assert reg.get(_TEST_SEED_ID).url == "https://prod.example/mcp"
 
 
 def test_claimed_seed_stays_builtin_after_restart():
@@ -98,16 +118,18 @@ def test_claimed_seed_stays_builtin_after_restart():
     """
     tmp = tempfile.mkdtemp()
     reg = ConnectorRegistry(project_dir=tmp)
+    reg._catalog[_TEST_SEED_ID] = dict(_TEST_SEED_CATALOG)
     reg._register_seed_connectors()
     reg.register_custom(
-        id="feishu",
-        name="feishu",
-        url="https://prod.feishu.example/mcp",
-        category="knowledge",
+        id=_TEST_SEED_ID,
+        name="seed",
+        url="https://prod.example/mcp",
+        category="custom",
     )
 
     # New registry over the same project dir → replays persisted state.
     reg2 = ConnectorRegistry(project_dir=tmp)
+    reg2._catalog[_TEST_SEED_ID] = dict(_TEST_SEED_CATALOG)
     for custom in reg2._persisted_state.get("custom", []):
         cid = custom.get("id", "")
         if cid and cid not in reg2._connectors:
@@ -124,9 +146,9 @@ def test_claimed_seed_stays_builtin_after_restart():
             )
     reg2._register_seed_connectors()
 
-    conn = reg2.get("feishu")
+    conn = reg2.get(_TEST_SEED_ID)
     assert conn.source == "builtin"
-    assert conn.url == "https://prod.feishu.example/mcp"
+    assert conn.url == "https://prod.example/mcp"
 
 
 def test_local_builtin_cannot_be_claimed():
@@ -169,17 +191,3 @@ def test_seed_is_idempotent():
     conn = reg.get("datasage")
     assert conn is not None
     assert conn.source == "builtin"
-
-
-def test_feishu_is_seed_connector():
-    reg = _fresh_registry()
-    assert reg.get("feishu") is None  # not present before seeding
-
-    reg._register_seed_connectors()
-
-    conn = reg.get("feishu")
-    assert conn is not None
-    assert conn.category == "knowledge"
-    assert conn.source == "builtin"
-    assert conn.url == ""
-    assert conn.type == "remote"

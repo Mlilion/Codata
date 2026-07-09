@@ -2,15 +2,8 @@
   "datasage": {
     "name": "datasage 数据平台",
     "url": "https://datasage.flow.chat/mcp",
-    "description": "连接 datasage 数据平台:用自然语言查询、分析、出图。打开开关后,按对话中的提示登录授权即可(首次使用会引导你完成授权,无需手动填 token)。",
+    "description": "连接 datasage 数据平台:用自然语言查询、分析、出图。打开开关后,请到 https://datasage.flow.chat/mcp-access 获取你的 MCP Key,并填入下方 Token 输入框完成连接。",
     "category": "data",
-    "seed": true
-  },
-  "feishu": {
-    "name": "飞书文档",
-    "url": "",
-    "description": "连接飞书 MCP,读取你登记在知识库里的飞书文档作为分析背景。点击后填写你的飞书 MCP 服务地址(参考飞书官方 lark-openapi-mcp)。",
-    "category": "knowledge",
     "seed": true
   },
   "slack": {
