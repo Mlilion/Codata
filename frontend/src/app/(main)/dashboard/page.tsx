@@ -7,6 +7,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getDashboardRoute } from "@/lib/routes";
 import {
   useDashboards,
   useCreateDashboard,
@@ -33,7 +34,7 @@ export default function DashboardListPage() {
         onSuccess: (board) => {
           setName("");
           setCreating(false);
-          router.push(`/dashboard/${board.id}`);
+          router.push(getDashboardRoute(board.id));
         },
         onError: () => toast.error("创建看板失败"),
       },
@@ -116,7 +117,7 @@ export default function DashboardListPage() {
                   "bg-[var(--surface-secondary)] p-4 transition-colors hover:bg-[var(--surface-tertiary)]",
                 )}
               >
-                <Link href={`/dashboard/${board.id}`} className="flex-1">
+                <Link href={getDashboardRoute(board.id)} className="flex-1">
                   <div className="flex items-center gap-2">
                     <LayoutDashboard className="h-4 w-4 text-[var(--brand-primary)]" />
                     <span className="truncate text-sm font-medium text-[var(--text-primary)]">
