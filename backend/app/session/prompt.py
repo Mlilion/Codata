@@ -180,6 +180,7 @@ class SessionPrompt:
         self.fts_status: dict[str, Any] | None = None
         self.workspace_memory_section: str | None = None
         self.analysis_memory_section: str | None = None
+        self.knowledge_section: str | None = None
         self.system_prompt_parts: SystemPromptParts | None = None
         self.merged_permissions: list = []
         self.request_permissions: list = []
@@ -457,6 +458,17 @@ class SessionPrompt:
             except Exception:
                 logger.debug("Analysis memory injection skipped", exc_info=True)
 
+        # --- Load the Feishu knowledge-base listing for the data agent ---
+        if self.agent.name == "data":
+            try:
+                from app.knowledge.injection import build_knowledge_section
+
+                self.knowledge_section = await build_knowledge_section(
+                    self.session_factory
+                )
+            except Exception:
+                logger.debug("Knowledge section injection skipped", exc_info=True)
+
         self.system_prompt_parts = build_system_prompt(
             self.agent,
             directory=self.directory,
@@ -464,6 +476,7 @@ class SessionPrompt:
             fts_status=self.fts_status,
             workspace_memory_section=self.workspace_memory_section,
             analysis_memory_section=self.analysis_memory_section,
+            knowledge_section=self.knowledge_section,
             app_mode=self.request.mode,
         )
 
@@ -1139,6 +1152,7 @@ class SessionPrompt:
             fts_status=self.fts_status,
             workspace_memory_section=self.workspace_memory_section,
             analysis_memory_section=self.analysis_memory_section,
+            knowledge_section=self.knowledge_section,
             app_mode=self.request.mode,
         )
 

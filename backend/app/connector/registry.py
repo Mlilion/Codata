@@ -133,13 +133,20 @@ class ConnectorRegistry:
         here), replacing it. Any other id collision is rejected.
         """
         existing = self._connectors.get(id)
-        if existing is not None and not (
-            existing.type == "remote"
+        claimable_placeholder = (
+            existing is not None
+            and existing.type == "remote"
             and existing.source == "builtin"
             and not existing.url
-        ):
+        )
+        if existing is not None and not claimable_placeholder:
             raise ValueError(f"Connector '{id}' already exists")
 
+        # Filling in a seed connector's URL only *completes the placeholder* —
+        # it stays a builtin (no "custom" badge), regardless of whether the seed
+        # was registered before or after this call. A genuinely new id (not in
+        # the seed catalog) becomes a user custom connector.
+        is_seed = bool(self._catalog.get(id, {}).get("seed"))
         connector = ConnectorInfo(
             id=id,
             name=name,
@@ -148,7 +155,7 @@ class ConnectorRegistry:
             description=description or f"{name} (custom connector)",
             category=category,
             enabled=False,
-            source="custom",
+            source="builtin" if is_seed else "custom",
         )
         self._connectors[id] = connector
 
@@ -216,10 +223,13 @@ class ConnectorRegistry:
 
     async def startup(self) -> None:
         """Build McpManager config from enabled connectors and start connections."""
-        # Restore custom connectors from persisted state
+        # Restore custom connectors from persisted state. An id that is a seed
+        # in the catalog was a claimed placeholder (URL filled in by the user),
+        # so it stays a builtin — only genuinely new ids are "custom".
         for custom in self._persisted_state.get("custom", []):
             cid = custom.get("id", "")
             if cid and cid not in self._connectors:
+                is_seed = bool(self._catalog.get(cid, {}).get("seed"))
                 self._connectors[cid] = ConnectorInfo(
                     id=cid,
                     name=custom.get("name", cid),
@@ -228,7 +238,7 @@ class ConnectorRegistry:
                     description=custom.get("description", ""),
                     category=custom.get("category", "custom"),
                     enabled=cid in self._persisted_state.get("enabled", []),
-                    source="custom",
+                    source="builtin" if is_seed else "custom",
                 )
 
         # Register seed connectors (discoverable catalog cards) — after custom

@@ -10,8 +10,7 @@ def test_datasage_seed_connector_present():
     assert entry["category"] == "data"
     assert entry["name"]
     assert entry["description"]
-    # url 存在但为空占位——datasage 地址因部署而异,由用户填写
-    assert "url" in entry
-    assert entry["url"] == ""
+    # 预置官方 MCP 地址:用户打开开关即可直接走 OAuth 授权,无需手填地址
+    assert entry["url"] == "https://datasage.flow.chat/mcp"
     # seed 标记:让 datasage 作为种子连接器进入 registry、在目录中可见
     assert entry["seed"] is True

@@ -51,6 +51,7 @@
   "connectBridge": "连接",
   "disconnectBridge": "断开",
   "tokenPatPlaceholder": "令牌 / PAT",
+  "tokenHint": "无法自动授权时,可在 datasage 平台「设置 → API Key」生成令牌后粘贴到此处。",
   "category_communication": "通讯",
   "category_productivity": "生产力",
   "category_dev_tools": "开发工具",
