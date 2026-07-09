@@ -9,7 +9,7 @@
   "feishu": {
     "name": "飞书文档",
     "url": "",
-    "description": "连接飞书,读取你登记在知识库里的飞书文档作为分析背景。点击后按提示完成飞书授权。",
+    "description": "连接飞书 MCP,读取你登记在知识库里的飞书文档作为分析背景。点击后填写你的飞书 MCP 服务地址(参考飞书官方 lark-openapi-mcp)。",
     "category": "knowledge",
     "seed": true
   },
