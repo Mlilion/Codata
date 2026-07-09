@@ -496,7 +496,7 @@ export default function ExpertsPage() {
     <div className="flex h-full flex-col overflow-hidden bg-[var(--surface-chat)]">
       <div className="shrink-0 bg-[var(--surface-chat)]">
         <div className="px-5 pb-4 pt-6 lg:px-7">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div className="min-w-0">
               <div className="mb-1.5 flex items-center gap-3">
                 <Button variant="ghost" size="icon" className="h-9 w-9 lg:hidden" asChild>
@@ -504,9 +504,9 @@ export default function ExpertsPage() {
                     <ArrowLeft className="h-4.5 w-4.5" />
                   </Link>
                 </Button>
-                <h1 className="text-[26px] font-semibold tracking-normal text-[var(--text-primary)]">专家团</h1>
+                <h1 className="text-[22px] font-semibold tracking-normal text-[var(--text-primary)]">专家团</h1>
               </div>
-              <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+              <p className="text-[13px] leading-5 text-[var(--text-secondary)]">
                 复用可配置的多专家分析流程
               </p>
             </div>
@@ -579,16 +579,16 @@ export default function ExpertsPage() {
 
       {/* Main Content */}
       <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--surface-chat)] px-5 pb-5 pt-0 lg:px-7 xl:overflow-hidden">
-        <div className="grid min-h-0 gap-6 xl:h-full xl:grid-cols-[minmax(0,1fr)_440px]">
+        <div className="grid min-h-0 gap-5 xl:h-full xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="min-h-0 pr-1 xl:overflow-y-auto xl:scrollbar-auto">
-            <div className="mb-5 flex gap-3 overflow-x-auto pb-1 scrollbar-none">
+            <div className="mb-4 flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
               {CATEGORIES.map((item) => (
                 <button
                   key={item}
                   type="button"
                   onClick={() => setCategory(item)}
                   className={cn(
-                    "h-9 shrink-0 rounded-lg border px-5 text-sm font-medium transition-colors cursor-pointer",
+                    "h-8 shrink-0 rounded-lg border px-4 text-[13px] font-medium transition-colors cursor-pointer",
                     category === item
                       ? "border-[rgba(11,118,246,0.24)] bg-[var(--data-accent-soft)] text-[var(--data-accent)]"
                       : "border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--border-default)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]",
@@ -599,7 +599,7 @@ export default function ExpertsPage() {
               ))}
             </div>
             {isLoading ? (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {Array.from({ length: 6 }).map((_, index) => (
                   <ExpertTeamCardSkeleton key={index} />
                 ))}
@@ -617,7 +617,7 @@ export default function ExpertsPage() {
                 description={query || category !== "全部" ? "换个关键词或分类试试。" : "当前还没有可用的专家团。"}
               />
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {filtered.map((team) => (
                   <ExpertTeamCard
                     key={team.id}
@@ -673,35 +673,35 @@ export default function ExpertsPage() {
 
 function ExpertTeamCardSkeleton() {
   return (
-    <div className="h-[118px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5">
+    <div className="h-[104px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3">
       <div className="animate-pulse">
-        <div className="flex h-full items-center gap-5">
-          <div className="h-16 w-16 rounded-lg bg-[var(--surface-tertiary)]" />
+        <div className="flex h-full items-center gap-4">
+          <div className="h-12 w-12 rounded-lg bg-[var(--surface-tertiary)]" />
           <div className="min-w-0 flex-1">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="h-5 w-44 rounded bg-[var(--surface-tertiary)]" />
-              <div className="h-5 w-12 rounded-md bg-[var(--surface-tertiary)]" />
+            <div className="mb-2.5 flex items-center gap-2">
+              <div className="h-4 w-40 rounded bg-[var(--surface-tertiary)]" />
+              <div className="h-4 w-11 rounded-md bg-[var(--surface-tertiary)]" />
+              <div className="h-4 w-12 rounded-md bg-[var(--surface-tertiary)]" />
+            </div>
+            <div className="mb-3 h-3 w-2/3 rounded bg-[var(--surface-tertiary)]" />
+            <div className="flex gap-2">
+              <div className="h-5 w-14 rounded-md bg-[var(--surface-tertiary)]" />
+              <div className="h-5 w-14 rounded-md bg-[var(--surface-tertiary)]" />
               <div className="h-5 w-14 rounded-md bg-[var(--surface-tertiary)]" />
             </div>
-            <div className="mb-4 h-3 w-2/3 rounded bg-[var(--surface-tertiary)]" />
-            <div className="flex gap-2">
-              <div className="h-6 w-16 rounded-md bg-[var(--surface-tertiary)]" />
-              <div className="h-6 w-16 rounded-md bg-[var(--surface-tertiary)]" />
-              <div className="h-6 w-16 rounded-md bg-[var(--surface-tertiary)]" />
-            </div>
           </div>
-          <div className="hidden w-40 shrink-0 items-center justify-between md:flex">
-            <div className="space-y-3">
+          <div className="hidden w-32 shrink-0 items-center justify-between md:flex">
+            <div className="space-y-2.5">
               <div className="h-4 w-14 rounded bg-[var(--surface-tertiary)]" />
-              <div className="flex gap-1.5">
-                <div className="h-7 w-7 rounded-full bg-[var(--surface-tertiary)]" />
-                <div className="h-7 w-7 rounded-full bg-[var(--surface-tertiary)]" />
-                <div className="h-7 w-7 rounded-full bg-[var(--surface-tertiary)]" />
+              <div className="flex gap-1">
+                <div className="h-6 w-6 rounded-full bg-[var(--surface-tertiary)]" />
+                <div className="h-6 w-6 rounded-full bg-[var(--surface-tertiary)]" />
+                <div className="h-6 w-6 rounded-full bg-[var(--surface-tertiary)]" />
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="h-4 w-14 rounded bg-[var(--surface-tertiary)]" />
-              <div className="h-7 w-7 rounded-full bg-[var(--surface-tertiary)]" />
+              <div className="h-6 w-6 rounded-full bg-[var(--surface-tertiary)]" />
             </div>
           </div>
         </div>
@@ -724,7 +724,7 @@ function ExpertTeamStatus({
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-[var(--surface-tertiary)]">
         <Icon className="h-7 w-7 text-[var(--text-tertiary)]" />
       </div>
-      <p className="text-base font-medium text-[var(--text-secondary)]">{title}</p>
+      <p className="text-sm font-medium text-[var(--text-secondary)]">{title}</p>
       <p className="mt-1 text-ui-2xs text-[var(--text-tertiary)]">{description}</p>
     </div>
   );
@@ -750,7 +750,7 @@ function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; 
       type="button"
       onClick={onClick}
       className={cn(
-        "group relative flex min-h-[128px] w-full items-center gap-5 overflow-hidden rounded-lg border bg-[var(--surface-primary)] px-5 py-4 text-left transition-colors cursor-pointer hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]",
+        "group relative flex min-h-[106px] w-full items-center gap-4 overflow-hidden rounded-lg border bg-[var(--surface-primary)] px-4 py-3 text-left transition-colors cursor-pointer hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]",
         selected
           ? "border-[rgba(11,118,246,0.28)] bg-[rgba(11,118,246,0.035)] shadow-[0_14px_30px_-30px_rgba(11,118,246,0.5)]"
           : "border-[var(--border-default)]",
@@ -758,22 +758,22 @@ function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; 
     >
       <div
         className={cn(
-          "flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border shadow-[0_12px_24px_-24px_rgba(21,32,51,0.42)] transition-transform group-hover:scale-[1.02]",
+          "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border shadow-[0_10px_20px_-22px_rgba(21,32,51,0.42)] transition-transform group-hover:scale-[1.02]",
           toneClass,
         )}
       >
-        <Icon className="h-7 w-7" />
+        <Icon className="h-6 w-6" />
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="mb-1.5 flex min-w-0 flex-nowrap items-center gap-2">
-          <h2 className="truncate text-[17px] font-semibold leading-6 text-[var(--text-primary)]">{team.name}</h2>
-          <span className="shrink-0 rounded-md bg-[var(--data-accent-soft)] px-2 py-0.5 text-ui-2xs font-semibold text-[var(--data-accent)]">
+        <div className="mb-1 flex min-w-0 flex-nowrap items-center gap-1.5">
+          <h2 className="truncate text-[14px] font-semibold leading-5 text-[var(--text-primary)]">{team.name}</h2>
+          <span className="shrink-0 rounded-md bg-[var(--data-accent-soft)] px-1.5 py-0.5 text-ui-3xs font-semibold text-[var(--data-accent)]">
             {teamOriginLabel(team)}
           </span>
           <span
             className={cn(
-              "shrink-0 rounded-md px-2 py-0.5 text-ui-2xs font-semibold",
+              "shrink-0 rounded-md px-1.5 py-0.5 text-ui-3xs font-semibold",
               team.process === "workflow"
                 ? "bg-[rgba(18,185,129,0.10)] text-[var(--color-success)]"
                 : "bg-[rgba(11,118,246,0.08)] text-[var(--data-accent)]",
@@ -783,30 +783,30 @@ function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; 
             {teamProcessLabel(team.process)}
           </span>
           {isRemote && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--border-subtle)] px-2 py-0.5 text-ui-2xs text-[var(--text-tertiary)]">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--border-subtle)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-tertiary)]">
               <Globe2 className="h-3 w-3" />
               只读
             </span>
           )}
           {comingSoon && (
-            <span className="shrink-0 rounded-full border border-[var(--border-default)] bg-[var(--surface-secondary)] px-2 py-0.5 text-ui-2xs font-medium text-[var(--text-tertiary)]">
+            <span className="shrink-0 rounded-full border border-[var(--border-default)] bg-[var(--surface-secondary)] px-1.5 py-0.5 text-ui-3xs font-medium text-[var(--text-tertiary)]">
               即将上线
             </span>
           )}
         </div>
-        <p className="mb-3 line-clamp-1 text-sm leading-5 text-[var(--text-secondary)]">{team.description}</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="mb-2.5 line-clamp-1 text-[13px] leading-5 text-[var(--text-secondary)]">{team.description}</p>
+        <div className="flex flex-wrap gap-1.5">
           {team.tags.slice(0, 3).map((tag) => (
-            <span key={tag} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-2 py-1 text-ui-2xs text-[var(--text-secondary)]">
+            <span key={tag} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-secondary)]">
               {tag}
             </span>
           ))}
         </div>
       </div>
 
-      <div className="hidden w-40 shrink-0 items-center justify-between md:flex">
+      <div className="hidden w-32 shrink-0 items-center justify-between md:flex">
         <div>
-          <div className="mb-3 flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
+          <div className="mb-2 flex items-center gap-1.5 text-[13px] text-[var(--text-secondary)]">
             <Users className="h-3.5 w-3.5" />
             <span className="font-semibold text-[var(--text-primary)]">{team.member_count}</span>
           </div>
@@ -814,20 +814,20 @@ function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; 
             {team.members.slice(0, 4).map((member) => (
               <div
                 key={member.id}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-secondary)]"
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-secondary)]"
                 title={member.name}
               >
-                <Bot className="h-4 w-4 text-[var(--text-secondary)]" />
+                <Bot className="h-3.5 w-3.5 text-[var(--text-secondary)]" />
               </div>
             ))}
           </div>
         </div>
         <div>
-          <div className="mb-3 flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
+          <div className="mb-2 flex items-center gap-1.5 text-[13px] text-[var(--text-secondary)]">
             <Layers className="h-3.5 w-3.5" />
             <span className="font-semibold text-[var(--text-primary)]">{team.task_count}</span>
           </div>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-secondary)]">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-secondary)]">
             <ChevronRight className="h-4 w-4 text-[var(--text-tertiary)] transition-transform group-hover:translate-x-0.5" />
           </div>
         </div>
@@ -923,16 +923,16 @@ function ExpertTeamDetailPanel({
           : "普通";
 
   return (
-    <aside className="min-h-0 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[0_18px_44px_-36px_rgba(15,23,42,0.28)] xl:h-[calc(100vh-154px)] xl:max-h-full">
+    <aside className="min-h-0 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[0_18px_44px_-36px_rgba(15,23,42,0.28)] xl:h-[calc(100vh-146px)] xl:max-h-full">
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
-        <div className="bg-[var(--surface-primary)] px-6 pb-5 pt-6">
-          <div className="mb-5 flex items-start gap-4">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border border-[rgba(11,118,246,0.18)] bg-[var(--data-accent-soft)] text-[var(--data-accent)] shadow-[0_14px_30px_-28px_rgba(11,118,246,0.55)]">
-              <DetailIcon className="h-9 w-9" />
+        <div className="bg-[var(--surface-primary)] px-5 pb-4 pt-5">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-[rgba(11,118,246,0.18)] bg-[var(--data-accent-soft)] text-[var(--data-accent)] shadow-[0_12px_24px_-26px_rgba(11,118,246,0.55)]">
+              <DetailIcon className="h-7 w-7" />
             </div>
             <div className="min-w-0 flex-1 pt-0.5">
-              <div className="mb-2 flex items-start justify-between gap-3">
-                <h2 className="min-w-0 text-xl font-semibold leading-7 text-[var(--text-primary)]">{team.name}</h2>
+              <div className="mb-1.5 flex items-start justify-between gap-3">
+                <h2 className="min-w-0 text-[15px] font-semibold leading-5 text-[var(--text-primary)]">{team.name}</h2>
                 <button
                   type="button"
                   onClick={onClose}
@@ -958,41 +958,41 @@ function ExpertTeamDetailPanel({
             </div>
           </div>
 
-          <p className="text-sm leading-7 text-[var(--text-secondary)]">{team.description}</p>
+          <p className="text-[13px] leading-6 text-[var(--text-secondary)]">{team.description}</p>
 
-          <div className="mt-4 flex flex-wrap gap-1.5">
+          <div className="mt-3 flex flex-wrap gap-1.5">
             {team.tags.slice(0, 5).map((tag) => (
-              <span key={tag} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-2 py-1 text-ui-2xs text-[var(--text-secondary)]">
+              <span key={tag} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-1.5 py-0.5 text-ui-3xs text-[var(--text-secondary)]">
                 {tag}
               </span>
             ))}
           </div>
 
-          <div className="mt-5 grid grid-cols-4 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]">
+          <div className="mt-4 grid grid-cols-4 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]">
             {[
               ["协作流程", processCaption],
               ["成员数量", String(detailMembers.length)],
               ["任务数量", String(detailTasks.length || team.task_count)],
               ["版本", isRemote && remoteVersion ? `v${remoteVersion}${remoteChannel ? ` · ${remoteChannel}` : ""}` : "v1.0"],
             ].map(([label, value], index) => (
-              <div key={label} className={cn("px-3 py-3 text-center", index > 0 && "border-l border-[var(--border-subtle)]")}>
-                <div className="text-ui-2xs text-[var(--text-tertiary)]">{label}</div>
-                <div className="mt-1 truncate text-sm font-semibold text-[var(--text-primary)]">{value}</div>
+              <div key={label} className={cn("px-2.5 py-2.5 text-center", index > 0 && "border-l border-[var(--border-subtle)]")}>
+                <div className="text-ui-3xs text-[var(--text-tertiary)]">{label}</div>
+                <div className="mt-1 truncate text-[13px] font-semibold text-[var(--text-primary)]">{value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto border-t border-[var(--border-subtle)] bg-[var(--surface-primary)] px-6 py-5 scrollbar-auto">
+        <div className="flex-1 overflow-y-auto border-t border-[var(--border-subtle)] bg-[var(--surface-primary)] px-5 py-4 scrollbar-auto">
           {isLoading && (
             <div className="mb-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2 text-ui-2xs text-[var(--text-tertiary)]">
               正在加载专家团详情…
             </div>
           )}
 
-          <section className="border-b border-[var(--border-subtle)] pb-5">
-            <div className="mb-3 text-sm font-semibold text-[var(--text-primary)]">协作流程</div>
-            <div className="relative space-y-3 before:absolute before:left-3 before:top-4 before:bottom-4 before:w-px before:bg-[var(--border-subtle)]">
+          <section className="border-b border-[var(--border-subtle)] pb-4">
+            <div className="mb-3 text-[12px] font-semibold text-[var(--text-primary)]">协作流程</div>
+            <div className="relative space-y-2.5 before:absolute before:left-3 before:top-4 before:bottom-4 before:w-px before:bg-[var(--border-subtle)]">
               {detailTasks.length > 0 ? detailTasks.map((task, index) => {
                 const member = detailMembers.find((item) => item.id === task.member);
                 return (
@@ -1001,7 +1001,7 @@ function ExpertTeamDetailPanel({
                       {index + 1}
                     </span>
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-[var(--text-primary)]">{task.name}</div>
+                      <div className="truncate text-[13px] font-medium text-[var(--text-primary)]">{task.name}</div>
                       <div className="mt-1 truncate text-ui-2xs text-[var(--text-tertiary)]">
                         {member?.name ?? task.member} · {member?.role ?? "专家"}
                       </div>
@@ -1014,8 +1014,8 @@ function ExpertTeamDetailPanel({
             </div>
           </section>
 
-          <section className="pt-5">
-            <div className="mb-3 text-sm font-semibold text-[var(--text-primary)]">专家成员</div>
+          <section className="pt-4">
+            <div className="mb-3 text-[12px] font-semibold text-[var(--text-primary)]">专家成员</div>
             <div className="overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]">
               {detailMembers.map((member) => {
                 const summary = memberDisplaySummary(member);
@@ -1026,7 +1026,7 @@ function ExpertTeamDetailPanel({
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 items-center justify-between gap-2">
-                        <div className="truncate text-sm font-medium text-[var(--text-primary)]">{member.name}</div>
+                        <div className="truncate text-[13px] font-medium text-[var(--text-primary)]">{member.name}</div>
                         <div className="shrink-0 text-ui-2xs text-[var(--text-tertiary)]">{member.role}</div>
                       </div>
                       <p className="mt-1 line-clamp-2 text-ui-2xs leading-5 text-[var(--text-secondary)]">{summary}</p>
@@ -1269,7 +1269,7 @@ function ExpertTeamEditor({
               <Users className="h-5 w-5 text-[var(--text-secondary)]" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+              <h2 className="text-[17px] font-semibold leading-6 text-[var(--text-primary)]">
                 {existingId ? "修改专家团" : "新建专家团"}
               </h2>
               <p className="text-sm text-[var(--text-secondary)]">
@@ -1314,7 +1314,7 @@ function ExpertTeamEditor({
                     {completed ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-[var(--text-primary)]">{step.title}</span>
+                    <span className="block text-[13px] font-semibold text-[var(--text-primary)]">{step.title}</span>
                     <span className="block truncate text-ui-2xs text-[var(--text-tertiary)]">{step.description}</span>
                   </span>
                 </button>
@@ -1332,7 +1332,7 @@ function ExpertTeamEditor({
                   <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-4">
                     <div className="mb-4 flex items-start justify-between gap-3">
                       <div>
-                        <h3 className="text-base font-semibold text-[var(--text-primary)]">基本信息</h3>
+                        <h3 className="text-sm font-semibold text-[var(--text-primary)]">基本信息</h3>
                         <p className="mt-1 text-ui-2xs leading-5 text-[var(--text-secondary)]">
                           先定义这个专家团解决什么问题，以及运行时采用哪种协作模式。
                         </p>
@@ -1507,7 +1507,7 @@ function ExpertTeamEditor({
                   <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-4">
                     <div className="mb-4 flex items-start justify-between gap-3">
                       <div>
-                        <h3 className="text-base font-semibold text-[var(--text-primary)]">最终交付</h3>
+                        <h3 className="text-sm font-semibold text-[var(--text-primary)]">最终交付</h3>
                         <p className="mt-1 text-ui-2xs leading-5 text-[var(--text-secondary)]">
                           专家团最后一步应交付可打开、可预览、可复用的产物，而不是只返回一段文本。
                         </p>
@@ -1766,7 +1766,7 @@ function ExpertTeamEditorSummary({
         <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-4">
           <div className="mb-3 flex items-center gap-2">
             <Layers className="h-4 w-4 text-[var(--text-tertiary)]" />
-            <h3 className="text-sm font-semibold text-[var(--text-primary)]">配置摘要</h3>
+            <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">配置摘要</h3>
           </div>
           <div className="space-y-2 text-ui-2xs">
             <SummaryRow label="执行模式" value={processDetail} />
@@ -1780,7 +1780,7 @@ function ExpertTeamEditorSummary({
         </div>
 
         <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3">
-          <div className="mb-2 text-sm font-semibold text-[var(--text-primary)]">完成检查</div>
+          <div className="mb-2 text-[13px] font-semibold text-[var(--text-primary)]">完成检查</div>
           <div className="space-y-1">
             {checks.map((item) => (
               <button
@@ -1904,7 +1904,7 @@ function MemberEditor({
         <div className="flex items-start gap-2">
           <Users className="mt-0.5 h-5 w-5 text-[var(--text-tertiary)]" />
           <div>
-            <h3 className="text-base font-semibold text-[var(--text-primary)]">专家成员</h3>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">专家成员</h3>
             <p className="mt-1 text-ui-2xs leading-5 text-[var(--text-secondary)]">
               先定义每位专家的身份和职责；工具、模型、角色库可以在高级能力中配置。
             </p>
@@ -1923,7 +1923,7 @@ function MemberEditor({
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--surface-tertiary)]">
                   <Bot className="h-4.5 w-4.5 text-[var(--text-secondary)]" />
                 </div>
-                <span className="text-sm font-semibold text-[var(--text-primary)]">{member.name || member.id}</span>
+                <span className="text-[13px] font-semibold text-[var(--text-primary)]">{member.name || member.id}</span>
               </div>
               <Button
                 size="icon"
@@ -2124,7 +2124,7 @@ function TaskEditor({
         <div className="flex items-start gap-2">
           <Workflow className="mt-0.5 h-5 w-5 text-[var(--text-tertiary)]" />
           <div>
-            <h3 className="text-base font-semibold text-[var(--text-primary)]">任务流程</h3>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">任务流程</h3>
             <p className="mt-1 text-ui-2xs leading-5 text-[var(--text-secondary)]">
               每一步选择负责人，填写要做什么；依赖决定执行顺序，输出变量给后续步骤引用。
             </p>
@@ -2145,10 +2145,10 @@ function TaskEditor({
           <div key={`${task.id}-${index}`} className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-4">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--surface-tertiary)] text-sm font-semibold text-[var(--text-secondary)]">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--surface-tertiary)] text-[13px] font-semibold text-[var(--text-secondary)]">
                   {index + 1}
                 </span>
-                <span className="text-sm font-semibold text-[var(--text-primary)]">第 {index + 1} 步</span>
+                <span className="text-[13px] font-semibold text-[var(--text-primary)]">第 {index + 1} 步</span>
               </div>
               <Button
                 size="icon"
