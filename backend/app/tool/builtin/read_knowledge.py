@@ -78,6 +78,7 @@ class ReadKnowledgeTool(ToolDefinition):
         try:
             body = await read_feishu_doc(client, entry.doc_type, entry.feishu_token)
         except Exception as exc:  # surface for self-correction
+            logger.warning("read_feishu_doc failed: %s", exc)
             return ToolResult(error=f"读取飞书文档失败: {exc}")
 
         if len(body) > MAX_DOC_CHARS:
