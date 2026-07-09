@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BookOpen,
   ChartColumn,
   Plus,
   Search,
@@ -21,6 +20,7 @@ import { useSessions } from "@/hooks/use-sessions";
 import { useIsMacOS } from "@/hooks/use-platform";
 import { cn } from "@/lib/utils";
 import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
+import { getChatRoute, getDashboardRoute } from "@/lib/routes";
 
 /**
  * Codata data-workspace sidebar. Swaps in place of the chat `Sidebar` when
@@ -38,7 +38,6 @@ const SECTIONS: {
 }[] = [
   { id: "dashboards", label: "看板", icon: ChartColumn, href: "/dashboard" },
   { id: "experts", label: "专家团", icon: Users, href: "/experts" },
-  { id: "knowledge", label: "知识库", icon: BookOpen, href: "/knowledge" },
 ];
 const CODATA_SIDEBAR_WIDTH = 270;
 
@@ -169,7 +168,7 @@ export function CodataSidebar() {
               <SidebarGroupLabel>看板</SidebarGroupLabel>
               <div className="space-y-0.5">
               {(dashboards ?? []).slice(0, 6).map((b) => {
-                const boardHref = `/dashboard/${b.id}`;
+                const boardHref = getDashboardRoute(b.id);
                 return (
                   <NavRow
                     key={b.id}
@@ -192,7 +191,7 @@ export function CodataSidebar() {
               </div>
             ) : (
               codataSessions.slice(0, 8).map((s) => {
-                const href = `/c/${s.id}`;
+                const href = getChatRoute(s.id);
                 const expertSession = isExpertTeamSession(s.slug, s.title);
                 return (
                   <NavRow

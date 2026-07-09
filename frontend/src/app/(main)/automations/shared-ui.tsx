@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAutomationRuns } from "@/hooks/use-automations";
+import { getChatRoute } from "@/lib/routes";
 import { humanizeCron, relativeTime, formatDuration, parseCron, buildCron } from "./helpers";
 import type { TaskRunResponse } from "@/types/automation";
 
@@ -68,7 +69,7 @@ export function StatusBadge({ status, sessionId, t }: { status: string | null; s
   if (normalizedStatus !== "running" && sessionId) {
     return (
       <Link
-        href={`/c/${sessionId}`}
+        href={getChatRoute(sessionId)}
         className={`inline-flex items-center gap-1 text-ui-3xs ${c.color} hover:underline`}
       >
         <Icon className="h-3 w-3" />
@@ -123,7 +124,7 @@ export function RunHistoryPanel({ automationId, t }: { automationId: string; t: 
             {relativeTime(run.started_at, t)}
           </span>
           {run.session_id && run.status !== "running" && (
-            <Link href={`/c/${run.session_id}`} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+            <Link href={getChatRoute(run.session_id)} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
               <ArrowUpRight className="h-3 w-3" />
             </Link>
           )}

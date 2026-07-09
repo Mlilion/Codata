@@ -17,6 +17,7 @@ import {
 import { useTranslation } from "react-i18next";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
+import { getChatRoute } from "@/lib/routes";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -155,7 +156,7 @@ export function AutomationCard({ automation: a, onEdit }: { automation: Automati
             </span>
             {a.last_session_id && a.last_run_status !== "running" && (
               <Link
-                href={`/c/${a.last_session_id}`}
+                href={getChatRoute(a.last_session_id)}
                 className="ml-auto text-ui-3xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)] inline-flex items-center gap-0.5"
               >
                 {t("viewResult")}

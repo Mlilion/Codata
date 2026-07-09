@@ -458,8 +458,13 @@ class SessionPrompt:
             except Exception:
                 logger.debug("Analysis memory injection skipped", exc_info=True)
 
-        # --- Load the Feishu knowledge-base listing for the data agent ---
-        if self.agent.name == "data":
+        # --- Feishu knowledge-base injection (temporarily disabled) ---
+        # The knowledge-base feature is hidden from users for now (entry point,
+        # seed connector and agent guidance all removed). The backend code,
+        # model, tool and API are kept intact — flip this flag back to
+        # ``self.agent.name == "data"`` to re-enable injection.
+        _KNOWLEDGE_BASE_ENABLED = False
+        if _KNOWLEDGE_BASE_ENABLED and self.agent.name == "data":
             try:
                 from app.knowledge.injection import build_knowledge_section
 
