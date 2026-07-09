@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookOpen,
   ChartColumn,
   Plus,
   Search,
@@ -37,6 +38,7 @@ const SECTIONS: {
 }[] = [
   { id: "dashboards", label: "看板", icon: ChartColumn, href: "/dashboard" },
   { id: "experts", label: "专家团", icon: Users, href: "/experts" },
+  { id: "knowledge", label: "知识库", icon: BookOpen, href: "/knowledge" },
 ];
 const CODATA_SIDEBAR_WIDTH = 270;
 

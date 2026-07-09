@@ -10,9 +10,12 @@ import {
   ChevronUp,
   Eye,
   EyeOff,
+  KeyRound,
+  LockKeyhole,
   Loader2,
   Plus,
   RefreshCw,
+  ShieldCheck,
   Trash2,
   Zap,
 } from "lucide-react";
@@ -69,6 +72,8 @@ interface ProviderPreset {
 }
 
 const UNAVAILABLE_DEFAULT_MODEL_VALUE = "__unavailable_default__";
+const COMPANY_DEFAULT_ENDPOINT = "https://kaon-router.kaonai.com/v1";
+const COMPANY_DEFAULT_PROVIDER_NAME = "KaonRouter";
 
 const PROVIDER_LABELS: Record<string, string> = {
   openai: "OpenAI",
@@ -235,6 +240,14 @@ function ProviderListView({
   const customProviders = useMemo(
     () => configuredProviders.filter((p) => p.id.startsWith("custom_")),
     [configuredProviders],
+  );
+  const companyProvider = useMemo(
+    () => customProviders.find(isCompanyDefaultProvider) ?? null,
+    [customProviders],
+  );
+  const userCustomProviders = useMemo(
+    () => customProviders.filter((p) => !isCompanyDefaultProvider(p)),
+    [customProviders],
   );
   const enabledConfiguredProviders = useMemo(
     () => configuredProviders.filter(isProviderEnabled),
@@ -432,6 +445,19 @@ function ProviderListView({
         </Button>
       </div>
 
+      <CompanyPresetProviderCard
+        provider={companyProvider}
+        active={companyProvider ? displayedConfiguredProviderId === companyProvider.id : false}
+        onSaved={(provider) => {
+          setActiveProvider("custom");
+          qc.invalidateQueries({ queryKey: queryKeys.providers });
+          qc.invalidateQueries({ queryKey: queryKeys.models });
+          if (provider.enabled) {
+            selectModelSourceMutate({ type: "configured", provider, enabled: true });
+          }
+        }}
+      />
+
       <DefaultModelSelector
         models={selectableModels}
         value={defaultModelSelectValue}
@@ -458,11 +484,11 @@ function ProviderListView({
             {t("customModelConfigs")}
           </h3>
           <span className="text-ui-caption text-[var(--text-tertiary)]">
-            {builtInProviders.length + customProviders.length} {t("configuredCount")}
+            {builtInProviders.length + userCustomProviders.length} {t("configuredCount")}
           </span>
         </div>
 
-        {builtInProviders.length === 0 && customProviders.length === 0 ? (
+        {builtInProviders.length === 0 && userCustomProviders.length === 0 ? (
           <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-8 text-center">
             <p className="text-ui-body font-medium text-[var(--text-primary)]">
               {t("noCustomModelConfigs")}
@@ -484,7 +510,7 @@ function ProviderListView({
                 t={t}
               />
             ))}
-            {customProviders.map((provider) => (
+            {userCustomProviders.map((provider) => (
               <ConfiguredProviderCard
                 key={provider.id}
                 provider={provider}
@@ -499,6 +525,192 @@ function ProviderListView({
         )}
       </section>
     </div>
+  );
+}
+
+function CompanyPresetProviderCard({
+  provider,
+  active,
+  onSaved,
+}: {
+  provider: ProviderInfo | null;
+  active: boolean;
+  onSaved: (provider: ProviderInfo) => void;
+}) {
+  const { t } = useTranslation("settings");
+  const [apiKey, setApiKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<ProviderTestResult | null>(null);
+  const endpointPreview = `${COMPANY_DEFAULT_ENDPOINT}/models`;
+  const configured = Boolean(provider?.is_configured);
+  const statusText = active ? "已启用" : configured ? "已保存" : "未配置";
+  const modelText = provider?.model_count ? `${provider.model_count} 个模型` : testResult ? `${testResult.model_count} 个模型` : "保存后同步";
+
+  const testConnection = useMutation({
+    mutationFn: () =>
+      api.post<ProviderTestResult>(API.CONFIG.CUSTOM_ENDPOINT_TEST, {
+        name: COMPANY_DEFAULT_PROVIDER_NAME,
+        base_url: COMPANY_DEFAULT_ENDPOINT,
+        api_key: apiKey.trim(),
+        enabled: true,
+      }),
+    onSuccess: (result) => {
+      setError(null);
+      setTestResult(result);
+    },
+    onError: (err) => {
+      setTestResult(null);
+      setError(errorToMessage(err, t("modelConfigTestFailed")));
+    },
+  });
+
+  const saveProvider = useMutation({
+    mutationFn: () => {
+      const body = {
+        name: COMPANY_DEFAULT_PROVIDER_NAME,
+        base_url: COMPANY_DEFAULT_ENDPOINT,
+        api_key: apiKey.trim(),
+        enabled: true,
+      };
+      if (provider?.id) {
+        return api.patch<ProviderInfo>(API.CONFIG.CUSTOM_ENDPOINT_ITEM(provider.id), body);
+      }
+      return api.post<ProviderInfo>(API.CONFIG.CUSTOM_ENDPOINT, body);
+    },
+    onSuccess: (result) => {
+      setError(null);
+      setTestResult(null);
+      setApiKey("");
+      onSaved(result);
+    },
+    onError: (err) => {
+      setError(errorToMessage(err, t("failedSaveKey")));
+    },
+  });
+
+  const canSubmit = apiKey.trim().length > 0;
+  const mutating = testConnection.isPending || saveProvider.isPending;
+
+  return (
+    <section className="overflow-hidden rounded-lg border border-[#cfe0ff] bg-[linear-gradient(180deg,rgba(244,248,255,0.9),rgba(255,255,255,0.98)_42%)] shadow-[0_12px_32px_rgba(16,24,40,0.06)]">
+      <div className="grid gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <div className="min-w-0">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#e8f1ff] text-[#1677ff] ring-1 ring-[#cfe0ff]">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-ui-title-sm font-semibold text-[var(--text-primary)]">{COMPANY_DEFAULT_PROVIDER_NAME}</h3>
+                <Badge variant="outline" className="border-[#bfdbfe] bg-[#eff6ff] px-1.5 py-0 text-ui-3xs text-[#1677ff]">
+                  推荐
+                </Badge>
+                <Badge variant="outline" className="border-[#d8e2f0] bg-white px-1.5 py-0 text-ui-3xs text-[var(--text-secondary)]">
+                  内置端点
+                </Badge>
+              </div>
+              <p className="mt-1 text-ui-caption leading-5 text-[var(--text-secondary)]">
+                公司统一维护的模型服务，填写个人 API Key 即可使用。
+              </p>
+              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-[#d8e2f0] bg-white px-2.5 py-1.5 font-mono text-ui-caption text-[var(--text-secondary)]">
+                <LockKeyhole className="h-3.5 w-3.5 shrink-0 text-[#7b8aa0]" />
+                <span className="truncate">{COMPANY_DEFAULT_ENDPOINT}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-2 rounded-lg border border-[#d8e2f0] bg-white/80 px-3 py-2.5 text-ui-caption sm:grid-cols-3">
+            <div className="min-w-0">
+              <span className="text-[var(--text-tertiary)]">状态</span>
+              <div className="mt-0.5 flex items-center gap-1.5 font-medium text-[var(--text-primary)]">
+                <span className={cn("h-1.5 w-1.5 rounded-full", active ? "bg-[var(--color-success)]" : configured ? "bg-[#f59e0b]" : "bg-[var(--text-tertiary)]")} />
+                {statusText}
+              </div>
+            </div>
+            <div className="min-w-0">
+              <span className="text-[var(--text-tertiary)]">模型</span>
+              <div className="mt-0.5 truncate font-medium text-[var(--text-primary)]">{modelText}</div>
+            </div>
+            <div className="min-w-0">
+              <span className="text-[var(--text-tertiary)]">用途</span>
+              <div className="mt-0.5 truncate font-medium text-[var(--text-primary)]">默认推荐</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-[#d8e2f0] bg-white p-3">
+          <label className="mb-2 flex items-center gap-2 text-ui-caption font-medium text-[var(--text-primary)]">
+            <KeyRound className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+            个人 API Key
+          </label>
+          <div className="relative">
+            <Input
+              type={showKey ? "text" : "password"}
+              value={apiKey}
+              onChange={(event) => {
+                setApiKey(event.target.value);
+                setTestResult(null);
+                setError(null);
+              }}
+              placeholder="输入你的 API Key"
+              autoComplete="one-time-code"
+              data-form-type="other"
+              className="bg-[var(--surface-primary)] pr-9 font-mono text-ui-body shadow-none"
+            />
+            <button
+              type="button"
+              onClick={() => setShowKey((value) => !value)}
+              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
+              aria-label={showKey ? t("hideApiKey") : t("showApiKey")}
+            >
+              {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+          <p className="mt-2 truncate text-ui-3xs text-[var(--text-tertiary)]" title={endpointPreview}>
+            预览: {endpointPreview}
+          </p>
+          {(error || testResult) && (
+            <div
+              className={cn(
+                "mt-3 flex items-center gap-2 rounded-md border px-2.5 py-2 text-ui-caption",
+                error
+                  ? "border-[var(--color-destructive)]/30 bg-[var(--color-destructive)]/10 text-[var(--color-destructive)]"
+                  : "border-[var(--color-success)]/30 bg-[var(--color-success)]/10 text-[var(--color-success)]",
+              )}
+            >
+              {error ? <AlertCircle className="h-3.5 w-3.5 shrink-0" /> : <Check className="h-3.5 w-3.5 shrink-0" />}
+              <span className="truncate">
+                {error ?? t("modelConfigTestPassed", { count: testResult?.model_count ?? 0 })}
+              </span>
+            </div>
+          )}
+          <div className="mt-3 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => testConnection.mutate()}
+              disabled={!canSubmit || mutating}
+              className="h-8"
+            >
+              {testConnection.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+              测试连接
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => saveProvider.mutate()}
+              disabled={!canSubmit || mutating}
+              className="h-8 bg-[var(--brand-primary)] text-[var(--brand-primary-text)] hover:bg-[var(--brand-primary-hover)]"
+            >
+              {saveProvider.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              保存并启用
+            </Button>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1057,6 +1269,10 @@ function FormRow({
 
 function isProviderEnabled(provider: ProviderInfo) {
   return provider.enabled && provider.status !== "disabled";
+}
+
+function isCompanyDefaultProvider(provider: ProviderInfo) {
+  return provider.id.startsWith("custom_") && provider.base_url?.replace(/\/$/, "") === COMPANY_DEFAULT_ENDPOINT;
 }
 
 function getActiveConfiguredProviderId(

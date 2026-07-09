@@ -372,6 +372,7 @@ function ConnectorRow({
               value={tokenInput}
               onChange={(e) => setTokenInput(e.target.value)}
               placeholder={t("tokenPatPlaceholder")}
+              title={t("tokenHint")}
               className="h-6 w-28 rounded border border-[var(--border-default)] bg-transparent px-1.5 text-ui-3xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[var(--border-focus)]"
             />
             <Button
@@ -443,6 +444,11 @@ function ConnectorRow({
         />
       </div>
     </div>
+    {(connector.status === "needs_auth" || connector.status === "failed") && connector.enabled && (
+      <p className="mt-1 px-2.5 text-ui-3xs text-[var(--text-tertiary)]">
+        {t("tokenHint")}
+      </p>
+    )}
     {showUrlForm && (
       <div className="mt-1.5">
         <AddConnectorForm

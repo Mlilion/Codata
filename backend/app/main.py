@@ -105,6 +105,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from app.models import dashboard as _dashboard_models  # noqa: F401 — registers Dashboard
     from app.models import dashboard_item as _dashboard_item_models  # noqa: F401 — registers DashboardItem
     from app.models import analysis_memory as _analysis_memory_models  # noqa: F401 — registers AnalysisMemory
+    from app.models import knowledge_entry as _knowledge_entry_models  # noqa: F401 — registers KnowledgeEntry
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -505,6 +506,7 @@ def _register_builtin_tools(
     from app.tool.builtin.invalid import InvalidTool
     from app.tool.builtin.plan import PlanTool
     from app.tool.builtin.present_file import PresentFileTool
+    from app.tool.builtin.read_knowledge import ReadKnowledgeTool
     from app.tool.builtin.question import QuestionTool
     from app.tool.builtin.submit_plan import SubmitPlanTool
     from app.tool.builtin.read import ReadTool
@@ -523,6 +525,7 @@ def _register_builtin_tools(
         PlanTool, SubmitPlanTool, ArtifactTool, PresentFileTool,
         CreateExpertTeamsTool, ChartSpecTool,
         RunQueryTool, BuildReportTool,
+        ReadKnowledgeTool,
     ]:
         registry.register(tool_cls())
 

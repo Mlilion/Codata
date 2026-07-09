@@ -1,15 +1,11 @@
 "use client";
 
-import { BookOpen, CheckCircle2, Download, ExternalLink, Info, RefreshCw } from "lucide-react";
+import { CheckCircle2, Download, Info, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { IS_DESKTOP } from "@/lib/constants";
-import { desktopAPI } from "@/lib/tauri-api";
 import { useUpdateCheck } from "@/hooks/use-update-check";
 import packageJson from "../../../package.json";
-
-const USER_GUIDE_URL = "https://example.com/codata-office-user-guide.html";
 
 export function AboutTab() {
   const { t } = useTranslation("settings");
@@ -36,14 +32,6 @@ export function AboutTab() {
       }).format(new Date(lastCheckedAt))
     : null;
 
-  const openUserGuide = () => {
-    if (IS_DESKTOP) {
-      void desktopAPI.openExternal(USER_GUIDE_URL);
-      return;
-    }
-    window.open(USER_GUIDE_URL, "_blank", "noopener,noreferrer");
-  };
-
   return (
     <div className="space-y-8">
       <section className="space-y-3">
@@ -66,31 +54,6 @@ export function AboutTab() {
         <p className="text-ui-caption text-[var(--text-tertiary)]">
           {t("aboutCopyright")}
         </p>
-      </section>
-
-      <Separator />
-
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-[var(--text-secondary)]" />
-          <h2 className="text-ui-title-sm font-semibold text-[var(--text-primary)]">
-            {t("aboutUserGuideTitle")}
-          </h2>
-        </div>
-        <div className="flex flex-col gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-ui-body font-medium text-[var(--text-primary)]">
-              {t("aboutUserGuide")}
-            </p>
-            <p className="mt-1 text-ui-caption leading-relaxed text-[var(--text-secondary)]">
-              {t("aboutUserGuideDesc")}
-            </p>
-          </div>
-          <Button variant="outline" size="sm" className="h-8 shrink-0" onClick={openUserGuide}>
-            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-            {t("aboutOpenUserGuide")}
-          </Button>
-        </div>
       </section>
 
       <section className="space-y-4">
