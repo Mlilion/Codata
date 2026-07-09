@@ -51,6 +51,7 @@
   "connectBridge": "Connect",
   "disconnectBridge": "Disconnect",
   "tokenPatPlaceholder": "Token / PAT",
+  "tokenHint": "If automatic authorization fails, generate a token under \"Settings → API Key\" on the datasage platform and paste it here.",
   "category_communication": "Communication",
   "category_productivity": "Productivity",
   "category_dev_tools": "Developer Tools",

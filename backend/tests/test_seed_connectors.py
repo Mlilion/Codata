@@ -29,7 +29,7 @@ def test_seed_registers_datasage():
     assert conn is not None
     assert conn.category == "data"
     assert conn.source == "builtin"
-    assert conn.url == ""
+    assert conn.url == "https://datasage.flow.chat/mcp"
     assert conn.type == "remote"
 
 
@@ -42,44 +42,91 @@ def test_seed_appears_in_status():
     entry = status["datasage"]
     assert entry["category"] == "data"
     assert entry["source"] == "builtin"
-    assert entry["url"] == ""
+    assert entry["url"] == "https://datasage.flow.chat/mcp"
 
 
 def test_seed_does_not_overwrite_existing_connector():
-    """A user custom connector with the same id must win over the seed."""
+    """A user custom connector with the same id must win over an empty-url seed.
+
+    Uses feishu, whose seed has no preset URL, so register_custom is allowed to
+    claim the placeholder.
+    """
     reg = _fresh_registry()
     reg.register_custom(
-        id="datasage",
-        name="My datasage",
-        url="https://my.datasage.example/mcp",
+        id="feishu",
+        name="My feishu",
+        url="https://my.feishu.example/mcp",
         description="custom",
-        category="data",
+        category="knowledge",
     )
 
     reg._register_seed_connectors()
 
-    conn = reg.get("datasage")
+    conn = reg.get("feishu")
     assert conn is not None
-    assert conn.source == "custom"
-    assert conn.url == "https://my.datasage.example/mcp"
+    # Claiming an empty-url seed keeps it a builtin (URL just filled in).
+    assert conn.source == "builtin"
+    assert conn.url == "https://my.feishu.example/mcp"
 
 
 def test_user_can_claim_empty_url_seed():
-    """After seeding, a user submitting a real URL claims the seed placeholder."""
+    """After seeding, a user submitting a real URL claims the seed placeholder.
+
+    Claiming only fills in the URL — the connector stays a builtin (no
+    "custom" badge), it is not demoted to a user custom connector. Uses feishu,
+    whose seed ships with an empty URL.
+    """
     reg = _fresh_registry()
     reg._register_seed_connectors()
-    assert reg.get("datasage").url == ""
+    assert reg.get("feishu").url == ""
 
     conn = reg.register_custom(
-        id="datasage",
-        name="datasage",
-        url="https://prod.datasage.example/mcp",
-        category="data",
+        id="feishu",
+        name="feishu",
+        url="https://prod.feishu.example/mcp",
+        category="knowledge",
     )
 
-    assert conn.source == "custom"
-    assert conn.url == "https://prod.datasage.example/mcp"
-    assert reg.get("datasage").url == "https://prod.datasage.example/mcp"
+    assert conn.source == "builtin"
+    assert conn.url == "https://prod.feishu.example/mcp"
+    assert reg.get("feishu").url == "https://prod.feishu.example/mcp"
+
+
+def test_claimed_seed_stays_builtin_after_restart():
+    """A claimed seed persists as custom state on disk, but restoring it on the
+    next startup must recognise the seed id and keep it a builtin.
+    """
+    tmp = tempfile.mkdtemp()
+    reg = ConnectorRegistry(project_dir=tmp)
+    reg._register_seed_connectors()
+    reg.register_custom(
+        id="feishu",
+        name="feishu",
+        url="https://prod.feishu.example/mcp",
+        category="knowledge",
+    )
+
+    # New registry over the same project dir → replays persisted state.
+    reg2 = ConnectorRegistry(project_dir=tmp)
+    for custom in reg2._persisted_state.get("custom", []):
+        cid = custom.get("id", "")
+        if cid and cid not in reg2._connectors:
+            is_seed = bool(reg2._catalog.get(cid, {}).get("seed"))
+            reg2._connectors[cid] = ConnectorInfo(
+                id=cid,
+                name=custom.get("name", cid),
+                url=custom.get("url", ""),
+                type="remote",
+                description=custom.get("description", ""),
+                category=custom.get("category", "custom"),
+                enabled=cid in reg2._persisted_state.get("enabled", []),
+                source="builtin" if is_seed else "custom",
+            )
+    reg2._register_seed_connectors()
+
+    conn = reg2.get("feishu")
+    assert conn.source == "builtin"
+    assert conn.url == "https://prod.feishu.example/mcp"
 
 
 def test_local_builtin_cannot_be_claimed():
