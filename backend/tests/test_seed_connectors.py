@@ -122,3 +122,17 @@ def test_seed_is_idempotent():
     conn = reg.get("datasage")
     assert conn is not None
     assert conn.source == "builtin"
+
+
+def test_feishu_is_seed_connector():
+    reg = _fresh_registry()
+    assert reg.get("feishu") is None  # not present before seeding
+
+    reg._register_seed_connectors()
+
+    conn = reg.get("feishu")
+    assert conn is not None
+    assert conn.category == "knowledge"
+    assert conn.source == "builtin"
+    assert conn.url == ""
+    assert conn.type == "remote"
