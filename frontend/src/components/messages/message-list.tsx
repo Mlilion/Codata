@@ -121,10 +121,14 @@ export function MessageList({
   const openForMessage = useActivityStore((s) => s.openForMessage);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const restoredExpertActivityKeyRef = useRef<string | null>(null);
+  // IDs whose content was already visible in StreamingMessage. These must not
+  // animate when the persisted message takes over after the stream ends.
+  const streamedHandoffIdsRef = useRef<Set<string>>(new Set());
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     restoredExpertActivityKeyRef.current = null;
+    streamedHandoffIdsRef.current = new Set();
   }, [sessionId]);
 
   // Keep StreamingMessage visible briefly after generation finishes so the
@@ -132,13 +136,11 @@ export function MessageList({
   // there's a 1-frame blank flash between StreamingMessage unmounting and
   // the DB messages mounting.
   const wasGeneratingRef = useRef(false);
-  const prevMessageCountRef = useRef(messages?.length ?? 0);
   const [showStreamingFallback, setShowStreamingFallback] = useState(false);
 
   useEffect(() => {
     if (isGenerating) {
       wasGeneratingRef.current = true;
-      prevMessageCountRef.current = messages?.length ?? 0;
       setShowStreamingFallback(false);
     } else if (wasGeneratingRef.current) {
       wasGeneratingRef.current = false;
@@ -147,12 +149,6 @@ export function MessageList({
       return () => clearTimeout(timer);
     }
   }, [isGenerating, messages.length]);
-
-  useEffect(() => {
-    if (showStreamingFallback && (messages?.length ?? 0) > prevMessageCountRef.current) {
-      setShowStreamingFallback(false);
-    }
-  }, [messages.length, showStreamingFallback]);
 
   // Reverse infinite scroll: observe top sentinel to load older messages
   useEffect(() => {
@@ -256,14 +252,14 @@ export function MessageList({
   // The shell message only exists after the backend created it (streamId is set).
   // During beginSending (streamId is null), we must NOT hide the previous response.
   const hasActiveStream = !!streamId;
-	  const hasVisibleStreamingReplacement = useMemo(() => {
-	    if (streamingText.trim() || streamingReasoning.trim()) return true;
-	    return streamingParts.some(
-	      (part) =>
-	        (part.type === "step-start" && part.snapshot?.mode === "expert-team") ||
-	        (part.type !== "step-start" && part.type !== "step-finish"),
-	    );
-	  }, [streamingParts, streamingReasoning, streamingText]);
+  const hasVisibleStreamingReplacement = useMemo(() => {
+    if (streamingText.trim() || streamingReasoning.trim()) return true;
+    return streamingParts.some(
+      (part) =>
+        (part.type === "step-start" && part.snapshot?.mode === "expert-team") ||
+        (part.type !== "step-start" && part.type !== "step-finish"),
+    );
+  }, [streamingParts, streamingReasoning, streamingText]);
 
   // Don't show the optimistic user bubble if the DB-fetched messages already
   // contain a matching user message. This prevents duplicates after navigating
@@ -279,6 +275,31 @@ export function MessageList({
     });
     return !hasPendingInDb;
   }, [pendingUserText, messages]);
+
+  // The latest persisted user message is the handoff boundary. This avoids
+  // matching message text, which is ambiguous for repeated prompts and can
+  // race with persistence or stream completion.
+  const latestUserMessageId = useMemo(() => {
+    for (let index = groups.length - 1; index >= 0; index -= 1) {
+      const group = groups[index];
+      if (group.kind === "user") return group.message.id;
+    }
+    return null;
+  }, [groups]);
+
+  // Record streamed assistant IDs while they are still the visible live turn.
+  // A later persisted message, such as a compaction summary, may push them
+  // out of the last position before the DB handoff finishes.
+  const lastGroupForHandoff = groups[groups.length - 1];
+  if (
+    (hasActiveStream || showStreamingFallback) &&
+    !showPendingBubble &&
+    lastGroupForHandoff?.kind === "assistant"
+  ) {
+    for (const message of lastGroupForHandoff.messages) {
+      streamedHandoffIdsRef.current.add(message.id);
+    }
+  }
 
   // Only show the loading state on the very first load (no cached/placeholder data).
   // When switching sessions with keepPreviousData, messages.length > 0 so we
@@ -388,7 +409,7 @@ export function MessageList({
                   <MessageItem
                     key={group.message.id}
                     message={group.message}
-                    isNew={newMessageIds.has(group.message.id)}
+                    isNew={newMessageIds.has(group.message.id) && group.message.id !== latestUserMessageId}
                     onEditAndResend={onEditAndResend}
                     isGenerating={isGenerating}
                     directory={directory}
@@ -406,19 +427,25 @@ export function MessageList({
               // both here causes duplicate blocks with duplicate Sources
               // footers and an overlapping tool-call timeline.
               //
-              // If ``showPendingBubble`` is true, the user just sent a new
-              // message that isn't yet in the DB cache — meaning the last
-              // assistant group is from a PREVIOUS turn. Don't hide it or the
-              // previous AI response disappears when a follow-up is sent.
+              // While a follow-up is still optimistic, keep the previous
+              // assistant group visible. Once the new user turn is persisted,
+              // the active stream's last assistant group can be replaced by
+              // StreamingMessage without hiding the previous response.
               const lastMsg = group.messages[group.messages.length - 1];
               const isLastOverall =
                 messages.length > 0 && lastMsg.id === messages[messages.length - 1].id;
 
-              // Check if any message in the group is new
-              const groupIsNew = group.messages.some((m) => newMessageIds.has(m.id));
+              // The last assistant group is either the live response or known
+              // history. In both cases it should not re-run an entry animation.
+              // Handoff IDs cover a streamed group pushed out of last position.
+              const groupIsNew =
+                !isLastOverall &&
+                group.messages.some((m) => newMessageIds.has(m.id)) &&
+                !group.messages.some((m) => streamedHandoffIdsRef.current.has(m.id));
+              const showStreamingReplacement = hasActiveStream || showStreamingFallback;
 
               if (
-                (hasActiveStream || showStreamingFallback) &&
+                showStreamingReplacement &&
                 hasVisibleStreamingReplacement &&
                 isLastOverall &&
                 !showPendingBubble

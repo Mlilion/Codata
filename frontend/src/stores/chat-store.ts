@@ -220,7 +220,10 @@ export const useChatStore = create<ChatStore>((set) => ({
     set((s) => {
       const draft = s.draftSession;
       const existing = s.sessions[sessionId];
-      const base: ChatSessionState = draft ?? existing ?? EMPTY_SESSION_STATE;
+      // A follow-up writes its optimistic state into the existing session.
+      // The landing draft can linger after navigation, so it must only seed
+      // a brand-new session that has no bucket yet.
+      const base: ChatSessionState = existing ?? draft ?? EMPTY_SESSION_STATE;
       const next: ChatSessionState = {
         ...base,
         streamId,
