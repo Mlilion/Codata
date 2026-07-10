@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, LayoutDashboard, Plus, Trash2, Loader2, Star } from "lucide-react";
+import { LayoutDashboard, Plus, Trash2, Loader2, Star } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { PageContent, PageFrame, PageHeader } from "@/components/ui/page-frame";
 import { cn } from "@/lib/utils";
 import { getDashboardRoute } from "@/lib/routes";
 import {
@@ -42,26 +42,24 @@ export default function DashboardListPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        {/* Header */}
-        <div className="mb-6 flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" asChild>
-            <Link href="/c/new">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <LayoutDashboard className="h-5 w-5 text-[var(--text-secondary)]" />
-          <h1 className="text-lg font-semibold text-[var(--text-primary)]">看板</h1>
+    <PageFrame className="flex-1">
+      <PageContent className="max-w-4xl lg:py-8">
+        <PageHeader
+          title="看板"
+          description="集中查看对话中固定的数据图表"
+          icon={LayoutDashboard}
+          backHref="/c/new"
+          actions={
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-[var(--surface-secondary)] px-3 py-1.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] hover:text-[var(--text-primary)]"
+            className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--border-default)] bg-[var(--surface-raised)] px-3 text-ui-body font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
           >
             <Plus className="h-4 w-4" />
             新建看板
           </button>
-        </div>
+          }
+        />
 
         {isLoading ? (
           <div className="flex items-center justify-center py-16 text-sm text-[var(--text-tertiary)]">
@@ -71,7 +69,7 @@ export default function DashboardListPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {creating && (
-              <div className="flex flex-col justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] p-4">
+              <div className="flex flex-col justify-between rounded-[var(--radius-panel)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-4 shadow-[var(--shadow-sm)]">
                 <input
                   autoFocus
                   value={name}
@@ -113,8 +111,8 @@ export default function DashboardListPage() {
               <div
                 key={board.id}
                 className={cn(
-                  "group relative flex flex-col rounded-xl border border-[var(--border-default)]",
-                  "bg-[var(--surface-secondary)] p-4 transition-colors hover:bg-[var(--surface-tertiary)]",
+                  "group relative flex flex-col rounded-[var(--radius-panel)] border border-[var(--border-default)]",
+                  "bg-[var(--surface-raised)] p-4 shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--surface-hover)]",
                 )}
               >
                 <Link href={getDashboardRoute(board.id)} className="flex-1">
@@ -147,7 +145,7 @@ export default function DashboardListPage() {
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </PageContent>
+    </PageFrame>
   );
 }

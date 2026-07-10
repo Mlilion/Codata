@@ -10,6 +10,8 @@ export type SortBy = "created" | "updated";
 export type AppMode = "chat" | "codata";
 
 interface SidebarStore {
+  /** Whether persisted sidebar preferences have finished hydrating. */
+  hasHydrated: boolean;
   /** Mobile drawer open state */
   isOpen: boolean;
   /** Desktop sidebar collapsed state */
@@ -39,6 +41,7 @@ interface SidebarStore {
   setOrganizeMode: (mode: OrganizeMode) => void;
   setSortBy: (sortBy: SortBy) => void;
   setAppMode: (mode: AppMode) => void;
+  setHasHydrated: (hydrated: boolean) => void;
   collapseAllProjects: (directories: string[]) => void;
   expandAllProjects: () => void;
   setWidth: (width: number) => void;
@@ -48,9 +51,15 @@ function clampWidth(w: number): number {
   return Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, Math.round(w)));
 }
 
+// Mode is intentionally not persisted: the route/session is the source of
+// truth. Keep an in-memory request so a route effect that runs during Zustand
+// hydration is not overwritten by the store's initial default.
+let requestedAppMode: AppMode | null = null;
+
 export const useSidebarStore = create<SidebarStore>()(
   persist(
     (set) => ({
+      hasHydrated: false,
       isOpen: false,
       isCollapsed: false,
       isSearchOpen: false,
@@ -79,7 +88,11 @@ export const useSidebarStore = create<SidebarStore>()(
       setSearchModalOpen: (open) => set({ isSearchModalOpen: open }),
       setOrganizeMode: (mode) => set({ organizeMode: mode }),
       setSortBy: (sortBy) => set({ sortBy }),
-      setAppMode: (mode) => set({ appMode: mode }),
+      setAppMode: (mode) => {
+        requestedAppMode = mode;
+        set({ appMode: mode });
+      },
+      setHasHydrated: (hydrated) => set({ hasHydrated: hydrated }),
       collapseAllProjects: (directories) =>
         set(() => {
           const next: Record<string, boolean> = {};
@@ -104,6 +117,10 @@ export const useSidebarStore = create<SidebarStore>()(
           appMode: current.appMode,
           width: clampWidth(merged.width ?? SIDEBAR_WIDTH),
         };
+      },
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+        if (requestedAppMode) state?.setAppMode(requestedAppMode);
       },
     },
   ),

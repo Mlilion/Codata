@@ -1,5 +1,6 @@
 {
   "title": "自动化任务",
+  "pageDescription": "按计划运行分析任务并查看执行记录。",
   "createNew": "新建任务",
   "editAutomation": "编辑任务",
   "active": "已启用",

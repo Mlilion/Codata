@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowLeft, BookOpen, Loader2, Plus, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { BookOpen, Loader2, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { PageContent, PageFrame, PageHeader, SurfacePanel } from "@/components/ui/page-frame";
 import { apiErrorMessage } from "@/lib/api";
 import {
   useAddKnowledge,
@@ -60,27 +60,16 @@ export default function KnowledgePage() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[var(--surface-chat)]">
-      <div className="shrink-0 border-b border-[var(--border-subtle)] px-5 py-4 lg:px-7">
-        <div className="mb-2 flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" asChild>
-            <Link href="/c/new">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <BookOpen className="h-5 w-5 text-[var(--text-secondary)]" />
-          <h1 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">
-            知识库
-          </h1>
-        </div>
-        <p className="text-sm text-[var(--text-secondary)]">
-          把飞书文档链接添加进来,分析时 AI 就能参考它们作为权威背景。
-        </p>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-5 py-5 lg:px-7 scrollbar-auto">
+    <PageFrame className="flex-1">
+      <PageContent className="max-w-4xl lg:py-8">
+        <PageHeader
+          title="知识库"
+          description="把飞书文档链接添加进来，分析时 AI 就能参考它们作为权威背景。"
+          icon={BookOpen}
+          backHref="/c/new"
+        />
         <div className="mx-auto max-w-3xl">
-          <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] p-4">
+          <SurfacePanel className="bg-[var(--surface-secondary)] p-4">
             <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 value={url}
@@ -110,7 +99,7 @@ export default function KnowledgePage() {
               className="mt-2 h-10 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-focus)]"
             />
             {error && <p className="mt-2 text-sm text-[var(--color-destructive)]">{error}</p>}
-          </div>
+          </SurfacePanel>
 
           <div className="mt-5">
             {isLoading ? (
@@ -178,7 +167,7 @@ export default function KnowledgePage() {
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </PageContent>
+    </PageFrame>
   );
 }

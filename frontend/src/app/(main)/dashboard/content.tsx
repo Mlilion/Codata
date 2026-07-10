@@ -26,6 +26,20 @@ const DEFAULT_H = 11; // ~440px tall — enough for header + chart title/legend/
 const MIN_W = 3;
 const MIN_H = 6; // ~240px — never collapse a chart below a readable size
 
+function useCompactDashboard() {
+  const [compact, setCompact] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1199px)");
+    const update = () => setCompact(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  return compact;
+}
+
 /** Build the rgl layout array: use each item's saved layout, else auto-place by index. */
 function buildLayout(items: DashboardItem[]): Layout[] {
   return items.map((item, i) => {
@@ -180,6 +194,7 @@ function DashboardTile({ item, dashboardId }: { item: DashboardItem; dashboardId
 export function DashboardContent({ dashboardId }: { dashboardId: string }) {
   const { data: items, isLoading, isError } = useDashboardItems(dashboardId);
   const saveLayout = useSaveDashboardLayout(dashboardId);
+  const compact = useCompactDashboard();
 
   // Per-tile sizes are declared via data-grid on each child (below), so rgl
   // never falls back to its w1/h1 default. onLayoutChange only persists real
@@ -235,6 +250,18 @@ export function DashboardContent({ dashboardId }: { dashboardId: string }) {
         <p className="max-w-xs text-xs text-[var(--text-tertiary)]">
           在对话里对带图表的查询结果点「钉到看板」,图表就会出现在这里。
         </p>
+      </div>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className="space-y-4">
+        {gridItems.map((item) => (
+          <div key={item.id} className="h-[320px] sm:h-[380px]">
+            <DashboardTile item={item} dashboardId={dashboardId} />
+          </div>
+        ))}
       </div>
     );
   }

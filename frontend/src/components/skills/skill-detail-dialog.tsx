@@ -17,12 +17,12 @@ import { useSkillDetail } from "@/hooks/use-plugins";
 import type { SkillInfo } from "@/types/plugins";
 
 const SOURCE_COLORS: Record<string, string> = {
-  builtin: "bg-blue-500/10 text-blue-400",
-  global: "bg-amber-500/10 text-amber-400",
-  project: "bg-emerald-500/10 text-emerald-400",
-  plugin: "bg-purple-500/10 text-purple-400",
-  bundled: "bg-blue-500/10 text-blue-400",
-  custom: "bg-orange-500/10 text-orange-400",
+  builtin: "bg-[var(--brand-soft)] text-[var(--text-accent)]",
+  global: "bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
+  project: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
+  plugin: "bg-[var(--surface-tertiary)] text-[var(--text-secondary)]",
+  bundled: "bg-[var(--brand-soft)] text-[var(--text-accent)]",
+  custom: "bg-[var(--surface-tertiary)] text-[var(--text-secondary)]",
 };
 
 interface SkillDetailDialogProps {
@@ -85,7 +85,7 @@ export function SkillDetailDialog({
                   <span
                     className={`text-ui-3xs px-1.5 py-0.5 rounded-full ${
                       skill.enabled
-                        ? "bg-emerald-500/10 text-emerald-400"
+                        ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
                         : "bg-[var(--surface-tertiary)] text-[var(--text-tertiary)]"
                     }`}
                   >
@@ -94,7 +94,7 @@ export function SkillDetailDialog({
                       : t("skillDisabled", { defaultValue: "Disabled" })}
                   </span>
                   {skill.is_expert && (
-                    <span className="text-ui-3xs px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500">
+                    <span className="text-ui-3xs px-1.5 py-0.5 rounded-full bg-[var(--color-warning-soft)] text-[var(--color-warning)]">
                       {t("expertSkill", { defaultValue: "Expert skill" })}
                     </span>
                   )}

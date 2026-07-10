@@ -113,6 +113,7 @@ export function SessionList() {
       const seen = new Set<string>();
       const unique: SessionResponse[] = [];
       for (const result of searchResults) {
+        if (result.session.app_mode === "codata") continue;
         if (seen.has(result.session.id)) continue;
         seen.add(result.session.id);
         unique.push(result.session);

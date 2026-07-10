@@ -10,6 +10,7 @@ import { SidebarFooter } from "./sidebar-footer";
 import { SidebarResizeHandle } from "./sidebar-resize-handle";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useIsMacOS } from "@/hooks/use-platform";
+import { useEffectiveSidebarWidth } from "@/hooks/use-effective-sidebar-width";
 import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
 
 const SidebarNav = dynamic(
@@ -22,7 +23,8 @@ const SidebarNav = dynamic(
 
 export function Sidebar() {
   const isCollapsed = useSidebarStore((s) => s.isCollapsed);
-  const width = useSidebarStore((s) => s.width);
+  const requestedWidth = useSidebarStore((s) => s.width);
+  const width = useEffectiveSidebarWidth(requestedWidth);
   const isMac = useIsMacOS();
 
   // macOS: sidebar extends to the window top (traffic lights overlay the

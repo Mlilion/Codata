@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StatusPill } from "@/components/ui/page-frame";
 import {
   useAddChannel,
   useCancelFeishuQrRegistration,
@@ -167,7 +168,7 @@ const PLATFORMS = ([
     id: "qq",
     name: "QQ",
     icon: <QQIcon size={28} />,
-    color: "text-[#111827]",
+    color: "text-[var(--text-primary)]",
     auth: "token",
     help: "Create a bot at QQ Open Platform",
     helpUrl: "https://q.qq.com",
@@ -216,16 +217,16 @@ function ChannelsSection() {
   };
 
   return (
-    <div className="flex h-full min-h-[720px] w-full gap-5 overflow-x-auto px-5 py-5 text-[#172033]">
-      <section className="flex w-[440px] shrink-0 flex-col">
+    <div data-testid="channel-workspace" className="flex min-h-full w-full flex-col gap-5 overflow-y-auto px-5 py-5 text-[var(--text-primary)] min-[1320px]:h-full min-[1320px]:min-h-[720px] min-[1320px]:flex-row min-[1320px]:overflow-hidden">
+      <section data-testid="channel-list" className="flex w-full shrink-0 flex-col min-[1320px]:w-[400px]">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.01em] text-[#101828]">消息渠道</h1>
-            <p className="mt-2 text-[13px] leading-5 text-[#63728a]">将 Codata 连接到消息平台</p>
+            <h1 className="text-ui-xl font-semibold text-[var(--text-primary)]">消息渠道</h1>
+            <p className="mt-2 text-[13px] leading-5 text-[var(--text-secondary)]">将 Codata 连接到消息平台</p>
           </div>
           <Button
             variant="outline"
-            className="h-8 rounded-lg border-[#d8e2f0] px-3 text-[12px] text-[#344054] shadow-sm"
+            className="h-8 rounded-lg border-[var(--border-default)] px-3 text-[12px] text-[var(--text-secondary)] shadow-sm"
             onClick={() => refetch()}
             disabled={isLoading}
           >
@@ -234,9 +235,9 @@ function ChannelsSection() {
           </Button>
         </div>
 
-        <div className="mt-5 grid h-11 grid-cols-[1.1fr_0.82fr_0.82fr_0.7fr] items-center rounded-lg border border-[#d8e2f0] bg-white px-3 text-[11px] shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
-          <span className="flex items-center gap-2 whitespace-nowrap font-medium text-[#1f2937]">
-            <span className={cn("h-2 w-2 rounded-full", gatewayRunning ? "bg-[#18b981]" : "bg-[#98a2b3]")} />
+        <div className="mt-5 grid h-11 grid-cols-[1.1fr_0.82fr_0.82fr_0.7fr] items-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)] px-3 text-[11px] shadow-[var(--shadow-sm)]">
+          <span className="flex items-center gap-2 whitespace-nowrap font-medium text-[var(--text-primary)]">
+            <span className={cn("h-2 w-2 rounded-full", gatewayRunning ? "bg-[var(--color-success)]" : "bg-[var(--text-tertiary)]")} />
             {gatewayRunning ? "网关运行中" : "网关未运行"}
           </span>
           <MetricDivider label="已配置" value={configuredCount} />
@@ -251,7 +252,7 @@ function ChannelsSection() {
         </div>
       </section>
 
-      <section className="min-w-[560px] flex-1">
+      <section className="min-w-0 flex-1">
         <ChannelDetailPanel
           platform={selectedPlatform}
           channel={selectedChannel}
@@ -266,7 +267,7 @@ function ChannelsSection() {
 
 function MetricDivider({ label, value }: { label: string; value: number }) {
   return (
-    <span className="flex items-center justify-center gap-1.5 whitespace-nowrap border-l border-[#d8e2f0] font-medium text-[#1f2937]">
+    <span className="flex items-center justify-center gap-1.5 whitespace-nowrap border-l border-[var(--border-default)] font-medium text-[var(--text-primary)]">
       <span>{label}</span>
       <span className="font-semibold">{value}</span>
     </span>
@@ -291,10 +292,10 @@ function ChannelGroup({
 
   return (
     <div className="mb-5">
-      <div className="mb-2 text-[13px] font-semibold text-[#1f2937]">
+      <div className="mb-2 text-[13px] font-semibold text-[var(--text-primary)]">
         {title} ({platforms.length})
       </div>
-      <div className={cn("overflow-hidden rounded-lg border border-[#d8e2f0] bg-white", !compact && "space-y-0")}>
+      <div className={cn("overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)]", !compact && "space-y-0")}>
         {platforms.map((platform, index) => (
           <PlatformRow
             key={platform.id}
@@ -332,20 +333,20 @@ function PlatformRow({
       onClick={onSelect}
       className={cn(
         "flex h-[58px] w-full items-center gap-3 px-3 text-left transition-colors",
-        separated && "border-t border-[#e4eaf3]",
-        selected ? "border border-[#8bbcff] bg-[#eaf2ff] shadow-[inset_3px_0_0_#1677ff]" : "hover:bg-[#f8fbff]",
+        separated && "border-t border-[var(--border-default)]",
+        selected ? "border border-[var(--brand-border)] bg-[var(--brand-soft)] shadow-[inset_3px_0_0_var(--brand-primary)]" : "hover:bg-[var(--surface-hover)]",
       )}
     >
       <PlatformIcon platform={platform} size="sm" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-[14px] font-semibold text-[#172033]">{platformDisplayName(platform)}</span>
+          <span className="truncate text-[14px] font-semibold text-[var(--text-primary)]">{platformDisplayName(platform)}</span>
           <ChannelStatusPill status={status} />
         </div>
-        <div className="mt-1 truncate text-[12px] text-[#66758d]">{platformSubtitle(platform)}</div>
+        <div className="mt-1 truncate text-[12px] text-[var(--text-secondary)]">{platformSubtitle(platform)}</div>
       </div>
       <div className="flex w-[92px] shrink-0 items-center justify-end gap-2">
-        {account && <span className="truncate text-[12px] text-[#53647c]">{account}</span>}
+        {account && <span className="truncate text-[12px] text-[var(--text-secondary)]">{account}</span>}
         <RowAction status={status} />
       </div>
     </button>
@@ -355,14 +356,14 @@ function PlatformRow({
 function RowAction({ status }: { status: string }) {
   if (status === "running") {
     return (
-      <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#d8e2f0] bg-white text-[#53647c]">
+      <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)] text-[var(--text-secondary)]">
         <MoreHorizontal className="h-3.5 w-3.5" />
       </span>
     );
   }
-  if (status === "configured") return <span className="rounded-lg border border-[#d8e2f0] bg-white px-2.5 py-1.5 text-[11px] font-medium text-[#344054]">编辑</span>;
-  if (status === "disabled") return <span className="rounded-lg border border-[#d8e2f0] bg-white px-2.5 py-1.5 text-[11px] font-medium text-[#344054]">重连</span>;
-  return <span className="rounded-lg border border-[#d8e2f0] bg-white px-2.5 py-1.5 text-[11px] font-medium text-[#344054]">连接</span>;
+  if (status === "configured") return <span className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--text-secondary)]">编辑</span>;
+  if (status === "disabled") return <span className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--text-secondary)]">重连</span>;
+  return <span className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--text-secondary)]">连接</span>;
 }
 
 function ChannelDetailPanel({
@@ -384,32 +385,32 @@ function ChannelDetailPanel({
   const account = channel?.account || platformDefaultAccount(platform, channel?.status ?? "idle");
 
   return (
-    <div className="flex min-h-[660px] flex-col overflow-hidden rounded-xl border border-[#d8e2f0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-      <div className="flex min-h-[86px] items-center justify-between gap-4 border-b border-[#d8e2f0] px-5">
+    <div data-testid="channel-detail" className="flex min-h-[660px] flex-col overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-raised)] shadow-[var(--shadow-sm)]">
+      <div className="flex min-h-[86px] items-center justify-between gap-4 border-b border-[var(--border-default)] px-5">
         <div className="flex min-w-0 items-center gap-3">
           <PlatformIcon platform={platform} size="lg" />
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
-              <h2 className="truncate text-[18px] font-semibold text-[#111827]">{platformDisplayName(platform)}</h2>
+              <h2 className="truncate text-[18px] font-semibold text-[var(--text-primary)]">{platformDisplayName(platform)}</h2>
               <ChannelStatusPill status={channel?.status ?? "idle"} />
             </div>
-            <p className="mt-1.5 truncate text-[13px] text-[#53647c]">{platformSubtitle(platform)}</p>
+            <p className="mt-1.5 truncate text-[13px] text-[var(--text-secondary)]">{platformSubtitle(platform)}</p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          {account && <span className="max-w-[180px] truncate text-[12px] font-medium text-[#53647c]">{account}</span>}
+          {account && <span className="max-w-[180px] truncate text-[12px] font-medium text-[var(--text-secondary)]">{account}</span>}
           {connected ? <DisconnectChannelButton channel={platform.id} onDone={onDone} /> : null}
         </div>
       </div>
 
-      <div className="flex h-11 items-end gap-5 border-b border-[#d8e2f0] px-5">
+      <div className="flex h-11 items-end gap-5 border-b border-[var(--border-default)] px-5">
         {supportsQr && (
           <button
             type="button"
             onClick={() => onAuthModeChange("qr")}
             className={cn(
               "h-full border-b-2 px-5 text-[13px] font-semibold transition-colors",
-              authMode === "qr" ? "border-[#1677ff] text-[#1677ff]" : "border-transparent text-[#344054]",
+              authMode === "qr" ? "border-[var(--brand-primary)] text-[var(--text-accent)]" : "border-transparent text-[var(--text-secondary)]",
             )}
           >
             扫码创建
@@ -420,14 +421,14 @@ function ChannelDetailPanel({
           onClick={() => onAuthModeChange("manual")}
           className={cn(
             "h-full border-b-2 px-5 text-[13px] font-semibold transition-colors",
-            !supportsQr || authMode === "manual" ? "border-[#1677ff] text-[#1677ff]" : "border-transparent text-[#344054]",
+            !supportsQr || authMode === "manual" ? "border-[var(--brand-primary)] text-[var(--text-accent)]" : "border-transparent text-[var(--text-secondary)]",
           )}
         >
           手动配置
         </button>
       </div>
 
-      <div className="grid flex-1 grid-cols-[minmax(230px,1fr)_minmax(230px,0.82fr)] gap-4 px-5 py-5">
+      <div className="grid flex-1 grid-cols-1 gap-4 px-5 py-5 lg:grid-cols-[minmax(230px,1fr)_minmax(230px,0.82fr)]">
         <div className="min-w-0 space-y-5">
           {supportsQr && authMode === "qr" ? (
             <InlineQrSetupCard platform={platform} onDone={onDone} />
@@ -437,14 +438,14 @@ function ChannelDetailPanel({
         <PlatformGuide platform={platform} />
       </div>
 
-      <div className="flex h-[60px] items-center justify-center gap-3 border-t border-[#d8e2f0] bg-white px-5">
-        <Button type="submit" form={formId} className="h-9 w-[140px] rounded-lg bg-[#1677ff] text-[13px] font-semibold text-white hover:bg-[#0f67db]">
+      <div className="flex h-[60px] items-center justify-center gap-3 border-t border-[var(--border-default)] bg-[var(--surface-raised)] px-5">
+        <Button type="submit" form={formId} className="h-9 w-[140px] rounded-lg bg-[var(--brand-primary)] text-[13px] font-semibold text-white hover:bg-[var(--brand-primary-hover)]">
           保存并连接
         </Button>
         {connected ? (
           <DisconnectChannelButton channel={platform.id} onDone={onDone} wide />
         ) : (
-          <Button variant="outline" className="h-9 w-[130px] rounded-lg border-[#d8e2f0] text-[13px] font-semibold text-[#344054]" disabled>
+          <Button variant="outline" className="h-9 w-[130px] rounded-lg border-[var(--border-default)] text-[13px] font-semibold text-[var(--text-secondary)]" disabled>
             断开
           </Button>
         )}
@@ -561,23 +562,23 @@ function QrSetupCard({
   };
 
   return (
-    <div className="flex min-h-[276px] flex-col items-center rounded-lg border border-[#d8e2f0] bg-[#fbfdff] px-5 py-5 text-center">
-      <div className="text-[14px] font-semibold text-[#1f2937]">{title}</div>
-      <p className="mt-2 text-[12px] text-[#66758d]">{description}</p>
-      <div className="mt-4 flex h-[118px] w-[118px] items-center justify-center rounded-lg border border-[#d8e2f0] bg-white p-2">
+    <div className="flex min-h-[276px] flex-col items-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] px-5 py-5 text-center">
+      <div className="text-[14px] font-semibold text-[var(--text-primary)]">{title}</div>
+      <p className="mt-2 text-[12px] text-[var(--text-secondary)]">{description}</p>
+      <div className="mt-4 flex h-[118px] w-[118px] items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)] p-2">
         {qrDataUrl ? (
           // QR codes are generated as client-only data URLs, so Next image optimization does not apply.
           // eslint-disable-next-line @next/next/no-img-element
           <img src={qrDataUrl} alt="channel qr code" className="h-full w-full" />
         ) : (
-          <QrCode className="h-10 w-10 text-[#98a2b3]" />
+          <QrCode className="h-10 w-10 text-[var(--text-tertiary)]" />
         )}
       </div>
-      <Button className="mt-4 h-8 w-[168px] rounded-lg bg-white text-[12px] font-semibold text-[#1677ff] ring-1 ring-[#1677ff] hover:bg-[#f2f7ff]" onClick={onStart} disabled={isStarting}>
+      <Button className="mt-4 h-8 w-[168px] rounded-lg bg-[var(--surface-raised)] text-[12px] font-semibold text-[var(--text-accent)] ring-1 ring-[var(--brand-primary)] hover:bg-[var(--brand-soft-hover)]" onClick={onStart} disabled={isStarting}>
         {isStarting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <QrCode className="h-3.5 w-3.5" />}
         扫描二维码创建
       </Button>
-      <button type="button" className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-medium text-[#1677ff]" onClick={handleCopy}>
+      <button type="button" className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--text-accent)]" onClick={handleCopy}>
         <Copy className="h-3.5 w-3.5" />
         {copyLabel}
       </button>
@@ -627,7 +628,7 @@ function CredentialConfigForm({ platform, formId, onDone }: { platform: Platform
 
   return (
     <form id={formId} className="space-y-2.5" onSubmit={handleSubmit}>
-      <div className="text-[13px] font-semibold text-[#1f2937]">凭证配置</div>
+      <div className="text-[13px] font-semibold text-[var(--text-primary)]">凭证配置</div>
       <div className="space-y-2.5">
         {platform.fields?.map((field) => (
           <FieldInput
@@ -643,7 +644,7 @@ function CredentialConfigForm({ platform, formId, onDone }: { platform: Platform
       </div>
       {error && <p className="text-[12px] text-red-500">{error}</p>}
       {addChannel.isPending && (
-        <div className="flex items-center gap-2 text-[12px] text-[#66758d]">
+        <div className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           正在连接
         </div>
@@ -670,7 +671,7 @@ function FieldInput({
   const { t } = useTranslation("settings");
   return (
     <label className="block">
-      <span className="mb-1 block text-[12px] font-medium text-[#53647c]">{fieldLabel(t, platformId, field)}</span>
+      <span className="mb-1 block text-[12px] font-medium text-[var(--text-secondary)]">{fieldLabel(t, platformId, field)}</span>
       <span className="relative block">
         <Input
           type={field.secret && !showSecret ? "password" : "text"}
@@ -678,12 +679,12 @@ function FieldInput({
           onChange={(event) => onChange(event.target.value)}
           placeholder={field.placeholder}
           autoComplete="one-time-code"
-          className={cn("h-8 rounded-md border-[#d8e2f0] bg-white text-[12px] placeholder:text-[#98a2b3]", field.secret && "pr-9")}
+          className={cn("h-8 rounded-md border-[var(--border-default)] bg-[var(--surface-raised)] text-[12px] placeholder:text-[var(--text-tertiary)]", field.secret && "pr-9")}
         />
         {field.secret && (
           <button
             type="button"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[#98a2b3] hover:text-[#344054]"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
             onClick={onToggleSecret}
           >
             {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -707,22 +708,22 @@ function PlatformGuide({ platform }: { platform: PlatformDef }) {
   };
 
   return (
-    <aside className="min-w-0 rounded-lg border border-[#d8e2f0] bg-[#fbfdff] p-4">
-      <div className="text-[14px] font-semibold text-[#1f2937]">配置引导</div>
-      <p className="mt-1.5 text-[12px] text-[#66758d]">{platformSubtitle(platform)}</p>
+    <aside className="min-w-0 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] p-4">
+      <div className="text-[14px] font-semibold text-[var(--text-primary)]">配置引导</div>
+      <p className="mt-1.5 text-[12px] text-[var(--text-secondary)]">{platformSubtitle(platform)}</p>
 
       <div className="mt-5 space-y-5">
         {platform.id === "feishu" ? (
           <>
             <GuideStep index={1} title="创建飞书应用" body="扫描二维码或进入飞书开放平台创建自建应用。">
-              <a href={platform.helpUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-[#1677ff]">
+              <a href={platform.helpUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-[var(--text-accent)]">
                 打开控制台
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </GuideStep>
             <GuideStep index={2} title="配置机器人" body="在应用中添加机器人，并设置消息与事件订阅。" />
             <GuideStep index={3} title="授权权限" body="复制以下权限范围并在飞书应用中完成授权。">
-              <div className="mt-2 min-w-0 overflow-hidden rounded-md border border-[#d8e2f0] bg-white p-2.5 font-mono text-[11px] leading-5 text-[#344054]">
+              <div className="mt-2 min-w-0 overflow-hidden rounded-md border border-[var(--border-default)] bg-[var(--surface-raised)] p-2.5 font-mono text-[11px] leading-5 text-[var(--text-secondary)]">
                 <div className="flex min-w-0 items-start gap-2">
                   <div className="min-w-0 flex-1 overflow-x-auto pr-1">
                     {FEISHU_SCOPES.map((scope) => (
@@ -731,8 +732,8 @@ function PlatformGuide({ platform }: { platform: PlatformDef }) {
                       </div>
                     ))}
                   </div>
-                  <button type="button" className="shrink-0 rounded p-1 text-[#66758d] hover:bg-[#eef4ff]" onClick={handleCopyScopes}>
-                    {copied ? <Check className="h-4 w-4 text-[#18b981]" /> : <Copy className="h-4 w-4" />}
+                  <button type="button" className="shrink-0 rounded p-1 text-[var(--text-secondary)] hover:bg-[var(--brand-soft-hover)]" onClick={handleCopyScopes}>
+                    {copied ? <Check className="h-4 w-4 text-[var(--color-success)]" /> : <Copy className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -743,7 +744,7 @@ function PlatformGuide({ platform }: { platform: PlatformDef }) {
           guide.map((step: PlatformGuideStep, index) => (
             <GuideStep key={step.titleKey} index={index + 1} title={t(step.titleKey)} body={t(step.bodyKey)}>
               {step.href && (
-                <a href={step.href} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-[#1677ff]">
+                <a href={step.href} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-[var(--text-accent)]">
                   打开控制台
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
@@ -759,10 +760,10 @@ function PlatformGuide({ platform }: { platform: PlatformDef }) {
 function GuideStep({ index, title, body, children }: { index: number; title: string; body: string; children?: ReactNode }) {
   return (
     <div className="grid min-w-0 grid-cols-[20px_minmax(0,1fr)] gap-3">
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e8f1ff] text-[11px] font-semibold text-[#1677ff]">{index}</span>
+      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--brand-soft)] text-[11px] font-semibold text-[var(--text-accent)]">{index}</span>
       <div className="min-w-0">
-        <div className="text-[12px] font-semibold text-[#1f2937]">{title}</div>
-        <p className="mt-1.5 text-[12px] leading-5 text-[#66758d]">{body}</p>
+        <div className="text-[12px] font-semibold text-[var(--text-primary)]">{title}</div>
+        <p className="mt-1.5 text-[12px] leading-5 text-[var(--text-secondary)]">{body}</p>
         {children}
       </div>
     </div>
@@ -787,30 +788,30 @@ function DisconnectChannelButton({ channel, onDone, wide }: { channel: string; o
     <Button
       variant="outline"
       className={cn(
-        "h-8 rounded-lg border-[#d8e2f0] text-[12px] font-semibold text-[#344054] hover:bg-red-50 hover:text-red-500",
+        "h-8 rounded-lg border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] hover:bg-[var(--color-destructive-soft)] hover:text-[var(--color-destructive)]",
         wide ? "w-[130px]" : "px-4",
       )}
       disabled={removeChannel.isPending}
       onClick={handleRemove}
     >
-      {removeChannel.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : wide ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5 text-red-500" />}
+      {removeChannel.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : wide ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5 text-[var(--color-destructive)]" />}
       断开
     </Button>
   );
 }
 
 function ChannelStatusPill({ status }: { status?: string }) {
-  if (status === "running") return <span className="shrink-0 rounded-md bg-[#dff8ed] px-2 py-0.5 text-[11px] font-semibold text-[#16a36a]">已连接</span>;
-  if (status === "configured") return <span className="shrink-0 rounded-md bg-[#eaf2ff] px-2 py-0.5 text-[11px] font-semibold text-[#1677ff]">已配置</span>;
-  if (status === "disabled") return <span className="shrink-0 rounded-md bg-[#eef2f7] px-2 py-0.5 text-[11px] font-semibold text-[#66758d]">已停用</span>;
-  return <span className="shrink-0 rounded-md bg-[#eef2f7] px-2 py-0.5 text-[11px] font-semibold text-[#66758d]">未配置</span>;
+  if (status === "running") return <StatusPill tone="success">已连接</StatusPill>;
+  if (status === "configured") return <StatusPill tone="brand">已配置</StatusPill>;
+  if (status === "disabled") return <StatusPill>已停用</StatusPill>;
+  return <StatusPill>未配置</StatusPill>;
 }
 
 function PlatformIcon({ platform, size }: { platform: PlatformDef; size: "sm" | "lg" }) {
   return (
     <span
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-lg bg-[#f5f8fc]",
+        "flex shrink-0 items-center justify-center rounded-lg bg-[var(--surface-muted)]",
         platform.color,
         size === "lg" ? "h-11 w-11" : "h-9 w-9",
       )}

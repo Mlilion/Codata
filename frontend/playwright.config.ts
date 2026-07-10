@@ -7,6 +7,8 @@ const headless =
     ? process.env.CODATA_UI_HEADLESS === "true"
     : Boolean(process.env.CI);
 const workers = Number(process.env.CODATA_UI_WORKERS ?? 2);
+const browserExecutable = process.env.CODATA_UI_BROWSER_EXECUTABLE;
+const video = process.env.CODATA_UI_DISABLE_VIDEO === "true" ? "off" : "retain-on-failure";
 
 export default defineConfig({
   testDir: "./tests/ui",
@@ -18,9 +20,10 @@ export default defineConfig({
   use: {
     baseURL,
     headless,
+    launchOptions: browserExecutable ? { executablePath: browserExecutable } : undefined,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
-    video: "retain-on-failure",
+    video,
   },
   webServer: {
     command: `npm run dev -- --hostname 127.0.0.1 --port ${PORT}`,

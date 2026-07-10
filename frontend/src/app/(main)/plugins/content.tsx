@@ -48,12 +48,12 @@ import type { PluginInfo, SkillInfo, StoreSkill } from "@/types/plugins";
 import type { ConnectorInfo } from "@/types/connectors";
 
 const SOURCE_COLORS: Record<string, string> = {
-  builtin: "bg-blue-500/10 text-blue-400",
-  global: "bg-amber-500/10 text-amber-400",
-  project: "bg-emerald-500/10 text-emerald-400",
-  plugin: "bg-purple-500/10 text-purple-400",
-  bundled: "bg-blue-500/10 text-blue-400",
-  custom: "bg-orange-500/10 text-orange-400",
+  builtin: "bg-[var(--brand-soft)] text-[var(--text-accent)]",
+  global: "bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
+  project: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
+  plugin: "bg-[var(--surface-tertiary)] text-[var(--text-secondary)]",
+  bundled: "bg-[var(--brand-soft)] text-[var(--text-accent)]",
+  custom: "bg-[var(--surface-tertiary)] text-[var(--text-secondary)]",
 };
 
 /** Derive i18n key from category slug: "dev-tools" → "category_dev_tools" */
@@ -122,9 +122,9 @@ export function PluginsTabContent() {
 /* ------------------------------------------------------------------ */
 
 const STATUS_COLORS: Record<string, string> = {
-  connected: "bg-emerald-500",
-  needs_auth: "bg-amber-500",
-  failed: "bg-red-500",
+  connected: "bg-[var(--color-success)]",
+  needs_auth: "bg-[var(--color-warning)]",
+  failed: "bg-[var(--color-destructive)]",
   disconnected: "bg-[var(--text-tertiary)]",
   disabled: "bg-[var(--text-tertiary)]",
 };

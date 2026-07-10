@@ -2,12 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PageContent, PageFrame, PageHeader, SurfacePanel } from "@/components/ui/page-frame";
 import { GeneralTab } from "@/components/settings/general-tab";
 import { ProvidersTab } from "@/components/settings/providers-tab";
 import { UsageSkeleton } from "@/components/settings/usage-tab";
@@ -58,34 +56,22 @@ export default function SettingsPageClient({ initialTab }: SettingsPageClientPro
 
   if (activeTab === "remote") {
     return (
-      <div className="flex-1 overflow-y-auto bg-[#fbfdff] scrollbar-auto">
+      <PageFrame className="flex-1">
         <RemoteTabContent />
-      </div>
+      </PageFrame>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-auto">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
-        {/* Header — mobile back button + current section title */}
-        <div className="mb-5 flex items-start gap-3">
-          <Button variant="ghost" size="icon" className="mt-0.5 h-8 w-8 shrink-0 lg:hidden" asChild>
-            <Link href="/c/new" aria-label={t("settings:backToApp")}>
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div className="min-w-0">
-            <div className="text-ui-caption font-medium text-[var(--text-tertiary)]">
-              {t("settings:title")}
-            </div>
-            <h1 className="mt-1 text-ui-xl font-semibold text-[var(--text-primary)]">
-              {activeLabel}
-            </h1>
-            <p className="mt-1 max-w-2xl text-ui-caption leading-relaxed text-[var(--text-secondary)]">
-              {activeDescription}
-            </p>
-          </div>
-        </div>
+    <PageFrame className="flex-1">
+      <PageContent className="max-w-5xl lg:py-8">
+        <PageHeader
+          eyebrow={t("settings:title")}
+          title={activeLabel}
+          description={activeDescription}
+          backHref="/c/new"
+          backLabel={t("settings:backToApp")}
+        />
 
         {/* Mobile tab pills — desktop uses the SettingsSidebar instead */}
         <div className="flex gap-1 overflow-x-auto pb-4 lg:hidden">
@@ -107,7 +93,7 @@ export default function SettingsPageClient({ initialTab }: SettingsPageClientPro
         </div>
 
         {/* Tab content */}
-        <div className="min-w-0 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-sm)] sm:p-6 lg:p-7">
+        <SurfacePanel className="p-4 sm:p-6 lg:p-7">
           {activeTab === "general" && <GeneralTab />}
           {activeTab === "providers" && <ProvidersTab />}
           {activeTab === "permissions" && <PermissionsTab />}
@@ -115,8 +101,8 @@ export default function SettingsPageClient({ initialTab }: SettingsPageClientPro
           {activeTab === "usage" && <UsageTab />}
           {activeTab === "memory" && <MemoryTab />}
           {activeTab === "about" && <AboutTab />}
-        </div>
-      </div>
-    </div>
+        </SurfacePanel>
+      </PageContent>
+    </PageFrame>
   );
 }

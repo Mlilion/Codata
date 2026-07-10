@@ -76,12 +76,14 @@ export function ChatView({ sessionId }: ChatViewProps) {
     staleTime: 30_000,
   });
   const setAppMode = useSidebarStore((s) => s.setAppMode);
+  const sessionAppMode = session
+    ? session.app_mode === "codata" ? "codata" : "chat"
+    : null;
 
   useEffect(() => {
-    if (session?.app_mode === "codata") {
-      setAppMode("codata");
-    }
-  }, [session?.app_mode, setAppMode]);
+    if (!sessionAppMode) return;
+    setAppMode(sessionAppMode);
+  }, [sessionAppMode, setAppMode]);
 
   // Auto-fix sessions with default title — set to first user message
   const qc = useQueryClient();

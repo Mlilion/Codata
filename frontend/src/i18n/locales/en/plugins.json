@@ -1,5 +1,6 @@
 {
   "title": "Plugins & Skills",
+  "pageDescription": "Manage enabled plugins, connectors, and reusable skills.",
   "pluginsTab": "Plugins",
   "connectorsTab": "Connectors",
   "searchPlaceholder": "Search...",

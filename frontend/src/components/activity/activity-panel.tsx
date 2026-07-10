@@ -293,9 +293,9 @@ function ExpertStepIcon({ step }: { step: ExpertProgressItem }) {
     <span
       className={cn(
         "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-[var(--surface-primary)]",
-        step.status === "completed" && "border-[rgba(18,185,129,0.22)] bg-[rgba(18,185,129,0.08)]",
-        step.status === "running" && "border-[rgba(11,118,246,0.24)] bg-[var(--data-accent-soft)]",
-        step.status === "failed" && "border-[rgba(239,68,68,0.24)] bg-[rgba(239,68,68,0.08)]",
+        step.status === "completed" && "border-[var(--color-success)]/25 bg-[var(--color-success-soft)]",
+        step.status === "running" && "border-[var(--brand-border)] bg-[var(--brand-soft)]",
+        step.status === "failed" && "border-[var(--color-destructive)]/25 bg-[var(--color-destructive-soft)]",
       )}
     >
       <ExpertStatusIcon status={step.status} />
@@ -356,7 +356,7 @@ export function ExpertProgressPanel({
     <div className="flex h-full flex-col bg-[var(--surface-primary)]">
       <div className="flex h-14 shrink-0 items-center justify-between px-4">
         <div className="flex min-w-0 items-center gap-2">
-          <h2 className="truncate text-lg font-semibold leading-6 text-[var(--text-primary)]">专家团进度</h2>
+          <h2 className="truncate text-ui-title font-semibold text-[var(--text-primary)]">专家团进度</h2>
         </div>
         {showClose && (
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
@@ -381,7 +381,7 @@ export function ExpertProgressPanel({
               {processDescription(process)}
             </div>
           </div>
-          <span className="shrink-0 rounded-md bg-[rgba(18,185,129,0.12)] px-2 py-1 text-ui-3xs font-semibold text-[var(--color-success)]">
+          <span className="shrink-0 rounded-md bg-[var(--color-success-soft)] px-2 py-1 text-ui-3xs font-semibold text-[var(--color-success)]">
             {processLabel(process)}
           </span>
         </div>
@@ -451,7 +451,7 @@ function ExpertProgressCard({
     <div
       className={cn(
         "overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]",
-        step.status === "running" && "border-[rgba(11,118,246,0.45)] shadow-[inset_3px_0_0_var(--data-accent)]",
+        step.status === "running" && "border-[var(--brand-border)] shadow-[inset_3px_0_0_var(--data-accent)]",
         step.delegatedBy && "ml-4 border-[var(--border-subtle)]",
       )}
     >
@@ -460,7 +460,7 @@ function ExpertProgressCard({
         onClick={onToggle}
         className={cn(
           "flex w-full items-start gap-3 px-3 py-3 text-left transition-colors",
-          step.status === "running" ? "bg-[rgba(11,118,246,0.035)]" : "hover:bg-[var(--surface-secondary)]",
+          step.status === "running" ? "bg-[var(--brand-soft)]" : "hover:bg-[var(--surface-secondary)]",
         )}
       >
         <ExpertStepIcon step={step} />
@@ -527,7 +527,7 @@ function ExpertProgressCard({
             transition={{ duration: 0.18, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="space-y-2 border-t border-[var(--border-subtle)] bg-[rgba(11,118,246,0.02)] px-3 pb-3 pl-14 pt-3">
+            <div className="space-y-2 border-t border-[var(--border-subtle)] bg-[var(--surface-muted)] px-3 pb-3 pl-14 pt-3">
               <div className="text-ui-3xs font-semibold text-[var(--text-tertiary)]">工具调用</div>
               {step.toolParts.length > 0 ? (
                 <div className="space-y-2 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2.5 py-2">

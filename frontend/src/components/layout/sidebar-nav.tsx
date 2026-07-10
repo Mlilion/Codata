@@ -1,6 +1,7 @@
 "use client";
 
 import { MessageSquare, BarChart3 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useSidebarStore, type AppMode } from "@/stores/sidebar-store";
 import { cn } from "@/lib/utils";
 
@@ -14,8 +15,22 @@ const MODES: { id: AppMode; label: string; icon: typeof MessageSquare }[] = [
  * sidebar. Mounted between the drag strip and the session list.
  */
 export function SidebarNav() {
+  const router = useRouter();
+  const pathname = usePathname();
   const appMode = useSidebarStore((s) => s.appMode);
   const setAppMode = useSidebarStore((s) => s.setAppMode);
+
+  const changeMode = (mode: AppMode) => {
+    if (mode === appMode) return;
+    setAppMode(mode);
+
+    // Product workspaces and historical sessions carry their own mode. Move to
+    // a neutral draft before switching so the current route cannot immediately
+    // restore the previous mode.
+    if (pathname !== "/c/new") {
+      router.push("/c/new");
+    }
+  };
 
   return (
     <div className="px-3 pt-1 pb-2">
@@ -27,7 +42,7 @@ export function SidebarNav() {
             <button
               key={mode.id}
               type="button"
-              onClick={() => setAppMode(mode.id)}
+              onClick={() => changeMode(mode.id)}
               aria-pressed={selected}
               className={cn(
                 "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-ui-body font-medium transition-colors",

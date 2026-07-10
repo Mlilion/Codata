@@ -7,6 +7,7 @@ import { ArrowLeft, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useIsMacOS } from "@/hooks/use-platform";
+import { useEffectiveSidebarWidth } from "@/hooks/use-effective-sidebar-width";
 import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { SidebarResizeHandle } from "@/components/layout/sidebar-resize-handle";
@@ -23,7 +24,8 @@ export function SettingsSidebar() {
     ? (rawActiveTab as SettingsTabId)
     : "general";
   const isMac = useIsMacOS();
-  const sidebarWidth = useSidebarStore((s) => s.width);
+  const requestedSidebarWidth = useSidebarStore((s) => s.width);
+  const sidebarWidth = useEffectiveSidebarWidth(requestedSidebarWidth);
   const [query, setQuery] = useState("");
 
   const navigateTab = useCallback(

@@ -18,6 +18,7 @@ import { useSidebarStore } from "@/stores/sidebar-store";
 import { useDashboards } from "@/hooks/use-dashboard";
 import { useSessions } from "@/hooks/use-sessions";
 import { useIsMacOS } from "@/hooks/use-platform";
+import { useEffectiveSidebarWidth } from "@/hooks/use-effective-sidebar-width";
 import { cn } from "@/lib/utils";
 import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
 import { getChatRoute, getDashboardRoute } from "@/lib/routes";
@@ -116,14 +117,10 @@ function NavRow({
 
 export function CodataSidebar() {
   const isCollapsed = useSidebarStore((s) => s.isCollapsed);
-  const width = Math.min(useSidebarStore((s) => s.width), CODATA_SIDEBAR_WIDTH);
+  const requestedWidth = useSidebarStore((s) => s.width);
+  const width = useEffectiveSidebarWidth(requestedWidth, CODATA_SIDEBAR_WIDTH);
   const isMac = useIsMacOS();
   const topOffset = IS_DESKTOP && !isMac ? TITLE_BAR_HEIGHT : 0;
-  const pathname = usePathname();
-  const { data: dashboards } = useDashboards();
-  const dashboardCount = dashboards?.length ?? 0;
-  const { data: sessionPages } = useSessions("codata");
-  const codataSessions = (sessionPages?.pages.flat() ?? []).slice(0, 20);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -135,81 +132,95 @@ export function CodataSidebar() {
         animate={{ width: isCollapsed ? 0 : width }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
       >
-        <SidebarHeader />
-        <SidebarNav />
-        <div className="px-3 pb-2">
-          <Link
-            href="/c/new"
-            className="flex h-9 items-center justify-center gap-2 rounded-lg bg-[var(--text-primary)] text-ui-body font-medium text-[var(--surface-primary)] transition-all hover:opacity-90 active:scale-[0.98]"
-          >
-            <Plus className="h-4 w-4" />
-            新建分析
-          </Link>
-        </div>
-        <div className="flex-1 overflow-y-auto px-3 pb-3 scrollbar-auto">
-          <SidebarGroupLabel>工作区</SidebarGroupLabel>
-          {SECTIONS.map((section) => {
-            const href = section.href;
-            const active = href ? pathname === href || pathname?.startsWith(`${href}/`) : false;
-            return (
-              <NavRow
-                key={section.id}
-                href={href}
-                active={active}
-                icon={section.icon}
-                label={section.label}
-                badge={section.id === "dashboards" ? dashboardCount : undefined}
-              />
-            );
-          })}
-
-          {(dashboards ?? []).length > 0 && (
-            <>
-              <SidebarGroupLabel>看板</SidebarGroupLabel>
-              <div className="space-y-0.5">
-              {(dashboards ?? []).slice(0, 6).map((b) => {
-                const boardHref = getDashboardRoute(b.id);
-                return (
-                  <NavRow
-                    key={b.id}
-                    href={boardHref}
-                    active={pathname === boardHref}
-                    icon={ChartColumn}
-                    label={b.name}
-                  />
-                );
-              })}
-              </div>
-            </>
-          )}
-
-          <SidebarGroupLabel>最近分析</SidebarGroupLabel>
-          <div className="space-y-0.5">
-            {codataSessions.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--surface-secondary)] px-3 py-4 text-ui-caption text-[var(--text-tertiary)]">
-                暂无分析会话
-              </div>
-            ) : (
-              codataSessions.slice(0, 8).map((s) => {
-                const href = getChatRoute(s.id);
-                const expertSession = isExpertTeamSession(s.slug, s.title);
-                return (
-                  <NavRow
-                    key={s.id}
-                    href={href}
-                    active={pathname === href}
-                    icon={expertSession ? Users : Search}
-                    label={s.title || "未命名分析"}
-                    tag={expertSession ? "专家团" : undefined}
-                  />
-                );
-              })
-            )}
-          </div>
-        </div>
-        <SidebarFooter />
+        <CodataSidebarContent />
       </motion.aside>
     </TooltipProvider>
+  );
+}
+
+export function CodataSidebarContent() {
+  const pathname = usePathname();
+  const { data: dashboards } = useDashboards();
+  const dashboardCount = dashboards?.length ?? 0;
+  const { data: sessionPages } = useSessions("codata");
+  const codataSessions = (sessionPages?.pages.flat() ?? []).slice(0, 20);
+
+  return (
+    <>
+      <SidebarHeader />
+      <SidebarNav />
+      <div className="px-3 pb-2">
+        <Link
+          href="/c/new"
+          className="flex h-9 items-center justify-center gap-2 rounded-lg bg-[var(--text-primary)] text-ui-body font-medium text-[var(--surface-primary)] transition-all hover:opacity-90 active:scale-[0.98]"
+        >
+          <Plus className="h-4 w-4" />
+          新建分析
+        </Link>
+      </div>
+      <div className="flex-1 overflow-y-auto px-3 pb-3 scrollbar-auto">
+        <SidebarGroupLabel>工作区</SidebarGroupLabel>
+        {SECTIONS.map((section) => {
+          const href = section.href;
+          const active = href ? pathname === href || pathname?.startsWith(`${href}/`) : false;
+          return (
+            <NavRow
+              key={section.id}
+              href={href}
+              active={active}
+              icon={section.icon}
+              label={section.label}
+              badge={section.id === "dashboards" ? dashboardCount : undefined}
+            />
+          );
+        })}
+
+        {(dashboards ?? []).length > 0 && (
+          <>
+            <SidebarGroupLabel>看板</SidebarGroupLabel>
+            <div className="space-y-0.5">
+            {(dashboards ?? []).slice(0, 6).map((b) => {
+              const boardHref = getDashboardRoute(b.id);
+              return (
+                <NavRow
+                  key={b.id}
+                  href={boardHref}
+                  active={pathname === boardHref}
+                  icon={ChartColumn}
+                  label={b.name}
+                />
+              );
+            })}
+            </div>
+          </>
+        )}
+
+        <SidebarGroupLabel>最近分析</SidebarGroupLabel>
+        <div className="space-y-0.5">
+          {codataSessions.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--surface-secondary)] px-3 py-4 text-ui-caption text-[var(--text-tertiary)]">
+              暂无分析会话
+            </div>
+          ) : (
+            codataSessions.slice(0, 8).map((s) => {
+              const href = getChatRoute(s.id);
+              const expertSession = isExpertTeamSession(s.slug, s.title);
+              return (
+                <NavRow
+                  key={s.id}
+                  href={href}
+                  active={pathname === href}
+                  icon={expertSession ? Users : Search}
+                  label={s.title || "未命名分析"}
+                  tag={expertSession ? "专家团" : undefined}
+                />
+              );
+            })
+          )}
+        </div>
+      </div>
+      <SidebarFooter />
+    </>
   );
 }
 
