@@ -25,24 +25,24 @@ import { useSettingsHasHydrated } from "@/stores/settings-store";
 import { useAutoDetectProvider } from "@/hooks/use-auto-detect-provider";
 import { useIsMacOS } from "@/hooks/use-platform";
 import { useTraySync } from "@/hooks/use-tray-sync";
+import { effectiveSidebarWidth } from "@/hooks/use-effective-sidebar-width";
 import { useActivityStore } from "@/stores/activity-store";
 import { useArtifactStore } from "@/stores/artifact-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useRightSidebarStore } from "@/stores/right-sidebar-store";
-import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
+import { IS_DESKTOP, MAIN_CONTENT_MIN_WIDTH, TITLE_BAR_HEIGHT } from "@/lib/constants";
 import { desktopAPI } from "@/lib/tauri-api";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 
-function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(false);
+function useViewport() {
+  const [viewportWidth, setViewportWidth] = useState(0);
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-    setIsDesktop(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    const update = () => setViewportWidth(window.innerWidth);
+    update();
+    window.addEventListener("resize", update, { passive: true });
+    return () => window.removeEventListener("resize", update);
   }, []);
-  return isDesktop;
+  return { isDesktop: viewportWidth >= 1024, viewportWidth };
 }
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -54,7 +54,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const sidebarWidth = useSidebarStore((s) => s.width);
   const rightSidebarIsOpen = useRightSidebarStore((s) => s.isOpen);
   const rightSidebarWidth = useRightSidebarStore((s) => s.width);
-  const isDesktop = useIsDesktop();
+  const { isDesktop, viewportWidth } = useViewport();
   const isMac = useIsMacOS();
   useAutoDetectProvider();
   useTraySync();
@@ -141,18 +141,27 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const isCodataWorkspacePage =
     (pathname?.startsWith("/experts") || pathname?.startsWith("/dashboard")) ?? false;
   useEffect(() => {
-    if (isCodataWorkspacePage && appMode !== "codata") {
+    if (isCodataWorkspacePage) {
       setAppMode("codata");
     }
-  }, [appMode, isCodataWorkspacePage, setAppMode]);
+  }, [isCodataWorkspacePage, setAppMode]);
   // Codata mode swaps the sidebar (unless on settings, which owns its own nav).
   const isCodataMode = (appMode === "codata" || isCodataWorkspacePage) && !isSettingsPage;
   const isActiveChat = isChatPage && pathname !== "/c/new";
-  const effectiveSidebarWidth = isCodataMode ? Math.min(sidebarWidth, 270) : sidebarWidth;
+  const renderedSidebarWidth = effectiveSidebarWidth(
+    sidebarWidth,
+    viewportWidth,
+    isCodataMode ? 270 : undefined,
+  );
   // Settings replaces the sidebar with its own; always keep the gutter.
   const marginLeft =
-    isDesktop && (isSettingsPage || !isCollapsed) ? effectiveSidebarWidth : 0;
-  const marginRight = isDesktop && isActiveChat && rightSidebarIsOpen ? rightSidebarWidth : 0;
+    isDesktop && (isSettingsPage || !isCollapsed) ? renderedSidebarWidth : 0;
+  const canDockRightSidebar =
+    isDesktop &&
+    isActiveChat &&
+    rightSidebarIsOpen &&
+    viewportWidth - marginLeft - rightSidebarWidth >= MAIN_CONTENT_MIN_WIDTH;
+  const marginRight = canDockRightSidebar ? rightSidebarWidth : 0;
 
   // macOS uses native traffic lights overlay — page headers extend to the top.
   // Windows/Linux keep the custom title bar as a real 32px row.

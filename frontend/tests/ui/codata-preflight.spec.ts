@@ -104,6 +104,7 @@ test.describe("Codata UI preflight", () => {
 
   test("desktop history path: sidebar navigation and persisted conversation render", async ({ page }) => {
     await page.goto("/c/session-alpha");
+    await expect(page.getByRole("button", { name: "Chat", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText("Quarterly planning notes").first()).toBeVisible();
     await expect(page.getByText("Summarize the quarterly plan")).toBeVisible();
     await expect(page.getByText(/retention, onboarding, and billing clarity/i)).toBeVisible();
@@ -116,15 +117,17 @@ test.describe("Codata UI preflight", () => {
     await expect(page.getByText("Invoice cleanup").first()).toBeVisible();
   });
 
-  test("codata history: 历史查询 lists codata sessions, isolated from chat", async ({ page }) => {
+  test("codata history: 最近分析 lists codata sessions, isolated from chat", async ({ page }) => {
     await page.goto("/c/session-alpha");
     // Chat sidebar shows chat sessions but NOT the codata one.
     await expect(page.getByText("Quarterly planning notes").first()).toBeVisible();
     await expect(page.getByText("Data result showcase")).toHaveCount(0);
 
-    // Switch to Codata mode → the codata sidebar's 历史查询 lists codata sessions.
-    await page.getByRole("button", { name: "Codata" }).click();
-    await expect(page.getByText("历史查询")).toBeVisible();
+    // Switching products moves to a neutral draft before showing Codata history.
+    await page.getByRole("button", { name: "Codata", exact: true }).click();
+    await expect(page).toHaveURL(/\/c\/new$/, { timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Codata", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("最近分析")).toBeVisible();
     const historyLink = page.getByRole("link", { name: "Data result showcase" });
     await expect(historyLink).toBeVisible();
 
@@ -135,6 +138,7 @@ test.describe("Codata UI preflight", () => {
 
   test("desktop data path: datasage result renders as an inline data card with tabs", async ({ page }) => {
     await page.goto("/c/session-data");
+    await expect(page.getByRole("button", { name: "Codata", exact: true })).toHaveAttribute("aria-pressed", "true");
 
     // The user's data question and the assistant preamble render.
     await expect(page.getByText("近三天各渠道的活跃用户数是多少?")).toBeVisible();
@@ -144,15 +148,17 @@ test.describe("Codata UI preflight", () => {
     // is expanded with tabs. It carries a chart, so it defaults to the 图表 tab;
     // the 结果 tab reveals the table values.
     await expect(page.getByText(/3 行 · 2 列/)).toBeVisible();
-    await expect(page.getByRole("button", { name: /结果/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /SQL/ })).toBeVisible();
-    await page.getByRole("button", { name: /结果/ }).click();
+    await expect(page.getByRole("button", { name: "结果", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "SQL", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "结果", exact: true }).click();
     await expect(page.getByText("App").first()).toBeVisible();
     await expect(page.getByText("12,304").or(page.getByText("12304")).first()).toBeVisible();
 
     // Switching to the SQL tab reveals the generated query.
-    await page.getByRole("button", { name: /SQL/ }).click();
-    await expect(page.getByText(/SELECT channel, dau FROM dws\.dau_by_channel/)).toBeVisible();
+    await page.getByRole("button", { name: "SQL", exact: true }).click();
+    const sqlPreview = page.locator("pre").filter({ hasText: "dws.dau_by_channel" });
+    await expect(sqlPreview).toContainText("SELECT");
+    await expect(sqlPreview).toContainText("channel");
 
     // An async query (sql_job with SQL but no rows) renders as a running-status
     // card — NOT an empty SQL-only result card. Guards the priority bug where a
@@ -162,10 +168,20 @@ test.describe("Codata UI preflight", () => {
     await expect(page.getByText(/预计 12s/)).toBeVisible();
 
     // Chart tab exposes an editor: opening 配置 reveals the chart-type control.
-    await page.getByRole("button", { name: /图表/ }).first().click();
-    await page.getByRole("button", { name: /配置/ }).first().click();
+    await page.getByRole("button", { name: "图表", exact: true }).click();
+    await page.getByRole("button", { name: "配置", exact: true }).click();
     await expect(page.getByText("图表类型").first()).toBeVisible();
     await expect(page.getByText("X 轴").first()).toBeVisible();
+  });
+
+  test("product mode switch leaves Codata-only workspace routes", async ({ page }) => {
+    await page.goto("/experts");
+    await expect(page.getByRole("heading", { name: "专家团" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Chat", exact: true }).click();
+
+    await expect(page).toHaveURL(/\/c\/new$/, { timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Chat", exact: true })).toHaveAttribute("aria-pressed", "true");
   });
 
   test("desktop dashboard path: pin a chart, then view it on the dashboard page", async ({ page }) => {

@@ -1,5 +1,6 @@
 {
   "title": "插件与技能",
+  "pageDescription": "管理已启用的插件、连接器和可复用技能。",
   "pluginsTab": "插件",
   "connectorsTab": "连接器",
   "searchPlaceholder": "搜索...",

@@ -9,10 +9,12 @@ import { SidebarHeader } from "./sidebar-header";
 import { SidebarNav } from "./sidebar-nav";
 import { SessionList } from "./session-list";
 import { SidebarFooter } from "./sidebar-footer";
+import { CodataSidebarContent } from "@/components/codata/codata-sidebar";
 import { useSidebarStore } from "@/stores/sidebar-store";
 
 export function MobileNav() {
   const { isOpen, setOpen } = useSidebarStore();
+  const appMode = useSidebarStore((s) => s.appMode);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -35,11 +37,22 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent side="left" className="p-0 w-[260px]">
         <TooltipProvider delayDuration={200}>
-          <div className="flex flex-col h-full">
-            <SidebarHeader />
-            <SidebarNav />
-            <SessionList />
-            <SidebarFooter />
+          <div
+            className="flex flex-col h-full"
+            onClick={(event) => {
+              if ((event.target as HTMLElement).closest("a[href]")) setOpen(false);
+            }}
+          >
+            {appMode === "codata" ? (
+              <CodataSidebarContent />
+            ) : (
+              <>
+                <SidebarHeader />
+                <SidebarNav />
+                <SessionList />
+                <SidebarFooter />
+              </>
+            )}
           </div>
         </TooltipProvider>
       </SheetContent>

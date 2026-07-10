@@ -504,7 +504,7 @@ export default function ExpertsPage() {
                     <ArrowLeft className="h-4.5 w-4.5" />
                   </Link>
                 </Button>
-                <h1 className="text-[22px] font-semibold tracking-normal text-[var(--text-primary)]">专家团</h1>
+                <h1 className="text-ui-xl font-semibold text-[var(--text-primary)]">专家团</h1>
               </div>
               <p className="text-[13px] leading-5 text-[var(--text-secondary)]">
                 复用可配置的多专家分析流程
@@ -590,7 +590,7 @@ export default function ExpertsPage() {
                   className={cn(
                     "h-8 shrink-0 rounded-lg border px-4 text-[13px] font-medium transition-colors cursor-pointer",
                     category === item
-                      ? "border-[rgba(11,118,246,0.24)] bg-[var(--data-accent-soft)] text-[var(--data-accent)]"
+                      ? "border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--text-accent)]"
                       : "border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--border-default)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]",
                   )}
                 >
@@ -736,14 +736,14 @@ function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; 
   const comingSoon = isExpertTeamComingSoon(team);
   const toneClass =
     team.process === "hierarchical"
-      ? "border-amber-200 bg-amber-50 text-amber-600"
-      : team.process === "sequential"
-        ? "border-indigo-200 bg-indigo-50 text-indigo-600"
+      ? "border-[var(--color-warning)]/25 bg-[var(--color-warning-soft)] text-[var(--color-warning)]"
+    : team.process === "sequential"
+        ? "border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--text-accent)]"
         : team.category === "用户留存"
-          ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+          ? "border-[var(--color-success)]/25 bg-[var(--color-success-soft)] text-[var(--color-success)]"
           : team.category === "转化漏斗"
-            ? "border-cyan-200 bg-cyan-50 text-cyan-600"
-            : "border-[rgba(11,118,246,0.18)] bg-[var(--data-accent-soft)] text-[var(--data-accent)]";
+            ? "border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--text-accent)]"
+            : "border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--text-accent)]";
 
   return (
     <button
@@ -752,7 +752,7 @@ function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; 
       className={cn(
         "group relative flex min-h-[106px] w-full items-center gap-4 overflow-hidden rounded-lg border bg-[var(--surface-primary)] px-4 py-3 text-left transition-colors cursor-pointer hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]",
         selected
-          ? "border-[rgba(11,118,246,0.28)] bg-[rgba(11,118,246,0.035)] shadow-[0_14px_30px_-30px_rgba(11,118,246,0.5)]"
+          ? "border-[var(--brand-border)] bg-[var(--brand-soft)] shadow-[var(--shadow-sm)]"
           : "border-[var(--border-default)]",
       )}
     >
@@ -775,8 +775,8 @@ function ExpertTeamCard({ team, selected, onClick }: { team: ExpertTeamSummary; 
             className={cn(
               "shrink-0 rounded-md px-1.5 py-0.5 text-ui-3xs font-semibold",
               team.process === "workflow"
-                ? "bg-[rgba(18,185,129,0.10)] text-[var(--color-success)]"
-                : "bg-[rgba(11,118,246,0.08)] text-[var(--data-accent)]",
+                ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
+                : "bg-[var(--brand-soft)] text-[var(--text-accent)]",
             )}
             title={teamProcessDescription(team.process)}
           >
@@ -927,7 +927,7 @@ function ExpertTeamDetailPanel({
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <div className="bg-[var(--surface-primary)] px-5 pb-4 pt-5">
           <div className="mb-4 flex items-start gap-3">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-[rgba(11,118,246,0.18)] bg-[var(--data-accent-soft)] text-[var(--data-accent)] shadow-[0_12px_24px_-26px_rgba(11,118,246,0.55)]">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--text-accent)] shadow-[var(--shadow-sm)]">
               <DetailIcon className="h-7 w-7" />
             </div>
             <div className="min-w-0 flex-1 pt-0.5">
@@ -946,7 +946,7 @@ function ExpertTeamDetailPanel({
                 <span className="rounded-md bg-[var(--data-accent-soft)] px-2.5 py-0.5 text-ui-2xs font-semibold text-[var(--data-accent)]">
                   {teamOriginLabel({ ...team, origin })}
                 </span>
-                <span className="rounded-md bg-[rgba(18,185,129,0.12)] px-2.5 py-0.5 text-ui-2xs font-semibold text-[var(--color-success)]">
+                <span className="rounded-md bg-[var(--color-success-soft)] px-2.5 py-0.5 text-ui-2xs font-semibold text-[var(--color-success)]">
                   {teamProcessLabel(detailProcess)}
                 </span>
                 {!editable && (
@@ -997,7 +997,7 @@ function ExpertTeamDetailPanel({
                 const member = detailMembers.find((item) => item.id === task.member);
                 return (
                   <div key={task.id} className="grid grid-cols-[26px_1fr] gap-3">
-                    <span className="relative z-[1] flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(11,118,246,0.24)] bg-[var(--data-accent-soft)] text-ui-2xs font-semibold text-[var(--data-accent)]">
+                    <span className="relative z-[1] flex h-6 w-6 items-center justify-center rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] text-ui-2xs font-semibold text-[var(--text-accent)]">
                       {index + 1}
                     </span>
                     <div className="min-w-0">
@@ -1052,7 +1052,7 @@ function ExpertTeamDetailPanel({
                   <Pencil className="h-4 w-4" />
                   修改
                 </Button>
-                <Button variant="outline" size="sm" onClick={remove} disabled={deleteTeam.isPending} className="h-9 gap-2 rounded-md border-red-200 text-red-600 hover:bg-red-50">
+                <Button variant="outline" size="sm" onClick={remove} disabled={deleteTeam.isPending} className="h-9 gap-2 rounded-md border-[var(--color-destructive)]/30 text-[var(--color-destructive)] hover:bg-[var(--color-destructive-soft)]">
                   <Trash2 className="h-4 w-4" />
                   删除
                 </Button>

@@ -1,5 +1,6 @@
 {
   "title": "Automations",
+  "pageDescription": "Run analysis tasks on a schedule and review their execution history.",
   "createNew": "New Automation",
   "editAutomation": "Edit Automation",
   "active": "Active",

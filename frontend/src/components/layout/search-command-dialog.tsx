@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { MessageSquareText, Search } from "lucide-react";
@@ -33,6 +33,7 @@ export function SearchCommandDialog() {
   const router = useRouter();
   const open = useSidebarStore((s) => s.isSearchModalOpen);
   const setOpen = useSidebarStore((s) => s.setSearchModalOpen);
+  const setAppMode = useSidebarStore((s) => s.setAppMode);
   const [query, setQuery] = useState("");
 
   const { data: sessionPages } = useSessions();
@@ -82,10 +83,11 @@ export function SearchCommandDialog() {
     return all.slice(0, RECENT_LIMIT).map((s) => ({ session: s }));
   }, [query, sessionPages, searchResults]);
 
-  const navigate = (session: SessionResponse) => {
+  const navigate = useCallback((session: SessionResponse) => {
+    setAppMode(session.app_mode === "codata" ? "codata" : "chat");
     router.push(getChatRoute(session.id));
     setOpen(false);
-  };
+  }, [router, setAppMode, setOpen]);
 
   useEffect(() => {
     if (!open) return;
@@ -101,9 +103,7 @@ export function SearchCommandDialog() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // navigate is stable enough for this lifetime
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, rows]);
+  }, [navigate, open, rows]);
 
   const hasQuery = query.trim().length > 0;
   const desktopTopOffset = TITLE_BAR_HEIGHT + 48;

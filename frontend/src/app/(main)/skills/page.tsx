@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowLeft, Search, Sparkles, Plus, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { Search, Sparkles, Plus, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { PageContent, PageFrame, PageHeader } from "@/components/ui/page-frame";
 import {
   Dialog,
   DialogContent,
@@ -43,24 +43,15 @@ export default function SkillsPage() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[var(--surface-chat)]">
-      <div className="shrink-0 border-b border-[var(--border-subtle)] px-5 py-4 lg:px-7">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" asChild>
-                <Link href="/c/new">
-                  <ArrowLeft className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Sparkles className="h-5 w-5 text-[var(--text-secondary)]" />
-              <h1 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">技能</h1>
-            </div>
-            <p className="text-sm text-[var(--text-secondary)]">
-              管理内置技能、项目技能和插件技能,或把你自己的分析方法沉淀成技能。
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+    <PageFrame className="flex-1">
+      <PageContent className="max-w-5xl lg:py-8">
+        <PageHeader
+          title="技能"
+          description="管理内置技能、项目技能和插件技能，或把自己的分析方法沉淀成技能。"
+          icon={Sparkles}
+          backHref="/c/new"
+          actions={
+            <div className="flex w-full items-center gap-2 xl:w-auto">
             <div className="relative w-full max-w-sm">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-tertiary)]" />
               <input
@@ -74,14 +65,10 @@ export default function SkillsPage() {
               <Plus className="h-4 w-4" />
               新建技能
             </Button>
-          </div>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto px-5 py-5 lg:px-7 scrollbar-auto">
-        <div className="mx-auto max-w-4xl">
-          <SkillsTab search={search} />
-        </div>
-      </div>
+            </div>
+          }
+        />
+        <SkillsTab search={search} />
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-lg">
@@ -134,6 +121,7 @@ export default function SkillsPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </PageContent>
+    </PageFrame>
   );
 }

@@ -243,20 +243,11 @@ interface StreamingMessageProps {
 
 export const StreamingMessage = memo(function StreamingMessage({ sessionId = null, parts, streamingText, streamingReasoning }: StreamingMessageProps) {
   const { t } = useTranslation("chat");
-  const isModelLoading = useChatSession(sessionId).isModelLoading;
+  const { isModelLoading } = useChatSession(sessionId);
   const isCodata = useSidebarStore((s) => s.appMode) === "codata";
   const refreshForMessage = useActivityStore((s) => s.refreshForMessage);
   const openForMessage = useActivityStore((s) => s.openForMessage);
   const autoOpenedExpertPanelRef = useRef(false);
-
-  // Track whether this component mounted with no existing stream content.
-  // If it did, the fade-in is a genuine "new response appearing" cue. If the
-  // store already had parts/text/reasoning at mount time, this is a remount
-  // mid-stream (e.g. route swap from /c/new → /c/[id] after session creation)
-  // and the fade would flash the whole chat area like a page refresh.
-  const freshMountRef = useRef(
-    parts.length === 0 && !streamingText && !streamingReasoning,
-  );
 
   // Stabilize liveParts reference — without useMemo, a new array is created
   // on every render, breaking downstream useMemo dependencies in MessageContent.
@@ -326,16 +317,12 @@ export const StreamingMessage = memo(function StreamingMessage({ sessionId = nul
               <span className="text-[11px] font-normal text-[var(--text-quaternary)]">正在分析</span>
             </div>
             <StreamingStage label={t("stageThinking")} />
-            <StreamingIndicator />
           </div>
         </div>
       );
     }
     return (
-      <div className={freshMountRef.current ? "animate-fade-in" : undefined}>
-        <StreamingStage label={t("stageThinking")} />
-        <StreamingIndicator />
-      </div>
+      <StreamingStage label={t("stageThinking")} />
     );
   }
 
@@ -354,14 +341,16 @@ export const StreamingMessage = memo(function StreamingMessage({ sessionId = nul
   const lastStepFinish = [...liveParts].reverse().find((p) => p.type === "step-finish") as
     | (PartData & { type: "step-finish"; reason?: string }) | undefined;
   const isGenerationDone = !!lastStepFinish && lastStepFinish.reason !== "tool_use";
-  const showTail = !isActivelyStreaming && !hasRunningTool && !isGenerationDone;
+  // The stage line already communicates the waiting state. Only show the
+  // trailing dot row when there is actual reasoning/tool activity above it.
+  const showTail = hasAnyActivity && !isActivelyStreaming && !hasRunningTool && !isGenerationDone;
 
   let stageLabel = t("stageThinking");
   if (hasRunningTool) stageLabel = t("stageWorkingWithTools");
   else if (!isActivelyStreaming && hasAnyTool) stageLabel = t("stageFinalizing");
 
   const streamingBody = (
-    <div className={freshMountRef.current ? "animate-fade-in" : undefined}>
+    <div>
       {!hasAnyActivity && <StreamingStage label={isModelLoading ? t("stageThinking") : stageLabel} />}
       <MessageContent parts={liveParts} isStreaming />
       {showTail && (

@@ -593,38 +593,38 @@ function CompanyPresetProviderCard({
   const mutating = testConnection.isPending || saveProvider.isPending;
 
   return (
-    <section className="overflow-hidden rounded-lg border border-[#cfe0ff] bg-[linear-gradient(180deg,rgba(244,248,255,0.9),rgba(255,255,255,0.98)_42%)] shadow-[0_12px_32px_rgba(16,24,40,0.06)]">
+    <section className="overflow-hidden rounded-[var(--radius-panel)] border border-[var(--brand-border)] bg-[var(--surface-raised)] shadow-[var(--shadow-sm)]">
       <div className="grid gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <div className="min-w-0">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#e8f1ff] text-[#1677ff] ring-1 ring-[#cfe0ff]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--text-accent)] ring-1 ring-[var(--brand-border)]">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-ui-title-sm font-semibold text-[var(--text-primary)]">{COMPANY_DEFAULT_PROVIDER_NAME}</h3>
-                <Badge variant="outline" className="border-[#bfdbfe] bg-[#eff6ff] px-1.5 py-0 text-ui-3xs text-[#1677ff]">
+                <Badge variant="outline" className="border-[var(--brand-border)] bg-[var(--brand-soft)] px-1.5 py-0 text-ui-3xs text-[var(--text-accent)]">
                   推荐
                 </Badge>
-                <Badge variant="outline" className="border-[#d8e2f0] bg-white px-1.5 py-0 text-ui-3xs text-[var(--text-secondary)]">
+                <Badge variant="outline" className="border-[var(--border-default)] bg-[var(--surface-raised)] px-1.5 py-0 text-ui-3xs text-[var(--text-secondary)]">
                   内置端点
                 </Badge>
               </div>
               <p className="mt-1 text-ui-caption leading-5 text-[var(--text-secondary)]">
                 公司统一维护的模型服务，填写个人 API Key 即可使用。
               </p>
-              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-[#d8e2f0] bg-white px-2.5 py-1.5 font-mono text-ui-caption text-[var(--text-secondary)]">
-                <LockKeyhole className="h-3.5 w-3.5 shrink-0 text-[#7b8aa0]" />
+              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] px-2.5 py-1.5 font-mono text-ui-caption text-[var(--text-secondary)]">
+                <LockKeyhole className="h-3.5 w-3.5 shrink-0 text-[var(--text-tertiary)]" />
                 <span className="truncate">{COMPANY_DEFAULT_ENDPOINT}</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 grid gap-2 rounded-lg border border-[#d8e2f0] bg-white/80 px-3 py-2.5 text-ui-caption sm:grid-cols-3">
+          <div className="mt-4 grid gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-muted)] px-3 py-2.5 text-ui-caption sm:grid-cols-3">
             <div className="min-w-0">
               <span className="text-[var(--text-tertiary)]">状态</span>
               <div className="mt-0.5 flex items-center gap-1.5 font-medium text-[var(--text-primary)]">
-                <span className={cn("h-1.5 w-1.5 rounded-full", active ? "bg-[var(--color-success)]" : configured ? "bg-[#f59e0b]" : "bg-[var(--text-tertiary)]")} />
+                <span className={cn("h-1.5 w-1.5 rounded-full", active ? "bg-[var(--color-success)]" : configured ? "bg-[var(--color-warning)]" : "bg-[var(--text-tertiary)]")} />
                 {statusText}
               </div>
             </div>
@@ -639,7 +639,7 @@ function CompanyPresetProviderCard({
           </div>
         </div>
 
-        <div className="rounded-lg border border-[#d8e2f0] bg-white p-3">
+        <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-muted)] p-3">
           <label className="mb-2 flex items-center gap-2 text-ui-caption font-medium text-[var(--text-primary)]">
             <KeyRound className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
             个人 API Key
