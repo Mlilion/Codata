@@ -1187,38 +1187,130 @@
             <h1>Codata 使用与配置文档</h1>
             <p>这是一份覆盖安装、配置、使用到更新全流程的完整文档,带你从下载安装到模型与 API Key 配置、MCP 与 datasage 接入,再到日常使用、自动更新与管理员发布,一步步把 Codata 用起来。</p>
             <div class="article-meta">
-              <span>最后整理：2026-05-20</span>
-              <span>阅读时间：25-40 分钟</span>
-              <span>适合桌面端和手机远程用户</span>
+              <span>面向公司内部推广</span>
+              <span>覆盖安装 → 配置 → 使用 → 更新全流程</span>
+              <span>单文件 HTML，离线可读</span>
               <span>可打印为 PDF</span>
             </div>
             <div class="meta-grid">
               <div class="stat-card">
+                <strong>这是什么</strong>
+                <span>Codata 桌面 Data Agent 的完整安装、配置与使用手册</span>
+              </div>
+              <div class="stat-card">
                 <strong>适用人群</strong>
-                <span>行政、人事、财务、运营、销售、项目助理、学生</span>
+                <span>需要用自然语言问数、做分析、出图表看板的分析师与业务团队</span>
               </div>
               <div class="stat-card">
-                <strong>核心任务</strong>
-                <span>文件阅读、表格分析、内容写作、文件整理、自动化</span>
-              </div>
-              <div class="stat-card">
-                <strong>使用方式</strong>
-                <span>桌面端为主，手机远程和消息渠道为辅助</span>
+                <strong>覆盖内容</strong>
+                <span>下载安装、模型与 API Key、MCP 与 datasage 接入、日常使用、自动更新与发布</span>
               </div>
               <div class="stat-card">
                 <strong>推荐读法</strong>
-                <span>先看快速开始，再按具体场景查阅功能</span>
+                <span>先按「安装 → 配置详解 → 快速上手」跑通,再按需查阅其他章节</span>
               </div>
             </div>
             <div class="hero-actions">
               <a class="button primary" href="#quickstart">十分钟完成第一个任务</a>
-              <a class="button" href="#prompts">复制常用提示词</a>
-              <a class="button" href="#config">查看配置详解</a>
+              <a class="button" href="#config">配置模型与数据源</a>
+              <a class="button" href="#prompts">学习提示词写法</a>
             </div>
           </header>
 
+          <section id="intro-body" aria-label="产品简介">
+            <p>Codata 是一个<strong>本地优先的桌面 Data Agent</strong>:你用自然语言提出数据问题,它替你发现表和指标口径、生成或复用 SQL、执行查询,再把结果整理成结果卡片和图表,并支持把有价值的分析钉到看板,或交给专家团做深度分析。对话、看板、记忆和生成产物默认存储在本机,只有在你选择云端模型或外部连接器时,相关上下文才会发送给对应服务。</p>
+            <p>它主要面向需要频繁问数、取数和做分析的分析师与业务团队。你不用先记住表在哪、字段怎么拼、口径怎么算——用业务语言把问题说清楚,由 Agent 完成 schema 检查、指标检索、SQL 生成与纠错,并用具体数字、口径说明和 SQL 解释结论,让你能核对答案从哪里来。</p>
+
+            <div class="callout tip">
+              <strong>一句话理解 Codata 的分析闭环</strong>
+              自然语言问数 → 发现表 / 字段 / 指标口径 → 生成或复用 SQL → 执行查询 → 查看结果卡片、SQL 与图表 → 钉到看板,或交给专家团做深度分析。
+            </div>
+
+            <div class="cards-3">
+              <div class="feature-card">
+                <h3>自然语言查数</h3>
+                <p>用业务语言描述问题,Codata 转成完整分析流程:schema 检查、指标检索、SQL 生成、执行查询与结论解释。</p>
+              </div>
+              <div class="feature-card">
+                <h3>SQL 与结果可检查</h3>
+                <p>结果不藏在文字后面。查询结果、SQL、字段、行数据和图表元数据都会保留,方便核对答案来源。</p>
+              </div>
+              <div class="feature-card">
+                <h3>看板与专家团</h3>
+                <p>把图表结果钉到命名看板,支持刷新;复杂问题可交给多 Agent 专家团拆分成发现、SQL、归因、可视化与报告。</p>
+              </div>
+            </div>
+          </section>
+
           <section id="install">
             <h2>安装</h2>
+            <p>Codata 是桌面应用,从公司统一的 <a href="#">站点下载页</a> 下载对应平台安装包即可。目前提供 Windows 与 macOS 两个平台,安装后应用会随本机一起运行,无需额外部署后端。</p>
+
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>平台</th>
+                    <th>架构</th>
+                    <th>安装包</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Windows</strong></td>
+                    <td>x86_64(64 位)</td>
+                    <td>NSIS 安装程序 <code>.exe</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>macOS</strong>(Apple Silicon)</td>
+                    <td>aarch64(M 系列芯片)</td>
+                    <td><code>.dmg</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>macOS</strong>(Intel)</td>
+                    <td>x86_64</td>
+                    <td><code>.dmg</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3 id="install-windows">Windows 安装</h3>
+            <div class="steps">
+              <div class="step">
+                <strong>下载安装程序</strong>
+                <p>在站点下载页选择 Windows 版本,下载 <code>.exe</code> 安装程序。</p>
+              </div>
+              <div class="step">
+                <strong>运行并按向导安装</strong>
+                <p>双击运行,按 NSIS 安装向导选择安装位置并完成安装。</p>
+              </div>
+              <div class="step">
+                <strong>启动应用</strong>
+                <p>从开始菜单或桌面快捷方式启动,桌面端会随应用一起运行本机后端服务。</p>
+              </div>
+            </div>
+
+            <h3 id="install-macos">macOS 安装</h3>
+            <div class="steps">
+              <div class="step">
+                <strong>选择正确的架构</strong>
+                <p>M 系列芯片(Apple Silicon)选 aarch64 版本,较旧的 Intel 机型选 x86_64 版本。不确定时,可在「关于本机」中查看芯片型号。</p>
+              </div>
+              <div class="step">
+                <strong>打开 DMG 并拖入应用程序</strong>
+                <p>双击 <code>.dmg</code>,把 Codata 拖到「应用程序」文件夹。</p>
+              </div>
+              <div class="step">
+                <strong>首次启动</strong>
+                <p>从启动台或应用程序文件夹打开 Codata。</p>
+              </div>
+            </div>
+
+            <div class="callout">
+              <strong>macOS 首次启动说明</strong>
+              发布的 macOS 安装包经过 Apple 签名与公证,正常情况下双击即可打开。如果系统仍弹出 Gatekeeper 提示,右键点击应用图标 → 选择「打开」,在确认框中再次点「打开」即可。系统最低要求为 macOS 10.15。
+            </div>
           </section>
 
           <section id="config">
@@ -1227,22 +1319,238 @@
 
           <section id="quickstart">
             <h2>快速上手</h2>
+            <p>下面用「十分钟第一个任务」跑通一次完整的问数闭环:提一个数据问题,看 Agent 如何发现表、生成 SQL、执行,并把结果整理成卡片和图表。</p>
+
+            <div class="callout warn">
+              <strong>开始之前:先配置模型</strong>
+              第一次使用需要先连接一个可用模型(自有 API Key、OpenAI 兼容端点或本地 Ollama)。想做真实数据分析,还需要接入数据源(datasage MCP)。详细步骤见 <a href="#config">配置详解</a>,配置好至少一个模型后再回到这里。
+            </div>
+
+            <div class="steps">
+              <div class="step">
+                <strong>打开应用</strong>
+                <p>启动 Codata,进入问答首页。确认输入框上方的模型下拉里至少能看到一个可用模型;没有模型时先去 <a href="#config">配置详解</a> 配置。</p>
+              </div>
+              <div class="step">
+                <strong>输入一个数据问题</strong>
+                <p>在首页输入框用业务语言提问,例如「上个月各渠道的日活趋势」。不用自己写 SQL、也不用先知道表名。</p>
+              </div>
+              <div class="step">
+                <strong>观察 Agent 工作</strong>
+                <p>Agent 会先发现相关表和字段、优先匹配注册指标口径,再生成或复用 SQL 并执行查询;遇到错误会根据数据平台返回的信息自动修复。</p>
+              </div>
+              <div class="step">
+                <strong>查看结果卡片与图表</strong>
+                <p>结果以结构化卡片展示,保留表格、SQL、字段和行数据。你可以核对 SQL 与口径,确认答案从哪里来,并让它渲染成图表。</p>
+              </div>
+              <div class="step">
+                <strong>钉到看板或导出</strong>
+                <p>把有价值的图表钉到命名看板方便后续刷新,或让 Agent 把结果整理成报告导出。复杂问题还可以交给专家团做深度分析。</p>
+              </div>
+            </div>
+
+            <div class="callout tip">
+              <strong>拿到结果后怎么继续</strong>
+              可以在同一会话里追问:「换成按周聚合」「加上环比」「只看华东区」「把这张图钉到『渠道大盘』看板」。Codata 会基于上下文继续调整 SQL 与图表,不用重头再来。
+            </div>
           </section>
 
           <section id="interface">
             <h2>界面导览</h2>
+            <p>Codata 的主界面可以分成几块:左侧会话栏、中间的问答首页 / 对话页、右侧工作栏与产物面板,以及设置中心入口。熟悉这几块的位置,日常使用就能顺畅切换。</p>
+
+            <div class="module-grid">
+              <div class="feature-card">
+                <h3>左侧会话栏</h3>
+                <p>查看历史会话、新建对话、搜索对话,并从这里进入设置。进入设置后会替换成专门的设置导航。</p>
+              </div>
+              <div class="feature-card">
+                <h3>问答首页</h3>
+                <p>包含欢迎语、输入框、模型下拉、工作模式、工作区按钮和附件按钮。所有任务都从这里发起。</p>
+              </div>
+              <div class="feature-card">
+                <h3>对话页</h3>
+                <p>显示用户消息、AI 流式回复、活动摘要、SQL 结果卡片、权限确认和追问输入框。</p>
+              </div>
+              <div class="feature-card">
+                <h3>右侧工作栏</h3>
+                <p>显示任务进度、生成文件、工作区记忆、连接器和技能等,配合对话查看当前任务的状态。</p>
+              </div>
+              <div class="feature-card">
+                <h3>产物面板</h3>
+                <p>把结果卡片、图表、Markdown / HTML 报告、表格和文件预览独立出来,方便在右侧查看与切换版本。</p>
+              </div>
+              <div class="feature-card">
+                <h3>设置中心</h3>
+                <p>从会话栏进入,集中管理外观、模型来源、权限、插件 / MCP、渠道、记忆、用量和更新。</p>
+              </div>
+            </div>
+
+            <h3 id="settings-tabs">设置中心标签一览</h3>
+            <p>设置中心按下面几个标签组织。这里只列出各标签负责什么,详细配置步骤见 <a href="#config">配置详解</a>。</p>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>标签</th>
+                    <th>负责什么</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>通用</strong></td>
+                    <td>外观、语言和常用偏好</td>
+                  </tr>
+                  <tr>
+                    <td><strong>模型</strong></td>
+                    <td>模型来源(服务商)、API Key 和默认模型,也在这里配置本地 Ollama</td>
+                  </tr>
+                  <tr>
+                    <td><strong>权限</strong></td>
+                    <td>工具执行、文件修改和授权记录</td>
+                  </tr>
+                  <tr>
+                    <td><strong>插件</strong></td>
+                    <td>扩展能力与技能,MCP 连接器(含 datasage 数据源接入)也在这里</td>
+                  </tr>
+                  <tr>
+                    <td><strong>渠道</strong></td>
+                    <td>消息渠道和扫码配置</td>
+                  </tr>
+                  <tr>
+                    <td><strong>记忆</strong></td>
+                    <td>工作区记忆和上下文</td>
+                  </tr>
+                  <tr>
+                    <td><strong>用量</strong></td>
+                    <td>用量、成本和调用统计</td>
+                  </tr>
+                  <tr>
+                    <td><strong>关于</strong></td>
+                    <td>版本信息与软件更新</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </section>
 
           <section id="prompts">
             <h2>提示词写法</h2>
+            <p>提示词不用复杂,但要说清楚。最稳定的结构是:<strong>目标 + 材料 + 输出格式 + 限制条件 + 受众</strong>。说清这几点,Agent 才能准确发现表、选对口径、生成合适的 SQL 和结果。</p>
+
+            <div class="cards-2">
+              <div class="note-card">
+                <h3>不推荐</h3>
+                <p>「帮我看看销售数据。」</p>
+                <p>没有明确结果和范围,Agent 可能只给泛泛总结,或者用错口径。</p>
+              </div>
+              <div class="note-card">
+                <h3>推荐</h3>
+                <p>「统计上个月各渠道的 GMV 和环比,找出增长最快和下滑最明显的渠道,输出汇总表格,并附上你用的 SQL 和口径说明。」</p>
+                <p>目标、材料、格式、限制和用途都清楚。</p>
+              </div>
+            </div>
+
+            <h3 id="prompt-parts">好提示词的组成部分</h3>
+            <div class="module-grid">
+              <div class="feature-card">
+                <h3>目标</h3>
+                <p>说明最终要什么,例如「算 DAU 趋势」「找异常」「做一份留存分析」。</p>
+              </div>
+              <div class="feature-card">
+                <h3>材料</h3>
+                <p>说明看哪些数据、哪个时间范围、哪个业务口径,或指定用注册指标。</p>
+              </div>
+              <div class="feature-card">
+                <h3>格式</h3>
+                <p>说明输出成表格、图表、看板、报告,还是要附上 SQL。</p>
+              </div>
+              <div class="feature-card">
+                <h3>限制</h3>
+                <p>说明时间范围、维度、过滤条件,以及是否要说明口径来源。</p>
+              </div>
+              <div class="feature-card">
+                <h3>受众</h3>
+                <p>说明给老板、业务同事还是自己看,决定结论的详略和表达。</p>
+              </div>
+              <div class="feature-card">
+                <h3>下一步</h3>
+                <p>说明是否要钉到看板、导出报告,或继续追问下钻。</p>
+              </div>
+            </div>
           </section>
 
           <section id="files">
             <h2>文件与工作区</h2>
+            <p>除了连接数据源问数,Codata 也能处理本地文件。你可以上传单个文件做临时分析,也可以选择一个文件夹作为工作区,让 Agent 在其中读写、搜索并形成长期记忆。</p>
+
+            <div class="cards-2">
+              <div class="feature-card">
+                <h3>什么时候用上传文件</h3>
+                <ul class="check-list">
+                  <li>只需要处理一两份材料,例如一个 CSV 或 Excel。</li>
+                  <li>文件不在同一个文件夹里。</li>
+                  <li>只是临时分析,不需要形成长期记忆。</li>
+                </ul>
+              </div>
+              <div class="feature-card">
+                <h3>什么时候用工作区</h3>
+                <ul class="check-list">
+                  <li>任务涉及一个文件夹里的多份文件。</li>
+                  <li>需要跨文件搜索和 <code>@</code> 文件引用。</li>
+                  <li>需要生成文件并保存到这个项目目录。</li>
+                  <li>是长期项目,希望后续保留记忆。</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="callout warn">
+              <strong>安全建议</strong>
+              第一次不要把「整个电脑」交给 Agent。先建一个测试文件夹,把要处理的文件放进去,再选择这个文件夹作为工作区。
+            </div>
+
+            <h3 id="workspace-memory">工作区记忆</h3>
+            <p>每个工作区维护独立的记忆——它从对话中自动生成,为后续会话提供上下文,例如项目背景、常用口径和已完成事项。在工作区中开始对话后,记忆会自动生成;你可以在右侧工作栏查看,也可以在设置 →「记忆」标签中管理、删除,删除后后续对话会重新生成。</p>
           </section>
 
           <section id="automations">
             <h2>自动化任务</h2>
+            <p>自动化适合重复的分析流程,例如每日数据摘要、每周指标周报、定期巡检和循环处理。任务同样在本机运行,按你设定的规则触发。</p>
+
+            <div class="cards-2">
+              <div class="feature-card">
+                <h3>定时执行</h3>
+                <p>按时间或间隔运行,例如每天 8:00、工作日 9:00 或每 2 小时一次。时间用 cron 格式配置:分 时 日 月 星期。</p>
+              </div>
+              <div class="feature-card">
+                <h3>循环执行</h3>
+                <p>让 Agent 反复执行提示词,每轮使用新的上下文,最多执行设定的迭代次数。在输出中包含 <code>[LOOP_DONE]</code> 可提前停止。</p>
+              </div>
+            </div>
+
+            <h3 id="automation-create">创建自动化的推荐流程</h3>
+            <div class="steps">
+              <div class="step">
+                <strong>新建任务</strong>
+                <p>进入自动化入口新建任务,填写名称和描述,例如「每日渠道数据摘要」。</p>
+              </div>
+              <div class="step">
+                <strong>写提示词</strong>
+                <p>说明要查什么数据、输出什么、是否需要保存结果或钉到看板。</p>
+              </div>
+              <div class="step">
+                <strong>选择任务类型和时间</strong>
+                <p>固定周期的任务选定时并配置 cron;需要持续处理队列的选循环并设定最大迭代次数。</p>
+              </div>
+              <div class="step">
+                <strong>选择模型和工作区</strong>
+                <p>不确定模型可选自动;若涉及本地文件,工作区必须选准确。</p>
+              </div>
+              <div class="step">
+                <strong>先立即运行测试</strong>
+                <p>手动跑一次确认结果正确,再开启定时开关。</p>
+              </div>
+            </div>
           </section>
 
           <section id="updates">
