@@ -142,7 +142,6 @@
 
     .dl-arch {
       font-size: 12px;
-      color: var(--color-text-secondary);
       background: var(--color-primary-soft);
       color: var(--color-primary-dark);
       padding: 2px 10px;
@@ -209,20 +208,20 @@
     <p id="version">正在获取最新版本…</p>
 
     <div id="cards">
-      <a class="dl-card" id="dl-macos-aarch64" href="#">
-        <span class="dl-icon">🍎</span>
+      <a class="dl-card" id="dl-macos-aarch64">
+        <span class="dl-icon" aria-hidden="true">🍎</span>
         <span class="dl-label">macOS (Apple Silicon)</span>
         <span class="dl-file">—</span>
         <span class="dl-arch">Apple Silicon</span>
       </a>
-      <a class="dl-card" id="dl-macos-x86_64" href="#">
-        <span class="dl-icon">🍎</span>
+      <a class="dl-card" id="dl-macos-x86_64">
+        <span class="dl-icon" aria-hidden="true">🍎</span>
         <span class="dl-label">macOS (Intel)</span>
         <span class="dl-file">—</span>
         <span class="dl-arch">Intel x86_64</span>
       </a>
-      <a class="dl-card" id="dl-windows-x86_64" href="#">
-        <span class="dl-icon">🪟</span>
+      <a class="dl-card" id="dl-windows-x86_64">
+        <span class="dl-icon" aria-hidden="true">🪟</span>
         <span class="dl-label">Windows</span>
         <span class="dl-file">—</span>
         <span class="dl-arch">x86_64</span>
@@ -253,7 +252,7 @@
         const res = await fetch(MANIFEST, { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        document.getElementById("version").textContent = `版本 v${data.version}`;
+        document.getElementById("version").textContent = `版本 v${data.version ?? ""}`;
         for (const [key, id] of Object.entries(map)) {
           const d = data.downloads?.[key];
           const el = document.getElementById(id);

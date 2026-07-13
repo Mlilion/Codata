@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Codata 使用与配置文档</title>
   <meta name="description" content="Codata 完整文档:安装、模型与 API Key 配置、MCP 与 datasage 接入、使用、自动更新与管理员发布手册。" />
-  <link rel="icon" href="../frontend/public/logo.svg" type="image/svg+xml" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23d97757'/%3E%3Ctext x='16' y='22' font-family='sans-serif' font-size='20' font-weight='700' fill='%23fff' text-anchor='middle'%3EC%3C/text%3E%3C/svg%3E" type="image/svg+xml" />
   <style>
     :root {
       --color-primary: #d97757;
@@ -111,6 +111,13 @@
       height: 32px;
       border-radius: 8px;
       flex-shrink: 0;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
     }
 
     .nav-title {
@@ -1102,7 +1109,7 @@
   <nav class="navbar" id="navbar">
     <div class="container nav-container">
       <a href="#intro" class="nav-brand">
-        <img src="../frontend/public/logo.svg" alt="Codata" class="nav-logo" />
+        <span class="nav-logo" aria-hidden="true">C</span>
         <span class="nav-title">Codata <span class="nav-title-cn">使用文档</span></span>
       </a>
       <div class="nav-links" id="navLinks">
