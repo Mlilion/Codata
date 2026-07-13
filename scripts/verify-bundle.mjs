@@ -18,12 +18,37 @@
  */
 
 import { existsSync, statSync, readdirSync, mkdtempSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { argv, env, exit, platform } from "node:process";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const repoRoot = resolve(scriptDir, "..");
+
+/**
+ * The expert-team presets the bundle must contain, derived from the source
+ * tree (`backend/app/expert/presets/*.yaml`) rather than a hardcoded list.
+ * Reading reality is deliberate: a hardcoded copy silently drifts when
+ * presets are added or removed, which is exactly what blocked the 1.1.13
+ * release (the list still demanded 8 presets deleted when expert teams were
+ * narrowed to data analysis). Whatever ships as source must ship in the bundle.
+ */
+export function sourcePresetFiles() {
+  const dir = join(repoRoot, "backend", "app", "expert", "presets");
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(".yaml"))
+    .sort();
+}
+
+// Only run the verification when invoked as a script. When imported (e.g.
+// by verify-bundle.test.mjs to check the preset list), skip all of it so
+// importing never calls exit() or touches a bundle dir.
+const isMain = import.meta.url === pathToFileURL(argv[1] ?? "").href;
+
+if (isMain) {
 const distArg = argv[2] ?? "backend/dist/codata-backend";
 const dist = resolve(distArg);
 
@@ -33,17 +58,7 @@ if (!existsSync(dist)) {
 
 const internal = join(dist, "_internal");
 const exeName = platform === "win32" ? "codata-backend.exe" : "codata-backend";
-const expertPresetFiles = [
-  "video_production.yaml",
-  "data_analysis_report.yaml",
-  "meeting_notes_actions.yaml",
-  "weekly_monthly_report.yaml",
-  "document_review_polish.yaml",
-  "presentation_briefing.yaml",
-  "research_competitive_analysis.yaml",
-  "sales_proposal.yaml",
-  "project_plan_risk.yaml",
-];
+const expertPresetFiles = sourcePresetFiles();
 
 /**
  * Each entry describes one required asset. `kind` is "file" | "dir"
@@ -196,6 +211,7 @@ const binary = join(dist, exeName);
 const port = 17000 + Math.floor(Math.random() * 500);
 
 await smokeTest(binary, port);
+} // end if (isMain)
 
 async function smokeTest(bin, port) {
   // Isolated data dir so the smoke test never writes into the repo.
