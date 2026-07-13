@@ -1648,14 +1648,214 @@
 
           <section id="updates">
             <h2>软件更新</h2>
+            <p>桌面版内置了自动更新:Codata 会定期检查是否有新版本,发现后提示你下载并一键重启安装。更新包来自官方 GitHub Releases,且经过签名校验,校验不通过不会被安装。</p>
+
+            <h3 id="update-auto">自动检查</h3>
+            <p>桌面端启动后会自动检查更新,无需手动操作:</p>
+            <ul>
+              <li><strong>启动后 5 秒</strong>做一次首轮检查;</li>
+              <li>之后<strong>每 4 小时</strong>自动再检查一次。</li>
+            </ul>
+            <p>检查到新版本时,应用会弹出更新提示,展示新版本号与更新说明。你可以选择立即下载,也可以「忽略此版本」;忽略后该版本不再重复提示,但下一个新版本仍会提示。</p>
+
+            <h3 id="update-manual">手动检查</h3>
+            <p>不想等自动检查时,可以随时手动触发:</p>
+            <ul>
+              <li>通过<strong>托盘 / 菜单里的「Check for Updates」</strong>触发一次检查;</li>
+              <li>或进入<strong>设置 →「关于」</strong>标签,在这里查看当前版本并检查更新。</li>
+            </ul>
+            <p>手动检查会忽略之前的「忽略此版本」记录,即使你此前忽略过该版本,也会重新提示。</p>
+
+            <h3 id="update-install">下载与安装</h3>
+            <div class="steps">
+              <div class="step">
+                <strong>收到更新提示</strong>
+                <p>自动或手动检查发现新版本后,弹出提示并显示版本号与更新说明。</p>
+              </div>
+              <div class="step">
+                <strong>下载(带进度)</strong>
+                <p>点击下载,应用会显示下载进度。更新包在下载与安装前会做签名校验,确保来源可信、未被篡改。</p>
+              </div>
+              <div class="step">
+                <strong>自动重启安装</strong>
+                <p>下载完成后自动安装并重启应用,重启后即为新版本。若暂时不想更新,可选择「忽略此版本」跳过本次。</p>
+              </div>
+            </div>
+
+            <div class="callout">
+              <strong>更新来自 GitHub Releases</strong>
+              自动更新从官方 GitHub Releases 拉取更新包与清单,因此更新时本机需要能访问 <code>github.com</code>。若网络无法访问 GitHub,检查更新会失败;此时可前往站点下载页手动下载最新安装包升级。
+            </div>
           </section>
 
           <section id="faq">
             <h2>常见问题</h2>
+            <p>下面是安装、连接与更新中最常遇到的问题与处理方式。涉及配置的项都指向 <a href="#config">配置详解</a> 的对应小节。</p>
+
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>问题</th>
+                    <th>处理方式</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>装不上 / 打不开</strong></td>
+                    <td>macOS 若双击无反应或被拦截,<strong>右键点击应用图标 → 选择「打开」</strong>,在确认框中再次点「打开」。Windows 缺少运行环境时,安装程序会自动引导安装 WebView2,按提示完成即可。</td>
+                  </tr>
+                  <tr>
+                    <td><strong>连不上模型</strong></td>
+                    <td>检查 <strong>设置 →「模型」</strong>里是否已连接可用的供应商(Provider)并正确填写了 API Key;本地 Ollama 需确认服务已启动、端点填写正确。详见 <a href="#config-models">模型来源与 API Key</a>。</td>
+                  </tr>
+                  <tr>
+                    <td><strong>datasage 查询失败</strong></td>
+                    <td>确认「datasage 数据平台」开关已打开,且已在 <code>https://datasage.flow.chat/mcp-access</code> 领取 MCP Key 并填入 Token 输入框。步骤见 <a href="#config-datasage">datasage 数据平台授权</a>。</td>
+                  </tr>
+                  <tr>
+                    <td><strong>更新检查失败</strong></td>
+                    <td>自动更新来自 GitHub Releases,需能访问 <code>github.com</code>。网络受限时检查会失败,可前往站点下载页手动下载最新安装包升级。参见 <a href="#updates">软件更新</a>。</td>
+                  </tr>
+                  <tr>
+                    <td><strong>macOS 提示「未验证的开发者」</strong></td>
+                    <td>发布的安装包已经过 Apple 签名与公证,一般双击即可打开。若系统仍弹出 Gatekeeper 提示,<strong>右键点击应用 → 选择「打开」</strong>并确认;如仍无法打开,请参考站点下载页的说明。</td>
+                  </tr>
+                  <tr>
+                    <td><strong>忘记 / 想改已授权的权限</strong></td>
+                    <td>进入 <strong>设置 →「权限」</strong>标签,这里列出所有已记住的授权,可逐条撤销或全部清除;撤销后相应操作会重新触发权限弹窗。详见 <a href="#config-permissions">权限与工作模式</a>。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </section>
 
           <section id="admin">
             <h2>管理员/发布手册</h2>
+            <p>本章面向负责发版的管理员,说明 Codata 桌面版从打 tag 到客户端自动升级的完整链路、清单文件格式、回滚思路,以及未来迁移到自有域名的演进路径。</p>
+
+            <h3 id="admin-release">发版流程</h3>
+            <p>发版由 CI 自动完成,触发方式是推送一个 <code>v*</code> 版本 tag(例如 <code>v1.1.12</code>)。CI 会自动执行:</p>
+            <div class="steps">
+              <div class="step">
+                <strong>推送版本 tag</strong>
+                <p>向仓库推送 <code>v*</code> tag,触发 <code>Release Desktop</code> 工作流。</p>
+              </div>
+              <div class="step">
+                <strong>构建各平台安装包</strong>
+                <p>并行构建 Windows(NSIS <code>.exe</code>)与 macOS(arm64 / x64),macOS 产物经过 Apple 签名与公证,更新包使用私钥签名。</p>
+              </div>
+              <div class="step">
+                <strong>生成清单文件</strong>
+                <p>汇总所有产物后生成两个清单:<code>latest.json</code>(用于客户端自动升级)与 <code>downloads-latest.json</code>(用于下载页展示)。</p>
+              </div>
+              <div class="step">
+                <strong>发布到 GitHub Release</strong>
+                <p>把安装包与两个清单一并发布到对应 tag 的 GitHub Release,并自动生成 Release Notes。</p>
+              </div>
+            </div>
+
+            <div class="callout tip">
+              <strong>客户端如何感知新版本</strong>
+              客户端 updater 端点固定为 <code>https://github.com/Mlilion/Codata/releases/latest/download/latest.json</code>。其中 <code>releases/latest/download/</code> 永远指向最新的 Release,因此发版完成后,客户端在下一次自动或手动检查时即可发现并升级到新版本,无需改动客户端配置。
+            </div>
+
+            <h3 id="admin-manifests">清单文件格式</h3>
+            <p><code>latest.json</code>(升级清单)包含版本号、更新说明、发布时间,以及三个平台各自的更新包签名与下载地址:</p>
+            <div class="prompt-card">
+              <div class="prompt-card-header">
+                <span class="prompt-card-title">latest.json(升级用)</span>
+                <button class="copy-button" type="button">复制</button>
+              </div>
+              <pre>{
+  "version": "1.1.12",
+  "notes": "Codata 1.1.12",
+  "pub_date": "2026-05-06T08:00:00.000Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "&lt;minisign 签名内容&gt;",
+      "url": "https://github.com/Mlilion/Codata/releases/download/v1.1.12/Codata_1.1.12_x64-setup.exe?r=..."
+    },
+    "darwin-aarch64": {
+      "signature": "&lt;minisign 签名内容&gt;",
+      "url": "https://github.com/Mlilion/Codata/releases/download/v1.1.12/Codata_1.1.12_aarch64.app.tar.gz?r=..."
+    },
+    "darwin-x86_64": {
+      "signature": "&lt;minisign 签名内容&gt;",
+      "url": "https://github.com/Mlilion/Codata/releases/download/v1.1.12/Codata_1.1.12_x64.app.tar.gz?r=..."
+    }
+  }
+}</pre>
+            </div>
+
+            <p><code>downloads-latest.json</code>(下载页清单)包含版本号、更新说明、发布时间、Release 来源链接,以及三个平台各自的下载条目(每条含展示标签、平台、架构、类型、文件名、下载地址、大小与 SHA-256 校验值):</p>
+            <div class="prompt-card">
+              <div class="prompt-card-header">
+                <span class="prompt-card-title">downloads-latest.json(下载页用)</span>
+                <button class="copy-button" type="button">复制</button>
+              </div>
+              <pre>{
+  "version": "1.1.12",
+  "notes": "Codata 1.1.12",
+  "pub_date": "2026-05-06T08:00:00.000Z",
+  "source": "https://github.com/Mlilion/Codata/releases/tag/v1.1.12",
+  "downloads": {
+    "macos-aarch64": {
+      "label": "macOS Apple Silicon",
+      "platform": "macos",
+      "arch": "aarch64",
+      "kind": "dmg",
+      "filename": "Codata_1.1.12_aarch64.dmg",
+      "url": "https://github.com/Mlilion/Codata/releases/download/v1.1.12/Codata_1.1.12_aarch64.dmg?r=...",
+      "size": 123456789,
+      "sha256": "&lt;64 位十六进制校验值&gt;"
+    },
+    "macos-x86_64": {
+      "label": "macOS Intel",
+      "platform": "macos",
+      "arch": "x86_64",
+      "kind": "dmg",
+      "filename": "Codata_1.1.12_x64.dmg",
+      "url": "https://github.com/Mlilion/Codata/releases/download/v1.1.12/Codata_1.1.12_x64.dmg?r=...",
+      "size": 123456789,
+      "sha256": "&lt;64 位十六进制校验值&gt;"
+    },
+    "windows-x86_64": {
+      "label": "Windows",
+      "platform": "windows",
+      "arch": "x86_64",
+      "kind": "nsis",
+      "filename": "Codata_1.1.12_x64-setup.exe",
+      "url": "https://github.com/Mlilion/Codata/releases/download/v1.1.12/Codata_1.1.12_x64-setup.exe?r=...",
+      "size": 123456789,
+      "sha256": "&lt;64 位十六进制校验值&gt;"
+    }
+  }
+}</pre>
+            </div>
+
+            <h3 id="admin-rollback">回滚思路</h3>
+            <p>如果某个版本发出后发现问题,核心思路是让 <code>latest</code> 端点重新指回稳定的旧版本:</p>
+            <ul>
+              <li><strong>删除或标记问题 Release</strong>:删除该 Release(或将其从 latest 中移除),使 <code>releases/latest</code> 回退到上一个正常 Release;</li>
+              <li><strong>重新发布上一个 tag</strong>:重新触发上一个稳定版本的发版,使其成为最新 Release,让客户端在下次检查时「升级」回稳定版本。</li>
+            </ul>
+            <div class="callout warn">
+              <strong>回滚前先确认最新指向</strong>
+              客户端只认 <code>releases/latest/download/latest.json</code>。操作后请确认该端点指向的确实是你期望的稳定版本,再让用户重新检查更新。
+            </div>
+
+            <h3 id="admin-selfhost">未来迁移到自有域名(演进,非本次)</h3>
+            <p>当前发布与更新都走 GitHub Releases。如需迁移到公司自有域名,发布脚本已预留支持,思路如下:</p>
+            <ul>
+              <li>在 CI 中设置环境变量 <code>CODATA_SITE_BASE_URL</code>(或更细粒度的 <code>CODATA_RELEASE_ASSET_BASE_URL</code>),让生成的清单里 <code>url</code> 指向自有地址;</li>
+              <li>同步修改 <code>tauri.conf.json</code> 中 <code>plugins.updater.endpoints</code>,把 updater 端点指向自有域名上的 <code>latest.json</code>;</li>
+              <li>发布脚本还会额外产出一个 <code>release-site/</code> 目录(含 <code>latest.json</code>、<code>downloads-latest.json</code> 与产物),可直接部署到自有站点发布。</li>
+            </ul>
+            <div class="callout">
+              <strong>两处要同步改</strong>
+              迁移的关键是「清单里的地址」与「客户端 updater 端点」两处必须一致:前者由 CI 环境变量控制,后者在 <code>tauri.conf.json</code> 中配置。任一处不匹配都会导致客户端拉取不到更新。
+            </div>
           </section>
 
         </article>
