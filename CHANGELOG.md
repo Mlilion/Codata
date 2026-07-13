@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), and this pro
 
 ## [Unreleased]
 
+## [1.1.13] - 2026-07-13
+
+### Added
+
+- Full HTML usage and configuration guide (`docs/codata-guide.html`) covering install, model/API key/MCP/datasage setup, usage, software updates, FAQ, and an admin release manual.
+- Download landing page (`site/index.html`) that resolves the latest release from GitHub Releases at runtime.
+- GitHub Pages workflow publishing the guide and download page.
+- Download and documentation entry points in the README (English and Chinese).
+
 ### Changed
 
 - Reworked open-source contributor guidance for Apache-2.0 community contributions.
