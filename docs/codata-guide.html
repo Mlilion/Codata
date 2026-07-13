@@ -1,0 +1,1383 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Codata 使用与配置文档</title>
+  <meta name="description" content="Codata 完整文档:安装、模型与 API Key 配置、MCP 与 datasage 接入、使用、自动更新与管理员发布手册。" />
+  <link rel="icon" href="../frontend/public/logo.svg" type="image/svg+xml" />
+  <style>
+    :root {
+      --color-primary: #d97757;
+      --color-primary-dark: #c46545;
+      --color-primary-soft: rgba(217, 119, 87, 0.1);
+      --color-accent: #2f6f64;
+      --color-accent-soft: rgba(47, 111, 100, 0.1);
+      --color-blue: #3f6f9f;
+      --color-blue-soft: rgba(63, 111, 159, 0.1);
+      --color-warning: #a56a18;
+      --color-warning-soft: rgba(165, 106, 24, 0.11);
+      --color-danger: #a64235;
+      --color-danger-soft: rgba(166, 66, 53, 0.1);
+      --color-bg: #faf9f5;
+      --color-bg-alt: #f5f3ed;
+      --color-bg-white: #ffffff;
+      --color-text: #29261b;
+      --color-text-secondary: #5a5549;
+      --color-text-muted: #8a8577;
+      --color-border: #e5e2d9;
+      --shadow-sm: 0 2px 8px rgba(41, 38, 27, 0.06);
+      --shadow-md: 0 4px 20px rgba(41, 38, 27, 0.1);
+      --shadow-lg: 0 8px 40px rgba(41, 38, 27, 0.14);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      --transition: all 0.25s ease;
+      --nav-height: 60px;
+      --sidebar-width: 284px;
+      --content-width: 820px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.72;
+    }
+
+    .docs-body {
+      overflow: hidden;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .navbar {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 100;
+      height: var(--nav-height);
+      background: rgba(250, 249, 245, 0.94);
+      border-bottom: 1px solid var(--color-border);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .nav-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--color-text);
+      text-decoration: none;
+      min-width: 0;
+    }
+
+    .nav-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+
+    .nav-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .nav-title-cn {
+      color: var(--color-text-secondary);
+      font-weight: 450;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .nav-link,
+    .nav-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 0;
+      border-radius: var(--radius-full);
+      background: transparent;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 550;
+      padding: 6px 14px;
+      text-decoration: none;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .nav-link:hover,
+    .nav-button:hover {
+      color: var(--color-text);
+      background: rgba(41, 38, 27, 0.05);
+    }
+
+    .nav-link-active {
+      color: var(--color-primary) !important;
+      background: var(--color-primary-soft);
+      font-weight: 700;
+    }
+
+    .nav-cta {
+      margin-left: 8px;
+      background: var(--color-text);
+      color: var(--color-bg) !important;
+      padding: 7px 16px;
+    }
+
+    .nav-cta:hover {
+      background: #3d3a2e;
+      color: var(--color-bg) !important;
+    }
+
+    .nav-toggle {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .nav-toggle span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--color-text);
+      transition: var(--transition);
+    }
+
+    .nav-toggle.open span:nth-child(1) {
+      transform: rotate(45deg) translate(5px, 5px);
+    }
+
+    .nav-toggle.open span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .nav-toggle.open span:nth-child(3) {
+      transform: rotate(-45deg) translate(5px, -5px);
+    }
+
+    .docs-layout {
+      display: flex;
+      height: 100vh;
+      padding-top: var(--nav-height);
+    }
+
+    .docs-sidebar {
+      width: var(--sidebar-width);
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.92);
+      border-right: 1px solid var(--color-border);
+      overflow-y: auto;
+      position: sticky;
+      top: var(--nav-height);
+      height: calc(100vh - var(--nav-height));
+    }
+
+    .docs-sidebar-inner {
+      padding: 24px 16px 40px;
+    }
+
+    .docs-nav-section {
+      margin-bottom: 28px;
+    }
+
+    .docs-nav-title {
+      color: var(--color-text-muted);
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+      padding: 0 10px;
+      text-transform: uppercase;
+    }
+
+    .docs-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      font-weight: 560;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .docs-nav-item:hover {
+      background: var(--color-bg-alt);
+      color: var(--color-text);
+    }
+
+    .docs-nav-item.active {
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      font-weight: 720;
+    }
+
+    .docs-nav-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+
+    .docs-nav-item.active .docs-nav-icon {
+      opacity: 1;
+      stroke: var(--color-primary);
+    }
+
+    .docs-toc-section {
+      border-top: 1px solid var(--color-border);
+      padding-top: 20px;
+    }
+
+    .docs-toc-item {
+      display: block;
+      border-left: 2px solid transparent;
+      color: var(--color-text-muted);
+      font-size: 0.825rem;
+      line-height: 1.5;
+      margin-bottom: 1px;
+      padding: 4px 10px;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .docs-toc-item:hover {
+      border-left-color: var(--color-border);
+      color: var(--color-text-secondary);
+    }
+
+    .docs-toc-item.active {
+      border-left-color: var(--color-primary);
+      color: var(--color-primary);
+      font-weight: 650;
+    }
+
+    .docs-toc-item.toc-h3 {
+      font-size: 0.8rem;
+      padding-left: 22px;
+    }
+
+    .docs-content {
+      flex: 1;
+      overflow-y: auto;
+      background: transparent;
+    }
+
+    .docs-content-inner {
+      max-width: var(--content-width);
+      margin: 0 auto;
+      padding: 40px 48px 84px;
+    }
+
+    .docs-article {
+      color: var(--color-text);
+      font-size: 0.96rem;
+      line-height: 1.75;
+    }
+
+    .doc-hero {
+      padding: 36px 0 24px;
+      border-bottom: 2px solid var(--color-border);
+      margin-bottom: 30px;
+    }
+
+    .doc-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 6px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-bg-white);
+      color: var(--color-primary);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .doc-hero h1 {
+      color: var(--color-text);
+      font-size: 2.35rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      line-height: 1.16;
+      margin: 0 0 16px;
+    }
+
+    .doc-hero p {
+      color: var(--color-text-secondary);
+      font-size: 1rem;
+      margin: 0 0 18px;
+      max-width: 760px;
+    }
+
+    .article-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 18px;
+    }
+
+    .article-meta span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-bg-white);
+      color: var(--color-text-muted);
+      font-size: 0.78rem;
+      font-weight: 680;
+      padding: 3px 10px;
+      white-space: nowrap;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+      background: var(--color-bg-white);
+      color: var(--color-text);
+      font-size: 0.9rem;
+      font-weight: 680;
+      padding: 9px 14px;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .button:hover {
+      border-color: rgba(217, 119, 87, 0.45);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    .button.primary {
+      border-color: var(--color-text);
+      background: var(--color-text);
+      color: var(--color-bg);
+    }
+
+    .button.primary:hover {
+      background: #3d3a2e;
+      color: var(--color-bg);
+    }
+
+    .hero-shot {
+      margin-top: 26px;
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-bg-white);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .hero-shot img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .reading-map {
+      margin: 0 0 32px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-bg-white);
+      box-shadow: var(--shadow-sm);
+      padding: 18px;
+    }
+
+    .section-kicker {
+      color: var(--color-primary);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .reading-map-heading {
+      color: var(--color-text);
+      font-size: 1.18rem;
+      font-weight: 760;
+      line-height: 1.35;
+      margin-bottom: 14px;
+    }
+
+    .path-grid,
+    .figure-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .path-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .path-card {
+      border-left: 3px solid var(--color-primary);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      background: var(--color-bg-alt);
+      padding: 12px 14px;
+    }
+
+    .path-card strong {
+      display: block;
+      color: var(--color-text);
+      font-size: 0.92rem;
+      margin-bottom: 4px;
+    }
+
+    .path-card p {
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+      line-height: 1.58;
+      margin: 0;
+    }
+
+    .path-card a {
+      color: var(--color-primary-dark);
+      font-weight: 720;
+      text-decoration: none;
+    }
+
+    .figure-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin: 20px 0 26px;
+    }
+
+    .figure-card {
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-bg-white);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .figure-card img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: var(--color-bg-alt);
+    }
+
+    .figure-card figcaption {
+      border-top: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+      font-size: 0.84rem;
+      line-height: 1.55;
+      padding: 10px 12px;
+    }
+
+    .meta-grid,
+    .quick-grid,
+    .module-grid,
+    .cards-2,
+    .cards-3 {
+      display: grid;
+      gap: 14px;
+      margin: 18px 0 24px;
+    }
+
+    .meta-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .quick-grid,
+    .cards-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .module-grid,
+    .cards-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .stat-card,
+    .feature-card,
+    .task-card,
+    .prompt-card,
+    .note-card {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-bg-white);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stat-card,
+    .feature-card,
+    .task-card,
+    .note-card {
+      padding: 16px;
+    }
+
+    .stat-card strong,
+    .feature-card h3,
+    .task-card h3,
+    .note-card h3 {
+      display: block;
+      color: var(--color-text);
+      font-size: 0.98rem;
+      font-weight: 730;
+      line-height: 1.35;
+      margin-bottom: 6px;
+    }
+
+    .stat-card span,
+    .feature-card p,
+    .task-card p,
+    .note-card p,
+    .feature-card li,
+    .task-card li {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .docs-article h2 {
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text);
+      font-size: 1.5rem;
+      font-weight: 760;
+      letter-spacing: 0;
+      margin: 48px 0 16px;
+      padding-bottom: 8px;
+      scroll-margin-top: 88px;
+    }
+
+    .docs-article h3 {
+      color: var(--color-text);
+      font-size: 1.18rem;
+      font-weight: 700;
+      margin: 32px 0 12px;
+      scroll-margin-top: 88px;
+    }
+
+    .docs-article h4 {
+      color: var(--color-text-secondary);
+      font-size: 1.04rem;
+      font-weight: 680;
+      margin: 22px 0 8px;
+    }
+
+    .docs-article p {
+      margin: 0 0 16px;
+    }
+
+    .docs-article strong {
+      color: var(--color-text);
+      font-weight: 700;
+    }
+
+    .docs-article ul,
+    .docs-article ol {
+      margin: 0 0 16px;
+      padding-left: 24px;
+    }
+
+    .docs-article li {
+      margin-bottom: 6px;
+    }
+
+    .docs-article li > ul,
+    .docs-article li > ol {
+      margin-top: 6px;
+      margin-bottom: 0;
+    }
+
+    .check-list {
+      list-style: none;
+      padding-left: 0 !important;
+    }
+
+    .check-list li {
+      position: relative;
+      padding-left: 26px;
+    }
+
+    .check-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.62em;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--color-accent-soft);
+      border: 1px solid rgba(47, 111, 100, 0.3);
+    }
+
+    .check-list li::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: calc(0.62em + 3px);
+      width: 6px;
+      height: 4px;
+      border-left: 2px solid var(--color-accent);
+      border-bottom: 2px solid var(--color-accent);
+      transform: rotate(-45deg);
+    }
+
+    .steps {
+      counter-reset: step;
+      display: grid;
+      gap: 10px;
+      margin: 18px 0 24px;
+    }
+
+    .step {
+      position: relative;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-bg-white);
+      padding: 14px 16px 14px 54px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--color-text);
+      color: var(--color-bg);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .step p {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 0;
+    }
+
+    .callout {
+      border-left: 4px solid var(--color-primary);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      background: var(--color-primary-soft);
+      color: var(--color-text-secondary);
+      margin: 18px 0 24px;
+      padding: 14px 18px;
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .callout.tip {
+      border-left-color: var(--color-accent);
+      background: var(--color-accent-soft);
+    }
+
+    .callout.warn {
+      border-left-color: var(--color-warning);
+      background: var(--color-warning-soft);
+    }
+
+    .callout.danger {
+      border-left-color: var(--color-danger);
+      background: var(--color-danger-soft);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      margin: 0 6px 8px 0;
+      padding: 3px 8px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-bg-white);
+      color: var(--color-text-secondary);
+      font-size: 0.76rem;
+      font-weight: 680;
+      white-space: nowrap;
+    }
+
+    .badge.primary {
+      border-color: rgba(217, 119, 87, 0.25);
+      background: var(--color-primary-soft);
+      color: var(--color-primary-dark);
+    }
+
+    .badge.green {
+      border-color: rgba(47, 111, 100, 0.25);
+      background: var(--color-accent-soft);
+      color: var(--color-accent);
+    }
+
+    .badge.blue {
+      border-color: rgba(63, 111, 159, 0.25);
+      background: var(--color-blue-soft);
+      color: var(--color-blue);
+    }
+
+    .badge.red {
+      border-color: rgba(166, 66, 53, 0.25);
+      background: var(--color-danger-soft);
+      color: var(--color-danger);
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 0 0 18px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-bg-white);
+      box-shadow: var(--shadow-sm);
+    }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead {
+      background: var(--color-bg-alt);
+    }
+
+    th {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text);
+      font-weight: 700;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(245, 243, 237, 0.52);
+    }
+
+    code {
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      background: var(--color-bg-alt);
+      color: var(--color-primary-dark);
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", Menlo, Consolas, monospace;
+      font-size: 0.86em;
+      padding: 2px 6px;
+    }
+
+    pre {
+      overflow-x: auto;
+      white-space: pre-wrap;
+      margin: 0;
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", Menlo, Consolas, monospace;
+      font-size: 0.86rem;
+      line-height: 1.62;
+    }
+
+    .prompt-card {
+      overflow: hidden;
+      margin: 16px 0 18px;
+    }
+
+    .prompt-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-bg-white);
+      padding: 10px 12px 10px 14px;
+    }
+
+    .prompt-card-title {
+      color: var(--color-text);
+      font-size: 0.84rem;
+      font-weight: 760;
+    }
+
+    .copy-button {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-bg-alt);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 9px;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .copy-button:hover {
+      border-color: rgba(217, 119, 87, 0.35);
+      color: var(--color-primary-dark);
+    }
+
+    .prompt-card pre {
+      border-radius: 0;
+    }
+
+    .footer-note {
+      margin-top: 54px;
+      padding-top: 18px;
+      border-top: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      font-size: 0.84rem;
+      text-align: center;
+    }
+
+    .docs-sidebar-toggle {
+      display: none;
+      position: fixed;
+      left: 24px;
+      bottom: 24px;
+      z-index: 50;
+      width: 48px;
+      height: 48px;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 50%;
+      background: var(--color-primary);
+      color: white;
+      cursor: pointer;
+      box-shadow: var(--shadow-lg);
+      padding: 12px;
+    }
+
+    .docs-sidebar-toggle svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    @media (max-width: 1080px) {
+      .meta-grid,
+      .module-grid,
+      .cards-3,
+      .path-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      :root {
+        --sidebar-width: 260px;
+      }
+
+      .docs-content-inner {
+        padding: 32px 28px 70px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-toggle {
+        display: flex;
+      }
+
+      .nav-links {
+        position: absolute;
+        top: var(--nav-height);
+        left: 0;
+        right: 0;
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+        border-bottom: 1px solid var(--color-border);
+        background: rgba(250, 249, 245, 0.98);
+        padding: 10px 16px 16px;
+      }
+
+      .nav-links.open {
+        display: flex;
+      }
+
+      .nav-link,
+      .nav-button {
+        justify-content: flex-start;
+        width: 100%;
+      }
+
+      .nav-cta {
+        margin-left: 0;
+      }
+
+      .docs-sidebar {
+        position: fixed;
+        top: var(--nav-height);
+        bottom: 0;
+        left: 0;
+        z-index: 40;
+        width: 280px;
+        height: calc(100vh - var(--nav-height));
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+
+      .docs-sidebar.open {
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+        transform: translateX(0);
+      }
+
+      .docs-sidebar-toggle {
+        display: flex;
+      }
+
+      .docs-content-inner {
+        padding: 24px 20px 72px;
+      }
+
+      .doc-hero {
+        padding-top: 24px;
+      }
+
+      .docs-article h2 {
+        font-size: 1.3rem;
+        margin-top: 36px;
+      }
+
+      .docs-article h3 {
+        font-size: 1.08rem;
+      }
+
+      .meta-grid,
+      .quick-grid,
+      .module-grid,
+      .cards-2,
+      .cards-3,
+      .path-grid,
+      .figure-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 0 16px;
+      }
+
+      .docs-content-inner {
+        padding: 20px 16px 72px;
+      }
+
+      pre {
+        font-size: 0.8rem;
+        padding: 12px 14px;
+      }
+
+      .hero-actions {
+        display: grid;
+      }
+    }
+
+    @media print {
+      .navbar,
+      .docs-sidebar,
+      .docs-sidebar-toggle,
+      .copy-button {
+        display: none !important;
+      }
+
+      .docs-body {
+        overflow: auto;
+      }
+
+      .docs-layout {
+        display: block;
+        height: auto;
+        padding-top: 0;
+      }
+
+      .docs-content {
+        overflow: visible;
+      }
+
+      .docs-content-inner {
+        max-width: none;
+        padding: 0;
+      }
+
+      .feature-card,
+      .task-card,
+      .prompt-card,
+      .note-card,
+      .stat-card {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      .doc-hero,
+      .docs-article h2,
+      .docs-article h3 {
+        scroll-margin-top: 0;
+      }
+    }
+  </style>
+</head>
+<body class="docs-body">
+  <nav class="navbar" id="navbar">
+    <div class="container nav-container">
+      <a href="#intro" class="nav-brand">
+        <img src="../frontend/public/logo.svg" alt="Codata" class="nav-logo" />
+        <span class="nav-title">Codata <span class="nav-title-cn">使用文档</span></span>
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a href="#quickstart" class="nav-link">快速上手</a>
+        <a href="#config" class="nav-link">配置详解</a>
+        <a href="#files" class="nav-link">文件与工作区</a>
+        <a href="#faq" class="nav-link">常见问题</a>
+        <button class="nav-button" id="printButton" type="button">打印 / 导出 PDF</button>
+        <a href="#intro" class="nav-link nav-cta">回到顶部</a>
+      </div>
+      <button class="nav-toggle" id="navToggle" type="button" aria-label="打开导航">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="docs-layout">
+    <aside class="docs-sidebar" id="docsSidebar">
+      <div class="docs-sidebar-inner">
+        <div class="docs-nav-section">
+          <div class="docs-nav-title">文档</div>
+          <a href="#intro" class="docs-nav-item active">
+            <svg class="docs-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            产品简介
+          </a>
+          <a href="#install" class="docs-nav-item">
+            <svg class="docs-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            安装
+          </a>
+          <a href="#config" class="docs-nav-item">
+            <svg class="docs-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            配置详解
+          </a>
+          <a href="#quickstart" class="docs-nav-item">
+            <svg class="docs-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            快速上手
+          </a>
+          <a href="#interface" class="docs-nav-item">
+            <svg class="docs-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            界面导览
+          </a>
+          <a href="#prompts" class="docs-nav-item">
+            <svg class="docs-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+            提示词写法
+          </a>
+          <a href="#files" class="docs-nav-item">
+            <svg class="docs-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            文件与工作区
+          </a>
+          <a href="#automations" class="docs-nav-item">
+            <svg class="docs-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            自动化任务
+          </a>
+          <a href="#updates" class="docs-nav-item">
+            <svg class="docs-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            软件更新
+          </a>
+          <a href="#faq" class="docs-nav-item">
+            <svg class="docs-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            常见问题
+          </a>
+          <a href="#admin" class="docs-nav-item">
+            <svg class="docs-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            管理员/发布手册
+          </a>
+        </div>
+        <div class="docs-toc-section" id="docsToc">
+          <div class="docs-nav-title">目录</div>
+        </div>
+      </div>
+    </aside>
+
+    <button class="docs-sidebar-toggle" id="sidebarToggle" type="button" aria-label="打开目录">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+
+    <main class="docs-content" id="docsContent">
+      <div class="docs-content-inner">
+        <article class="docs-article" id="docsArticle">
+          <header class="doc-hero" id="intro">
+            <span class="doc-eyebrow">本地优先的 AI 办公工作台</span>
+            <h1>Codata 使用与配置文档</h1>
+            <p>这是一份覆盖安装、配置、使用到更新全流程的完整文档,带你从下载安装到模型与 API Key 配置、MCP 与 datasage 接入,再到日常使用、自动更新与管理员发布,一步步把 Codata 用起来。</p>
+            <div class="article-meta">
+              <span>最后整理：2026-05-20</span>
+              <span>阅读时间：25-40 分钟</span>
+              <span>适合桌面端和手机远程用户</span>
+              <span>可打印为 PDF</span>
+            </div>
+            <div class="meta-grid">
+              <div class="stat-card">
+                <strong>适用人群</strong>
+                <span>行政、人事、财务、运营、销售、项目助理、学生</span>
+              </div>
+              <div class="stat-card">
+                <strong>核心任务</strong>
+                <span>文件阅读、表格分析、内容写作、文件整理、自动化</span>
+              </div>
+              <div class="stat-card">
+                <strong>使用方式</strong>
+                <span>桌面端为主，手机远程和消息渠道为辅助</span>
+              </div>
+              <div class="stat-card">
+                <strong>推荐读法</strong>
+                <span>先看快速开始，再按具体场景查阅功能</span>
+              </div>
+            </div>
+            <div class="hero-actions">
+              <a class="button primary" href="#quickstart">十分钟完成第一个任务</a>
+              <a class="button" href="#prompts">复制常用提示词</a>
+              <a class="button" href="#config">查看配置详解</a>
+            </div>
+          </header>
+
+          <section id="install">
+            <h2>安装</h2>
+          </section>
+
+          <section id="config">
+            <h2>配置详解</h2>
+          </section>
+
+          <section id="quickstart">
+            <h2>快速上手</h2>
+          </section>
+
+          <section id="interface">
+            <h2>界面导览</h2>
+          </section>
+
+          <section id="prompts">
+            <h2>提示词写法</h2>
+          </section>
+
+          <section id="files">
+            <h2>文件与工作区</h2>
+          </section>
+
+          <section id="automations">
+            <h2>自动化任务</h2>
+          </section>
+
+          <section id="updates">
+            <h2>软件更新</h2>
+          </section>
+
+          <section id="faq">
+            <h2>常见问题</h2>
+          </section>
+
+          <section id="admin">
+            <h2>管理员/发布手册</h2>
+          </section>
+
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById("docsSidebar");
+    const sidebarToggle = document.getElementById("sidebarToggle");
+    const navToggle = document.getElementById("navToggle");
+    const navLinks = document.getElementById("navLinks");
+    const docsContent = document.getElementById("docsContent");
+    const docsArticle = document.getElementById("docsArticle");
+    const docsToc = document.getElementById("docsToc");
+
+    function buildToc() {
+      const headings = docsArticle.querySelectorAll("h2, h3");
+      let html = '<div class="docs-nav-title">目录</div>';
+
+      headings.forEach((heading) => {
+        const level = heading.tagName === "H2" ? "toc-h2" : "toc-h3";
+        html += `<a href="#${heading.id}" class="docs-toc-item ${level}" data-heading="${heading.id}">${heading.textContent}</a>`;
+      });
+
+      docsToc.innerHTML = html;
+      docsToc.querySelectorAll(".docs-toc-item").forEach((item) => {
+        item.addEventListener("click", (event) => {
+          event.preventDefault();
+          const target = document.getElementById(item.dataset.heading);
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+            history.replaceState(null, "", `#${item.dataset.heading}`);
+          }
+          sidebar.classList.remove("open");
+        });
+      });
+    }
+
+    function setupScrollSpy() {
+      const headings = Array.from(docsArticle.querySelectorAll("h2, h3"));
+      const navItems = Array.from(document.querySelectorAll(".docs-nav-item"));
+      let ticking = false;
+
+      const update = () => {
+        let activeId = "intro";
+        headings.forEach((heading) => {
+          const rect = heading.getBoundingClientRect();
+          if (rect.top <= 120) activeId = heading.id;
+        });
+
+        document.querySelectorAll(".docs-toc-item").forEach((item) => {
+          item.classList.toggle("active", item.dataset.heading === activeId);
+        });
+
+        navItems.forEach((item) => {
+          const id = item.getAttribute("href")?.replace("#", "");
+          const target = document.getElementById(id || "");
+          if (!target) return;
+          const next = item.nextElementSibling;
+          const targetTop = target.getBoundingClientRect().top;
+          let nextTop = Number.POSITIVE_INFINITY;
+          if (next && next.getAttribute("href")) {
+            const nextTarget = document.getElementById(next.getAttribute("href").replace("#", ""));
+            nextTop = nextTarget ? nextTarget.getBoundingClientRect().top : Number.POSITIVE_INFINITY;
+          }
+          item.classList.toggle("active", targetTop <= 140 && nextTop > 140);
+        });
+
+        ticking = false;
+      };
+
+      docsContent.addEventListener("scroll", () => {
+        if (!ticking) {
+          requestAnimationFrame(update);
+          ticking = true;
+        }
+      }, { passive: true });
+      update();
+    }
+
+    function setupCopyButtons() {
+      document.querySelectorAll(".prompt-card").forEach((card) => {
+        const button = card.querySelector(".copy-button");
+        const pre = card.querySelector("pre");
+        if (!button || !pre) return;
+        button.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(pre.innerText.trim());
+            const original = button.textContent;
+            button.textContent = "已复制";
+            setTimeout(() => { button.textContent = original; }, 1400);
+          } catch {
+            button.textContent = "复制失败";
+            setTimeout(() => { button.textContent = "复制"; }, 1400);
+          }
+        });
+      });
+    }
+
+    sidebarToggle.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+    });
+
+    navToggle.addEventListener("click", () => {
+      navLinks.classList.toggle("open");
+      navToggle.classList.toggle("open");
+    });
+
+    navLinks.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => {
+        navLinks.classList.remove("open");
+        navToggle.classList.remove("open");
+      });
+    });
+
+    document.getElementById("printButton").addEventListener("click", () => {
+      window.print();
+    });
+
+    buildToc();
+    setupScrollSpy();
+    setupCopyButtons();
+  </script>
+</body>
+</html>
