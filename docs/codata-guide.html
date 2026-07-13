@@ -1315,6 +1315,99 @@
 
           <section id="config">
             <h2>配置详解</h2>
+            <p>本章讲清楚三件让 Codata 真正跑起来的事:接入模型、接入数据与工具(MCP)、以及用权限控制 Agent 能做什么。首次使用请至少完成「模型来源与 API Key」,再按需要接入 datasage 数据平台。</p>
+
+            <h3 id="config-models">模型来源与 API Key</h3>
+            <p>模型来源在 <strong>设置 →「模型」</strong>标签里配置。支持两类来源:填入 API Key 的云端供应商(如 Anthropic、OpenAI 或兼容 OpenAI 的服务),以及运行在本机的 Ollama 本地模型。你可以同时连接多个来源,并随时在会话里切换。</p>
+
+            <div class="callout warn">
+              <strong>首次使用必做</strong>
+              发起第一个问题之前,必须先在这里连接至少一个可用模型;否则问答首页的模型下拉里没有可选项,查询无法开始。
+            </div>
+
+            <div class="steps">
+              <div class="step">
+                <strong>打开设置 → 模型</strong>
+                <p>从左侧会话栏进入设置,选择「模型」标签(模型来源、API Key 和默认模型都在这里管理)。</p>
+              </div>
+              <div class="step">
+                <strong>选择供应商并填写 API Key</strong>
+                <p>添加一个云端供应商,填入对应的 API Key。想用本机模型时,改为配置本地 Ollama(将 Codata 指向本地 OpenAI 兼容端点,例如 <code>http://localhost:11434/v1</code>)。</p>
+              </div>
+              <div class="step">
+                <strong>保存并确认可用</strong>
+                <p>保存后来源显示为「已就绪」,其模型会出现在问答首页的模型下拉中。可在设置里指定一个默认模型,新会话默认使用它。</p>
+              </div>
+            </div>
+
+            <div class="callout tip">
+              <strong>本地模型</strong>
+              使用 Ollama 时先在本机启动 Ollama 服务并拉取好模型,再在「模型」里把 Codata 指向其本地端点。数据不出本机,适合对隐私敏感的场景。
+            </div>
+
+            <h3 id="config-mcp">MCP 接入</h3>
+            <p>MCP(Model Context Protocol)让 Agent 连接外部数据源和工具。MCP 服务在 <strong>设置 →「插件」</strong>标签里管理。添加一个 MCP 服务通常只需要它的名称、URL,以及(如果需要)一个访问 Token。</p>
+
+            <div class="steps">
+              <div class="step">
+                <strong>打开设置 → 插件</strong>
+                <p>进入设置,选择「插件」标签,这里集中管理 MCP 服务与扩展能力。</p>
+              </div>
+              <div class="step">
+                <strong>填写服务信息</strong>
+                <p>填入 MCP 服务的名称与 URL;若该服务需要鉴权,再在 Token 输入框填入访问凭证。</p>
+              </div>
+              <div class="step">
+                <strong>打开开关启用</strong>
+                <p>用开关启用该服务后,其提供的工具即可被 Agent 调用。不用时关闭开关即可停用,无需删除配置。</p>
+              </div>
+            </div>
+
+            <h3 id="config-datasage">datasage 数据平台授权</h3>
+            <p>Codata 内置了一个数据平台连接器:<strong>「datasage 数据平台」</strong>,服务地址为 <code>https://datasage.flow.chat/mcp</code>。接入后即可用自然语言查询、分析并出图。它在「插件」里作为内置服务出现,你只需要打开开关并完成授权。</p>
+
+            <div class="steps">
+              <div class="step">
+                <strong>打开 datasage 开关</strong>
+                <p>在设置 →「插件」中找到「datasage 数据平台」,打开它的开关。</p>
+              </div>
+              <div class="step">
+                <strong>领取 MCP Key</strong>
+                <p>前往 <code>https://datasage.flow.chat/mcp-access</code> 获取你的 MCP Key。</p>
+              </div>
+              <div class="step">
+                <strong>填入 Token 完成连接</strong>
+                <p>把领取到的 MCP Key 填入下方的 Token 输入框,即可完成连接。</p>
+              </div>
+            </div>
+
+            <div class="callout">
+              <strong>走 mcp-access 领取 Key</strong>
+              datasage 的授权是打开开关后到 <code>https://datasage.flow.chat/mcp-access</code> 领取 MCP Key,再填入 Token 输入框——这是当前的流程,不是旧的知识库 token 流程。请以 mcp-access 领取到的 Key 为准。
+            </div>
+
+            <h3 id="config-permissions">权限与工作模式</h3>
+            <p>Agent 在执行工具、运行命令或修改文件之前会请求授权。授权通过权限弹窗完成,已记住的授权可在 <strong>设置 →「权限」</strong>标签里查看和撤销。</p>
+
+            <div class="steps">
+              <div class="step">
+                <strong>读懂权限弹窗</strong>
+                <p>当 Agent 需要执行工具或修改文件时会弹出请求,说明它要做什么。你可以选择「允许」或「拒绝」这一次操作,确认后 Agent 才会继续。</p>
+              </div>
+              <div class="step">
+                <strong>「记住此选择」</strong>
+                <p>勾选「记住此选择」后,同类请求以后不再逐次询问,该选择会被记录下来。适合你已经信任的、会重复出现的操作。</p>
+              </div>
+              <div class="step">
+                <strong>在「权限」标签管理</strong>
+                <p>设置 →「权限」列出所有已记住的授权,可逐条撤销,也可以全部清除。撤销后,相应操作会重新触发权限弹窗。</p>
+              </div>
+            </div>
+
+            <div class="callout tip">
+              <strong>需要授权的操作</strong>
+              权限弹窗主要拦截工具执行、运行命令与文件修改这类有副作用的动作;纯粹的查询与分析一般不会打断你。给刚上手的团队成员先保持逐次确认,熟悉后再按需记住常用授权。
+            </div>
           </section>
 
           <section id="quickstart">
