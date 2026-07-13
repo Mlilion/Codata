@@ -142,6 +142,14 @@ User
 - **Next.js frontend**: Codata workspace, chat, data result cards, dashboards, expert teams, artifacts, settings, plugins, and activity panels.
 - **FastAPI backend**: agent loop, resumable streaming, datasage/MCP tool integration, SQL execution wrapper, dashboard refresh, expert-team orchestration, file parsing, SQLite persistence, provider routing, and scheduled jobs.
 
+## Download & Docs
+
+- Desktop download (Windows / macOS): https://mlilion.github.io/Codata/
+- Full usage & configuration docs: https://mlilion.github.io/Codata/guide.html
+- Releases: https://github.com/Mlilion/Codata/releases
+
+> The desktop app auto-updates: it checks GitHub Releases for new versions on launch and every 4 hours, and you can also check manually from Settings → About.
+
 ## Quick Start
 
 ### Prerequisites

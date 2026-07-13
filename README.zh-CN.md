@@ -142,6 +142,14 @@ User
 - **Next.js 前端**：Codata 工作区、聊天、数据结果卡、看板、专家团、artifact、设置、插件和活动面板。
 - **FastAPI 后端**：Agent loop、可恢复流式输出、datasage/MCP 工具集成、SQL 执行封装、看板刷新、专家团编排、文件解析、SQLite 持久化、provider 路由和定时任务。
 
+## 下载与文档
+
+- 桌面端下载(Windows / macOS):https://mlilion.github.io/Codata/
+- 完整使用与配置文档:https://mlilion.github.io/Codata/guide.html
+- 版本发布:https://github.com/Mlilion/Codata/releases
+
+> 桌面端内置自动更新:启动后与每 4 小时自动检查 GitHub Releases 上的新版本,也可在「设置 → 关于」手动检查。
+
 ## 快速开始
 
 ### 环境要求
