@@ -363,7 +363,12 @@ jobs:
           repository: ${{ vars.RELEASE_REPOSITORY || 'renyichao-cyber/Codata-releases' }}
           token: ${{ secrets.RELEASE_TOKEN }}
           tag_name: ${{ github.ref_name }}
-          generate_release_notes: true
+          # The release repo has no source history, so target the release repo's
+          # default branch and skip auto-generated notes (which diff commits and
+          # would 400 on Invalid target_commitish for a cross-repo publish).
+          target_commitish: main
+          name: Codata ${{ github.ref_name }}
+          body: ${{ github.ref_name }}
           files: |
             artifacts/windows-bundle/**/*
             artifacts/macos-aarch64-bundle/**/*
