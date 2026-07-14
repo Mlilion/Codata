@@ -4,6 +4,7 @@
     "url": "https://datasage.flow.chat/mcp",
     "description": "连接 datasage 数据平台:用自然语言查询、分析、出图。打开开关后,请到 https://datasage.flow.chat/mcp-access 获取你的 MCP Key,并填入下方 Token 输入框完成连接。",
     "category": "data",
+    "auth": "token",
     "seed": true
   },
   "slack": {

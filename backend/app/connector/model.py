@@ -23,6 +23,15 @@ class ConnectorInfo:
     category: str  # "communication", "productivity", etc.
     enabled: bool = False
     source: str = "builtin"  # "builtin" | "custom"
+    # How this connector authenticates:
+    #   "oauth" — browser OAuth flow (default for remote connectors)
+    #   "token" — user pastes a PAT / API key (e.g. datasage MCP Key)
+    #   "none"  — no auth needed (local command connectors, open endpoints)
+    # Drives status(): a "token" connector whose transport handshake
+    # succeeds but has no stored token is reported as needs_auth, not
+    # connected — the transport accepting an unauthenticated handshake does
+    # not mean tool calls will be authorized.
+    auth: str = "oauth"
     local_config: dict[str, Any] = field(default_factory=dict)
     referenced_by: list[str] = field(default_factory=list)
 
@@ -37,5 +46,6 @@ class ConnectorInfo:
             "category": self.category,
             "enabled": self.enabled,
             "source": self.source,
+            "auth": self.auth,
             "referenced_by": self.referenced_by,
         }

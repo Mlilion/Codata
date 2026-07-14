@@ -428,13 +428,20 @@ function ConnectorRow({
               return;
             }
             await toggle.mutateAsync({ id, enable: checked });
-            if (checked && (connector.type === "remote" || id === "google-workspace")) {
-              // Remote or Google: auto-trigger OAuth after enable
+            // Token-auth connectors (e.g. datasage) have no OAuth server —
+            // enabling just connects the transport; the backend then reports
+            // needs_auth until a token is pasted, which surfaces the token
+            // input below. Don't run a doomed OAuth discovery for them.
+            const isOAuth =
+              connector.type === "remote" &&
+              connector.auth !== "token";
+            if (checked && (isOAuth || id === "google-workspace")) {
+              // OAuth remote or Google: auto-trigger OAuth after enable
               await new Promise((r) => setTimeout(r, 500));
               await qc.invalidateQueries({ queryKey: queryKeys.connectors });
               handleConnect();
             } else if (checked) {
-              // Local: just refresh status
+              // Token remote / local: just refresh status
               await new Promise((r) => setTimeout(r, 1000));
               await qc.invalidateQueries({ queryKey: queryKeys.connectors });
             }
