@@ -234,6 +234,19 @@ pub fn run() {
             } else {
                 // Production: spawn and manage backend process
                 tauri::async_runtime::spawn(async move {
+                    // Sweep any orphaned backends from a previous instance
+                    // (hard crash, force-quit, or an older buggy build) before
+                    // starting ours, so they don't pile up or hold the DB.
+                    if let Ok(resource_dir) = app_handle.path().resource_dir() {
+                        let backend_binary = if cfg!(target_os = "windows") {
+                            "codata-backend.exe"
+                        } else {
+                            "codata-backend"
+                        };
+                        let backend_path = resource_dir.join("backend").join(backend_binary);
+                        backend::reap_stale_backends(&backend_path).await;
+                    }
+
                     let state = app_handle.state::<BackendState>();
                     match state.start(&app_handle).await {
                         Ok(url) => {
