@@ -1,22 +1,12 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { test } from "node:test";
+import { sourcePresetFiles } from "./verify-bundle.mjs";
 
 const workflow = fs.readFileSync(".github/workflows/release.yml", "utf8");
 const tauriConfig = JSON.parse(fs.readFileSync("desktop-tauri/src-tauri/tauri.conf.json", "utf8"));
 const pyinstallerSpec = fs.readFileSync("backend/codata.spec", "utf8");
 const verifyBundleScript = fs.readFileSync("scripts/verify-bundle.mjs", "utf8");
-const expectedPresetFiles = [
-  "video_production.yaml",
-  "data_analysis_report.yaml",
-  "meeting_notes_actions.yaml",
-  "weekly_monthly_report.yaml",
-  "document_review_polish.yaml",
-  "presentation_briefing.yaml",
-  "research_competitive_analysis.yaml",
-  "sales_proposal.yaml",
-  "project_plan_risk.yaml",
-];
 
 test("macOS release workflow requires Apple signing and notarization credentials", () => {
   for (const name of ["APPLE_CERTIFICATE", "APPLE_CERTIFICATE_PASSWORD", "APPLE_SIGNING_IDENTITY"]) {
@@ -109,9 +99,13 @@ test("release workflow verifies exported frontend image assets before packaging"
 test("backend bundle includes expert team presets", () => {
   assert.match(pyinstallerSpec, /app['"], ['"]expert['"], ['"]presets/);
   assert.match(verifyBundleScript, /app", "expert", "presets"/);
-  for (const filename of expectedPresetFiles) {
-    assert.match(verifyBundleScript, new RegExp(filename.replace(".", "\\.")));
-  }
+  // verify-bundle derives the required presets from the source tree rather
+  // than a hardcoded list (a hardcoded copy silently drifts — see 1.1.13).
+  // Assert that source has presets and they're all .yaml, so the guard has
+  // something real to check.
+  const presets = sourcePresetFiles();
+  assert.ok(presets.length > 0, "expected at least one expert-team preset in the source tree");
+  assert.ok(presets.every((f) => f.endsWith(".yaml")), "presets should be .yaml files");
 });
 
 test("macOS Node.js runtime signing keeps hardened runtime JIT entitlements", () => {
