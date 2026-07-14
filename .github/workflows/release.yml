@@ -348,11 +348,21 @@ jobs:
         run: find artifacts -type f | sort
 
       - name: Generate GitHub Release download and updater manifests
+        env:
+          # Assets ship to the public release repo so the desktop updater can
+          # download them anonymously (code repo is private).
+          CODATA_RELEASE_REPOSITORY: ${{ vars.RELEASE_REPOSITORY || 'renyichao-cyber/Codata-releases' }}
         run: node scripts/generate-release-manifests.mjs artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          # Publish to the public release repo, not this private code repo.
+          # RELEASE_TOKEN must have contents:write on renyichao-cyber/Codata-releases
+          # (GITHUB_TOKEN only covers the current repo).
+          repository: ${{ vars.RELEASE_REPOSITORY || 'renyichao-cyber/Codata-releases' }}
+          token: ${{ secrets.RELEASE_TOKEN }}
+          tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
             artifacts/windows-bundle/**/*

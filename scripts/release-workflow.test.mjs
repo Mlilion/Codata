@@ -140,6 +140,6 @@ test("open-source release workflow publishes updater files only to GitHub Releas
 
 test("open-source desktop updater checks the GitHub latest.json release asset", () => {
   assert.deepEqual(tauriConfig.plugins.updater.endpoints, [
-    "https://github.com/Mlilion/Codata/releases/latest/download/latest.json",
+    "https://github.com/renyichao-cyber/Codata-releases/releases/latest/download/latest.json",
   ]);
 });

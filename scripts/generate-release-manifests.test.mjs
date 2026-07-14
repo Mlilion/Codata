@@ -65,7 +65,9 @@ test("defaults release asset URLs to GitHub Releases", () => {
   const result = spawnSync(process.execPath, [scriptPath, artifacts], {
     env: {
       ...env,
-      GITHUB_REPOSITORY: "Mlilion/Codata",
+      // Code repo is private; assets are published to the public release repo.
+      GITHUB_REPOSITORY: "FlowGPT/Codata",
+      CODATA_RELEASE_REPOSITORY: "renyichao-cyber/Codata-releases",
       GITHUB_REF_NAME: "v9.9.9",
       RELEASE_SITE_DIR: releaseSite,
     },
@@ -85,10 +87,10 @@ test("defaults release asset URLs to GitHub Releases", () => {
 
   assert.deepEqual(githubUpdaterManifest, updateManifest);
   assert.deepEqual(githubDownloadManifest, downloadManifest);
-  assert.equal(downloadManifest.source, "https://github.com/Mlilion/Codata/releases/tag/v9.9.9");
+  assert.equal(downloadManifest.source, "https://github.com/renyichao-cyber/Codata-releases/releases/tag/v9.9.9");
   assert(urls.length > 0);
   assert(
-    urls.every((url) => url.startsWith("https://github.com/Mlilion/Codata/releases/download/v9.9.9/")),
+    urls.every((url) => url.startsWith("https://github.com/renyichao-cyber/Codata-releases/releases/download/v9.9.9/")),
   );
 });
 
@@ -101,7 +103,7 @@ test("keeps website release paths when a site base URL is configured", () => {
   const result = spawnSync(process.execPath, [scriptPath, artifacts], {
     env: {
       ...process.env,
-      GITHUB_REPOSITORY: "Mlilion/Codata",
+      GITHUB_REPOSITORY: "FlowGPT/Codata",
       GITHUB_REF_NAME: "v9.9.9",
       RELEASE_SITE_DIR: releaseSite,
       CODATA_SITE_BASE_URL: "https://oss.codata.test",

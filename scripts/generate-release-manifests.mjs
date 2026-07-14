@@ -5,7 +5,11 @@ import path from "node:path";
 const rootDir = process.cwd();
 const artifactRoot = path.resolve(rootDir, process.argv[2] || "artifacts");
 const outRoot = path.resolve(rootDir, process.env.RELEASE_SITE_DIR || "release-site");
-const repository = process.env.GITHUB_REPOSITORY || "Mlilion/Codata";
+// Assets are published to a dedicated public release repo (code lives in a
+// private repo, so anonymous updater downloads must point elsewhere). Override
+// with CODATA_RELEASE_REPOSITORY; falls back to the current repo.
+const repository =
+  process.env.CODATA_RELEASE_REPOSITORY || process.env.GITHUB_REPOSITORY || "renyichao-cyber/Codata-releases";
 const tag = process.env.GITHUB_REF_NAME || process.env.RELEASE_TAG;
 const releaseCacheKey = process.env.GITHUB_RUN_ID
   ? `${process.env.GITHUB_RUN_ID}.${process.env.GITHUB_RUN_ATTEMPT || "1"}`
