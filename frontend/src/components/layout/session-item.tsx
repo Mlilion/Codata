@@ -71,6 +71,10 @@ export const SessionItem = memo(function SessionItem({
     : rawTitle;
   const relativeTime = getRelativeTimeLabel(session.time_updated);
   const sessionBadge = session.slug ? getSessionBadge(session.slug) : null;
+  // Leading icon shown in the codata-style rounded box: channel/expert badge
+  // icon when present, otherwise a generic chat glyph.
+  const LeadingIcon = sessionBadge?.Icon ?? MessageCircle;
+  const isExpertTeam = session.slug?.startsWith("expert-team") ?? false;
   const liveBucket = useChatSession(session.id);
   const isLive = liveBucket.isGenerating || liveBucket.isCompacting;
   const hasDirectory = !!session.directory && session.directory !== ".";
@@ -257,9 +261,8 @@ export const SessionItem = memo(function SessionItem({
             cancel();
           }}
           className={cn(
-            "group/session relative mx-3 flex cursor-pointer items-center gap-2 overflow-hidden rounded-lg text-sm transition-colors duration-150 ease-out",
-            "pl-9 pr-2",
-            snippet ? "min-h-11 py-1.5" : "h-7 py-1",
+            "group/session relative mx-3 flex cursor-pointer items-center gap-2 overflow-hidden rounded-md px-2 text-sm transition-colors duration-150 ease-out",
+            snippet ? "min-h-11 py-1.5" : "py-1",
             isActive
               ? "bg-[var(--sidebar-active)] text-[var(--text-primary)] shadow-[var(--sidebar-active-shadow)]"
               : "text-[var(--text-primary)] hover:bg-[var(--sidebar-hover)] focus-within:bg-[var(--sidebar-active)] focus-within:shadow-[var(--sidebar-active-shadow)] data-[state=open]:bg-[var(--sidebar-active)] data-[state=open]:shadow-[var(--sidebar-active-shadow)]",
@@ -267,22 +270,37 @@ export const SessionItem = memo(function SessionItem({
             isEditing && "ring-1 ring-[var(--brand-primary)]",
           )}
         >
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              e.currentTarget.blur();
-              onTogglePin?.(session.id, !session.is_pinned);
-            }}
-            className={cn(
-              "absolute left-1.5 top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-[var(--text-tertiary)] opacity-0 transition-opacity hover:bg-[var(--surface-tertiary)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--brand-primary)] focus-visible:opacity-100 group-hover/session:opacity-100",
-              isEditing && "hidden",
-            )}
-            aria-label={pinLabel}
-            title={pinLabel}
-          >
-            {session.is_pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
-          </button>
+          {/* Leading icon box (codata NavRow style). Doubles as the pin
+              target: the icon shows normally, a pin button fades in on hover. */}
+          <span className="relative flex h-6 w-6 shrink-0 items-center justify-center">
+            <span
+              className={cn(
+                "flex h-6 w-6 items-center justify-center rounded-md transition-opacity group-hover/session:opacity-0",
+                isActive
+                  ? "bg-[var(--data-accent-soft)] text-[var(--data-accent)]"
+                  : "bg-[var(--surface-primary)] text-[var(--text-tertiary)]",
+                isEditing && "opacity-0",
+              )}
+            >
+              <LeadingIcon className={cn("h-3.5 w-3.5", sessionBadge?.color)} />
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.currentTarget.blur();
+                onTogglePin?.(session.id, !session.is_pinned);
+              }}
+              className={cn(
+                "absolute inset-0 z-10 flex items-center justify-center rounded-md text-[var(--text-tertiary)] opacity-0 transition-opacity hover:bg-[var(--surface-tertiary)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--brand-primary)] focus-visible:opacity-100 group-hover/session:opacity-100",
+                isEditing && "hidden",
+              )}
+              aria-label={pinLabel}
+              title={pinLabel}
+            >
+              {session.is_pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+            </button>
+          </span>
 
           <div
             className={cn(
@@ -305,15 +323,9 @@ export const SessionItem = memo(function SessionItem({
               <>
                 <p
                   ref={titleRef}
-                  className="flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-sm leading-5"
+                  className="flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-ui-body font-medium leading-5"
                   style={scrollVars}
                 >
-                  {sessionBadge && (
-                    <sessionBadge.Icon
-                      aria-label={sessionBadge.label}
-                      className={cn("inline h-3 w-3 shrink-0", sessionBadge.color)}
-                    />
-                  )}
                   <span
                     className={cn(
                       "min-w-0 flex-1 overflow-hidden text-ellipsis",
@@ -322,6 +334,11 @@ export const SessionItem = memo(function SessionItem({
                   >
                     {title}
                   </span>
+                  {isExpertTeam && (
+                    <span className="shrink-0 rounded-md bg-[var(--data-accent-soft)] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[var(--data-accent)]">
+                      {sessionBadge?.label ?? "专家团"}
+                    </span>
+                  )}
                   {isLive && (
                     <Loader2
                       aria-label={t('sessionIsGenerating', { defaultValue: 'Generating in background' })}

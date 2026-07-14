@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   ChartColumn,
   Plus,
-  Search,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -14,14 +13,19 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarHeader } from "@/components/layout/sidebar-header";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { SidebarFooter } from "@/components/layout/sidebar-footer";
+import { ActivityRailCapabilities } from "@/components/layout/activity-rail";
+import { SessionItem } from "@/components/layout/session-item";
+import { DeleteConfirmationDialog } from "@/components/layout/delete-confirmation-dialog";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useDashboards } from "@/hooks/use-dashboard";
 import { useSessions } from "@/hooks/use-sessions";
+import { useActiveSessionId } from "@/hooks/use-active-session-id";
+import { useSessionActions } from "@/hooks/use-session-actions";
 import { useIsMacOS } from "@/hooks/use-platform";
 import { useEffectiveSidebarWidth } from "@/hooks/use-effective-sidebar-width";
 import { cn } from "@/lib/utils";
-import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
-import { getChatRoute, getDashboardRoute } from "@/lib/routes";
+import { ACTIVITY_RAIL_WIDTH, IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
+import { getDashboardRoute } from "@/lib/routes";
 
 /**
  * Codata data-workspace sidebar. Swaps in place of the chat `Sidebar` when
@@ -126,8 +130,8 @@ export function CodataSidebar() {
     <TooltipProvider delayDuration={200}>
       <motion.aside
         aria-label="Codata sidebar"
-        className="sidebar-glass fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden bg-[var(--sidebar-translucent-bg)] backdrop-blur-xl"
-        style={IS_DESKTOP ? { top: topOffset } : undefined}
+        className="sidebar-glass fixed inset-y-0 z-30 flex flex-col overflow-hidden bg-[var(--sidebar-translucent-bg)] backdrop-blur-xl"
+        style={{ left: ACTIVITY_RAIL_WIDTH, ...(IS_DESKTOP ? { top: topOffset } : {}) }}
         initial={false}
         animate={{ width: isCollapsed ? 0 : width }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
@@ -138,17 +142,37 @@ export function CodataSidebar() {
   );
 }
 
-export function CodataSidebarContent() {
+/**
+ * `railChrome` renders the mode switch + shared capability links inline. The
+ * desktop rail owns those, so it defaults off; the mobile drawer (no rail)
+ * passes true.
+ */
+export function CodataSidebarContent({ railChrome = false }: { railChrome?: boolean } = {}) {
   const pathname = usePathname();
+  const activeSessionId = useActiveSessionId();
   const { data: dashboards } = useDashboards();
   const dashboardCount = dashboards?.length ?? 0;
   const { data: sessionPages } = useSessions("codata");
   const codataSessions = (sessionPages?.pages.flat() ?? []).slice(0, 20);
+  const {
+    editingId,
+    deleteTarget,
+    handleDeleteRequest,
+    handleDeleteConfirm,
+    handleDeleteCancel,
+    handleRename,
+    handleTogglePin,
+    handleArchive,
+    handleEditStart,
+    handleEditEnd,
+    exportPdf,
+    exportMarkdown,
+  } = useSessionActions();
 
   return (
     <>
       <SidebarHeader />
-      <SidebarNav />
+      {railChrome && <SidebarNav />}
       <div className="px-3 pb-2">
         <Link
           href="/c/new"
@@ -196,34 +220,39 @@ export function CodataSidebarContent() {
         )}
 
         <SidebarGroupLabel>最近分析</SidebarGroupLabel>
-        <div className="space-y-0.5">
+        <div className="-mx-3 space-y-0.5">
           {codataSessions.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--surface-secondary)] px-3 py-4 text-ui-caption text-[var(--text-tertiary)]">
+            <div className="mx-3 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--surface-secondary)] px-3 py-4 text-ui-caption text-[var(--text-tertiary)]">
               暂无分析会话
             </div>
           ) : (
-            codataSessions.slice(0, 8).map((s) => {
-              const href = getChatRoute(s.id);
-              const expertSession = isExpertTeamSession(s.slug, s.title);
-              return (
-                <NavRow
-                  key={s.id}
-                  href={href}
-                  active={pathname === href}
-                  icon={expertSession ? Users : Search}
-                  label={s.title || "未命名分析"}
-                  tag={expertSession ? "专家团" : undefined}
-                />
-              );
-            })
+            codataSessions.slice(0, 8).map((s) => (
+              <SessionItem
+                key={s.id}
+                session={s}
+                isActive={activeSessionId === s.id}
+                onDelete={handleDeleteRequest}
+                onRename={handleRename}
+                onExportPdf={exportPdf}
+                onExportMarkdown={exportMarkdown}
+                onTogglePin={handleTogglePin}
+                onArchive={handleArchive}
+                isEditing={editingId === s.id}
+                onEditStart={handleEditStart}
+                onEditEnd={handleEditEnd}
+              />
+            ))
           )}
         </div>
       </div>
+      {railChrome && <ActivityRailCapabilities />}
       <SidebarFooter />
+      <DeleteConfirmationDialog
+        open={!!deleteTarget}
+        title={deleteTarget?.title ?? ""}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </>
   );
-}
-
-function isExpertTeamSession(slug?: string | null, title?: string | null): boolean {
-  return slug?.startsWith("expert-team") === true || title?.startsWith("专家团") === true;
 }

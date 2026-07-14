@@ -439,7 +439,7 @@ function ChannelDetailPanel({
       </div>
 
       <div className="flex h-[60px] items-center justify-center gap-3 border-t border-[var(--border-default)] bg-[var(--surface-raised)] px-5">
-        <Button type="submit" form={formId} className="h-9 w-[140px] rounded-lg bg-[var(--brand-primary)] text-[13px] font-semibold text-white hover:bg-[var(--brand-primary-hover)]">
+        <Button type="submit" form={formId} className="h-9 w-[140px] rounded-lg bg-[var(--text-primary)] text-[13px] font-semibold text-[var(--surface-primary)] transition-opacity hover:opacity-90">
           保存并连接
         </Button>
         {connected ? (
@@ -574,7 +574,7 @@ function QrSetupCard({
           <QrCode className="h-10 w-10 text-[var(--text-tertiary)]" />
         )}
       </div>
-      <Button className="mt-4 h-8 w-[168px] rounded-lg bg-[var(--surface-raised)] text-[12px] font-semibold text-[var(--text-accent)] ring-1 ring-[var(--brand-primary)] hover:bg-[var(--brand-soft-hover)]" onClick={onStart} disabled={isStarting}>
+      <Button className="mt-4 h-8 w-[168px] rounded-lg bg-[var(--text-primary)] text-[12px] font-semibold text-[var(--surface-primary)] transition-opacity hover:opacity-90" onClick={onStart} disabled={isStarting}>
         {isStarting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <QrCode className="h-3.5 w-3.5" />}
         扫描二维码创建
       </Button>
@@ -642,7 +642,7 @@ function CredentialConfigForm({ platform, formId, onDone }: { platform: Platform
           />
         ))}
       </div>
-      {error && <p className="text-[12px] text-red-500">{error}</p>}
+      {error && <p className="text-[12px] text-[var(--color-destructive)]">{error}</p>}
       {addChannel.isPending && (
         <div className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />

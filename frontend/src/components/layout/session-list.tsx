@@ -4,24 +4,19 @@ import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from 'react-i18next';
 import { toast } from "sonner";
-import Link from "next/link";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { API, queryKeys } from "@/lib/constants";
+import { API } from "@/lib/constants";
 import { api } from "@/lib/api";
-import { useChatStore } from "@/stores/chat-store";
-import { stopStream } from "@/lib/session-stream-registry";
 import { useSidebarStore } from "@/stores/sidebar-store";
-import { useSessions, useDeleteSession, useRenameSession, usePinSession, useArchiveSession, useUnarchiveSession, useSearchSessions } from "@/hooks/use-sessions";
+import { useSessions, useSearchSessions } from "@/hooks/use-sessions";
 import { useActiveSessionId } from "@/hooks/use-active-session-id";
-import { useSessionExport } from "@/hooks/use-session-export";
+import { useSessionActions } from "@/hooks/use-session-actions";
 import { SessionItem } from "./session-item";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import { ProjectsToolbar } from "./projects-toolbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
-import { Check, ChevronRight, Copy, FolderClosed, FolderOpen, Loader2, MessageSquare, PlugZap, SearchX, Sparkles, SquarePen, Zap } from "lucide-react";
-import { getChatRoute } from "@/lib/routes";
+import { Check, ChevronRight, Copy, FolderClosed, FolderOpen, Loader2, MessageSquare, SearchX, SquarePen } from "lucide-react";
 import { cn, groupSessionsByDate, groupSessionsByWorkspace } from "@/lib/utils";
 import type { SessionResponse } from "@/types/session";
 
@@ -32,7 +27,6 @@ type FlatItem =
 
 export function SessionList() {
   const { t } = useTranslation('common');
-  const router = useRouter();
   const activeSessionId = useActiveSessionId();
   const {
     data: sessionPages,
@@ -43,13 +37,20 @@ export function SessionList() {
     refetch,
     fetchNextPage,
   } = useSessions("chat");
-  const deleteSession = useDeleteSession();
-  const renameSession = useRenameSession();
-  const pinSession = usePinSession();
-  const archiveSession = useArchiveSession();
-  const unarchiveSession = useUnarchiveSession();
-  const { exportPdf, exportMarkdown } = useSessionExport();
-  const queryClient = useQueryClient();
+  const {
+    editingId,
+    deleteTarget,
+    handleDeleteRequest,
+    handleDeleteConfirm,
+    handleDeleteCancel,
+    handleRename,
+    handleTogglePin,
+    handleArchive,
+    handleEditStart,
+    handleEditEnd,
+    exportPdf,
+    exportMarkdown,
+  } = useSessionActions();
   const searchQuery = useSidebarStore((s) => s.searchQuery);
   const collapsedProjects = useSidebarStore((s) => s.collapsedProjects);
   const toggleProjectCollapsed = useSidebarStore((s) => s.toggleProjectCollapsed);
@@ -74,28 +75,6 @@ export function SessionList() {
 
   // Roving tabindex: track which session item is focused
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
-
-  // Inline editing state
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  // Delete confirmation state
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
-
-  // Soft delete with undo — refs for delayed deletion
-  const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const deletedSessionRef = useRef<{
-    id: string;
-    data: InfiniteData<SessionResponse[]>;
-  } | null>(null);
-
-  // Cleanup pending delete timer on unmount
-  useEffect(() => {
-    return () => {
-      if (deleteTimerRef.current) {
-        clearTimeout(deleteTimerRef.current);
-      }
-    };
-  }, []);
 
   // Build a map of session id → snippet for content search results
   const snippetMap = useMemo(() => {
@@ -347,142 +326,9 @@ export function SessionList() {
     [focusedIndex, sessionIndices, virtualizer],
   );
 
-  const handleDeleteRequest = useCallback((id: string, title: string) => {
-    setDeleteTarget({ id, title });
-  }, []);
-
-  const handleDeleteConfirm = useCallback(() => {
-    if (!deleteTarget) return;
-    const { id } = deleteTarget;
-
-    // If the session being deleted has active generation, abort it first.
-    const chatState = useChatStore.getState();
-    const bucket = chatState.sessions[id];
-    if (bucket && (bucket.isGenerating || bucket.isCompacting) && bucket.streamId) {
-      api.post(API.CHAT.ABORT, { stream_id: bucket.streamId }).catch(() => {});
-      stopStream(id);
-      chatState.finishGeneration(id);
-    }
-    chatState.removeSession(id);
-
-    // Save the current cache so we can restore on undo
-    const previousData = queryClient.getQueryData<InfiniteData<SessionResponse[]>>(
-      queryKeys.sessions.all,
-    );
-
-    if (previousData) {
-      deletedSessionRef.current = { id, data: previousData };
-
-      // Optimistically remove from cache
-      queryClient.setQueryData<InfiniteData<SessionResponse[]>>(
-        queryKeys.sessions.all,
-        {
-          ...previousData,
-          pages: previousData.pages.map((page) =>
-            page.filter((s) => s.id !== id),
-          ),
-        },
-      );
-    }
-
-    // Navigate away immediately if the deleted session is the active one
-    if (activeSessionId === id) {
-      router.push(getChatRoute());
-    }
-
-    // Start 5-second timer — actually delete when it fires
-    deleteTimerRef.current = setTimeout(() => {
-      deleteTimerRef.current = null;
-      deletedSessionRef.current = null;
-      deleteSession.mutate(id);
-    }, 5000);
-
-    toast(t('conversationDeleted'), {
-      action: {
-        label: t('undo'),
-        onClick: () => {
-          // Cancel the pending delete
-          if (deleteTimerRef.current) {
-            clearTimeout(deleteTimerRef.current);
-            deleteTimerRef.current = null;
-          }
-          // Restore session to cache
-          if (deletedSessionRef.current && deletedSessionRef.current.id === id) {
-            queryClient.setQueryData<InfiniteData<SessionResponse[]>>(
-              queryKeys.sessions.all,
-              deletedSessionRef.current.data,
-            );
-            deletedSessionRef.current = null;
-          }
-        },
-      },
-      duration: 5000,
-    });
-
-    setDeleteTarget(null);
-  }, [deleteTarget, deleteSession, activeSessionId, router, t, queryClient]);
-
-  const handleDeleteCancel = useCallback(() => {
-    setDeleteTarget(null);
-  }, []);
-
-  const handleRename = useCallback((id: string, newTitle: string) => {
-    renameSession.mutate({ id, title: newTitle });
-  }, [renameSession]);
-
-  const handleTogglePin = useCallback((id: string, is_pinned: boolean) => {
-    pinSession.mutate({ id, is_pinned });
-  }, [pinSession]);
-
-  const handleArchive = useCallback((id: string) => {
-    if (activeSessionId === id) {
-      router.push(getChatRoute());
-    }
-    const chatState = useChatStore.getState();
-    const bucket = chatState.sessions[id];
-    if (bucket && (bucket.isGenerating || bucket.isCompacting) && bucket.streamId) {
-      api.post(API.CHAT.ABORT, { stream_id: bucket.streamId }).catch(() => {});
-      stopStream(id);
-      chatState.finishGeneration(id);
-    }
-    chatState.removeSession(id);
-    archiveSession.mutate(
-      { id },
-      {
-        onSuccess: () => {
-          toast.success(t("conversationArchived"), {
-            action: {
-              label: t("undo"),
-              onClick: () => {
-                unarchiveSession.mutate(
-                  { id },
-                  {
-                    onSuccess: () => toast.success(t("conversationRestored")),
-                    onError: () => toast.error(t("restoreFailed")),
-                  },
-                );
-              },
-            },
-          });
-        },
-        onError: () => toast.error(t("archiveFailed")),
-      },
-    );
-  }, [activeSessionId, archiveSession, router, t, unarchiveSession]);
-
-  const handleEditStart = useCallback((id: string) => {
-    setEditingId(id);
-  }, []);
-
-  const handleEditEnd = useCallback(() => {
-    setEditingId(null);
-  }, []);
-
-
   if (isLoading || (isContentSearch && isSearching) || (isError && sessions.length === 0)) {
     return (
       <div className="flex flex-1 flex-col px-4 py-3">
-        <SidebarQuickNav />
         <div className="flex h-full min-h-0 flex-col gap-2">
           {Array.from({ length: 12 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full rounded-2xl" />
@@ -496,7 +342,6 @@ export function SessionList() {
   if (filtered.length === 0) {
     return (
       <div className="flex flex-1 flex-col">
-        <SidebarQuickNav />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6">
           {searchQuery ? (
             <>
@@ -525,7 +370,6 @@ export function SessionList() {
 
   return (
     <>
-      <SidebarQuickNav />
       <div
         ref={scrollRef}
         role="listbox"
@@ -612,34 +456,6 @@ export function SessionList() {
         onCancel={handleDeleteCancel}
       />
     </>
-  );
-}
-
-function SidebarQuickNav() {
-  return (
-    <div className="space-y-1 px-3 pb-2">
-      <Link
-        href="/skills"
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-ui-body text-[var(--text-secondary)] transition-colors hover:bg-[var(--sidebar-hover)] hover:text-[var(--text-primary)]"
-      >
-        <Sparkles className="h-3.5 w-3.5 shrink-0" />
-        <span>技能</span>
-      </Link>
-      <Link
-        href="/mcp"
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-ui-body text-[var(--text-secondary)] transition-colors hover:bg-[var(--sidebar-hover)] hover:text-[var(--text-primary)]"
-      >
-        <PlugZap className="h-3.5 w-3.5 shrink-0" />
-        <span>MCP</span>
-      </Link>
-      <Link
-        href="/automations"
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-ui-body text-[var(--text-secondary)] transition-colors hover:bg-[var(--sidebar-hover)] hover:text-[var(--text-primary)]"
-      >
-        <Zap className="h-3.5 w-3.5 shrink-0" />
-        <span>自动化</span>
-      </Link>
-    </div>
   );
 }
 

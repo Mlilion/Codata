@@ -23,6 +23,15 @@ from app.tool.base import ToolDefinition
 logger = logging.getLogger(__name__)
 
 
+def _default_auth(server_type: str) -> str:
+    """Default auth mode when a catalog entry doesn't declare one.
+
+    Local command connectors need no browser/token auth; remote connectors
+    default to OAuth (the common case for the hosted MCP catalog).
+    """
+    return "none" if server_type == "local" else "oauth"
+
+
 class ConnectorRegistry:
     """Single source of truth for all MCP connector state."""
 
@@ -101,6 +110,7 @@ class ConnectorRegistry:
                 category=catalog_entry.get("category", "other"),
                 enabled=connector_id in self._persisted_state.get("enabled", []),
                 source="builtin",
+                auth=catalog_entry.get("auth", _default_auth(server_type)),
                 local_config=(
                     {
                         k: v
@@ -146,7 +156,8 @@ class ConnectorRegistry:
         # it stays a builtin (no "custom" badge), regardless of whether the seed
         # was registered before or after this call. A genuinely new id (not in
         # the seed catalog) becomes a user custom connector.
-        is_seed = bool(self._catalog.get(id, {}).get("seed"))
+        catalog_entry = self._catalog.get(id, {})
+        is_seed = bool(catalog_entry.get("seed"))
         connector = ConnectorInfo(
             id=id,
             name=name,
@@ -156,6 +167,9 @@ class ConnectorRegistry:
             category=category,
             enabled=False,
             source="builtin" if is_seed else "custom",
+            # Claiming a seed placeholder inherits the seed's auth mode (e.g.
+            # datasage stays "token"); a genuinely new custom connector is oauth.
+            auth=catalog_entry.get("auth", "oauth"),
         )
         self._connectors[id] = connector
 
@@ -206,15 +220,17 @@ class ConnectorRegistry:
                 continue
             if cid in self._connectors:
                 continue
+            entry_type = entry.get("type", "remote")
             self._connectors[cid] = ConnectorInfo(
                 id=cid,
                 name=entry.get("name", cid.replace("-", " ").title()),
                 url=entry.get("url", ""),
-                type=entry.get("type", "remote"),
+                type=entry_type,
                 description=entry.get("description", ""),
                 category=entry.get("category", "other"),
                 enabled=cid in self._persisted_state.get("enabled", []),
                 source="builtin",
+                auth=entry.get("auth", _default_auth(entry_type)),
             )
 
     # ------------------------------------------------------------------
@@ -229,7 +245,8 @@ class ConnectorRegistry:
         for custom in self._persisted_state.get("custom", []):
             cid = custom.get("id", "")
             if cid and cid not in self._connectors:
-                is_seed = bool(self._catalog.get(cid, {}).get("seed"))
+                catalog_entry = self._catalog.get(cid, {})
+                is_seed = bool(catalog_entry.get("seed"))
                 self._connectors[cid] = ConnectorInfo(
                     id=cid,
                     name=custom.get("name", cid),
@@ -239,6 +256,7 @@ class ConnectorRegistry:
                     category=custom.get("category", "custom"),
                     enabled=cid in self._persisted_state.get("enabled", []),
                     source="builtin" if is_seed else "custom",
+                    auth=catalog_entry.get("auth", "oauth"),
                 )
 
         # Register seed connectors (discoverable catalog cards) — after custom
@@ -438,14 +456,15 @@ class ConnectorRegistry:
             mcp_connected = runtime.get("status") == "connected"
             effective_status = runtime.get("status", "disabled" if not connector.enabled else "disconnected")
 
-            # Google Workspace: MCP server can start without OAuth tokens.
-            # Override status to "needs_auth" if user hasn't completed Google login.
-            if cid == "google-workspace" and mcp_connected:
-                from app.api.google_auth import load_google_tokens
-                tokens = load_google_tokens(self._project_dir)
-                if not tokens or not tokens.get("refresh_token"):
-                    mcp_connected = False
-                    effective_status = "needs_auth"
+            # A transport handshake succeeding does NOT mean the connector is
+            # usable: some servers (datasage, google-workspace) complete the
+            # MCP handshake unauthenticated and only reject at tool-call time.
+            # For connectors that require credentials, downgrade a "connected"
+            # transport to "needs_auth" until the credential is actually present,
+            # so the UI never shows a green dot the agent can't use.
+            if mcp_connected and not self._has_required_credential(cid, connector):
+                mcp_connected = False
+                effective_status = "needs_auth"
 
             result[cid] = {
                 **connector.to_dict(),
@@ -456,6 +475,33 @@ class ConnectorRegistry:
             }
 
         return result
+
+    def _has_required_credential(self, cid: str, connector: ConnectorInfo) -> bool:
+        """Whether a connector that needs credentials actually has them.
+
+        Returns True (no gating) for connectors that don't require a
+        credential, or when the required credential is present. Returns False
+        only when a credential is required but missing — which callers use to
+        downgrade a transport-"connected" status to needs_auth.
+        """
+        # Google Workspace uses its own Google OAuth store (refresh_token),
+        # not the MCP token store.
+        if cid == "google-workspace":
+            from app.api.google_auth import load_google_tokens
+            tokens = load_google_tokens(self._project_dir)
+            return bool(tokens and tokens.get("refresh_token"))
+
+        # Token-auth connectors (e.g. datasage) need a stored MCP token.
+        if connector.auth == "token":
+            store = getattr(self._mcp_manager, "_token_store", None)
+            if store is None:
+                return False
+            return store.has_token(cid)
+
+        # oauth / none: nothing extra to check here — the transport status is
+        # authoritative (OAuth connectors fail the handshake without tokens
+        # and fall through to needs_auth via the manager).
+        return True
 
     @property
     def mcp_manager(self) -> McpManager | None:

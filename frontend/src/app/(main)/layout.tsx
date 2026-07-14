@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { SettingsSidebar } from "@/components/settings/settings-sidebar";
 import { CodataSidebar } from "@/components/codata/codata-sidebar";
+import { ActivityRail } from "@/components/layout/activity-rail";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { SearchCommandDialog } from "@/components/layout/search-command-dialog";
 import { RightSidebar } from "@/components/right-sidebar/right-sidebar";
@@ -30,7 +31,7 @@ import { useActivityStore } from "@/stores/activity-store";
 import { useArtifactStore } from "@/stores/artifact-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useRightSidebarStore } from "@/stores/right-sidebar-store";
-import { IS_DESKTOP, MAIN_CONTENT_MIN_WIDTH, TITLE_BAR_HEIGHT } from "@/lib/constants";
+import { ACTIVITY_RAIL_WIDTH, IS_DESKTOP, MAIN_CONTENT_MIN_WIDTH, TITLE_BAR_HEIGHT } from "@/lib/constants";
 import { desktopAPI } from "@/lib/tauri-api";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 
@@ -153,9 +154,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     viewportWidth,
     isCodataMode ? 270 : undefined,
   );
+  // The activity rail is always visible at desktop widths and offsets
+  // everything to its right (sidebars start at its right edge).
+  const railWidth = isDesktop ? ACTIVITY_RAIL_WIDTH : 0;
   // Settings replaces the sidebar with its own; always keep the gutter.
-  const marginLeft =
-    isDesktop && (isSettingsPage || !isCollapsed) ? renderedSidebarWidth : 0;
+  const sidebarGutter = isSettingsPage || !isCollapsed ? renderedSidebarWidth : 0;
+  const marginLeft = isDesktop ? railWidth + sidebarGutter : 0;
   const canDockRightSidebar =
     isDesktop &&
     isActiveChat &&
@@ -207,6 +211,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       {/* Desktop title bar (Electron only) */}
       <TitleBar />
+
+      {/* Always-visible activity rail (mode switch + shared capabilities) */}
+      <ActivityRail />
 
       {/* Desktop sidebar — Settings swaps in its own nav */}
       <div className="hidden lg:block">

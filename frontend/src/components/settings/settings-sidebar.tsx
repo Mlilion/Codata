@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useIsMacOS } from "@/hooks/use-platform";
 import { useEffectiveSidebarWidth } from "@/hooks/use-effective-sidebar-width";
-import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
+import { ACTIVITY_RAIL_WIDTH, IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { SidebarResizeHandle } from "@/components/layout/sidebar-resize-handle";
 import { SETTINGS_GROUPS, SETTINGS_TABS, type SettingsGroupId, type SettingsTabId } from "./settings-tabs";
@@ -64,8 +64,8 @@ export function SettingsSidebar() {
   return (
     <aside
       aria-label="Settings sidebar"
-      className="sidebar-glass fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden bg-[var(--sidebar-translucent-bg)] backdrop-blur-xl"
-      style={{ width: sidebarWidth, top: topOffset }}
+      className="sidebar-glass fixed inset-y-0 z-30 flex flex-col overflow-hidden bg-[var(--sidebar-translucent-bg)] backdrop-blur-xl"
+      style={{ width: sidebarWidth, left: ACTIVITY_RAIL_WIDTH, top: topOffset }}
     >
       <SidebarResizeHandle />
       <div
