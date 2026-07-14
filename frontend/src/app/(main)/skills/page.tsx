@@ -61,8 +61,13 @@ export default function SkillsPage() {
                 className="h-10 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] pl-9 pr-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-focus)]"
               />
             </div>
-            <Button onClick={() => setCreateOpen(true)} className="shrink-0 gap-1.5">
-              <Plus className="h-4 w-4" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 shrink-0 px-2.5 text-ui-2xs"
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className="h-3 w-3 mr-1" />
               新建技能
             </Button>
             </div>
@@ -111,11 +116,11 @@ export default function SkillsPage() {
             </label>
           </div>
           <div className="mt-2 flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setCreateOpen(false)}>
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setCreateOpen(false)}>
               取消
             </Button>
-            <Button onClick={submit} disabled={!canSubmit || createSkill.isPending} className="gap-1.5">
-              {createSkill.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            <Button size="sm" className="h-7 text-xs gap-1.5" onClick={submit} disabled={!canSubmit || createSkill.isPending}>
+              {createSkill.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               创建
             </Button>
           </div>

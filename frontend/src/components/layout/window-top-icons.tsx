@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useIsMacOS } from "@/hooks/use-platform";
-import { IS_DESKTOP } from "@/lib/constants";
+import { ACTIVITY_RAIL_WIDTH, IS_DESKTOP } from "@/lib/constants";
 
 /**
  * Floating icon strip anchored to the top-left of the window.
@@ -22,11 +22,13 @@ import { IS_DESKTOP } from "@/lib/constants";
  * sit over the sidebar's top padding; when collapsed they sit at the
  * left of the chat area. Either way their x coordinate doesn't move.
  *
- * Approximate footprint (used by ChatHeader to reserve left padding):
- *   macOS:         ≈ 187px  (91 left inset + 3 × 28 buttons + gaps)
- *   Windows/Linux: ≈ 132px  (12 left pad + 3 × 36 buttons + gaps)
+ * Footprint reserved by ChatHeader as left padding, measured from the main
+ * content's left edge (which starts just right of the activity rail when the
+ * sidebar is collapsed):
+ *   macOS:         ≈ 135px  (91 left inset + 3 × 28 buttons + gaps − rail)
+ *   Windows/Linux: ≈ 132px  (icons shift right with the content, so unchanged)
  */
-export const WINDOW_TOP_ICONS_WIDTH_MAC = 187;
+export const WINDOW_TOP_ICONS_WIDTH_MAC = 135;
 export const WINDOW_TOP_ICONS_WIDTH_OTHER = 132;
 
 export function WindowTopIcons() {
@@ -39,9 +41,11 @@ export function WindowTopIcons() {
   if (!IS_DESKTOP) return null;
 
   // Keep these aligned with the native macOS traffic lights configured in
-  // desktop-tauri/src-tauri/tauri.conf.json.
-  const leftPad = isMac ? 91 : 12;
-  const topOffset = isMac ? 16 : 0;
+  // desktop-tauri/src-tauri/tauri.conf.json. On Windows/Linux the icons shift
+  // right past the activity rail; on macOS the 91px traffic-light inset
+  // already clears the 52px rail.
+  const leftPad = isMac ? 91 : 12 + ACTIVITY_RAIL_WIDTH;
+  const topOffset = isMac ? 8 : 0;
 
   return (
     <TooltipProvider delayDuration={200}>

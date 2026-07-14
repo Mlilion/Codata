@@ -1,8 +1,10 @@
 "use client";
 
 import { Suspense } from "react";
-import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarHeader } from "./sidebar-header";
 import { SessionList } from "./session-list";
@@ -11,17 +13,10 @@ import { SidebarResizeHandle } from "./sidebar-resize-handle";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useIsMacOS } from "@/hooks/use-platform";
 import { useEffectiveSidebarWidth } from "@/hooks/use-effective-sidebar-width";
-import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
-
-const SidebarNav = dynamic(
-  () => import("./sidebar-nav").then((mod) => mod.SidebarNav),
-  {
-    ssr: false,
-    loading: () => <div className="px-3 pt-1 pb-2" aria-hidden="true" />,
-  },
-);
+import { ACTIVITY_RAIL_WIDTH, IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
 
 export function Sidebar() {
+  const { t } = useTranslation("common");
   const isCollapsed = useSidebarStore((s) => s.isCollapsed);
   const requestedWidth = useSidebarStore((s) => s.width);
   const width = useEffectiveSidebarWidth(requestedWidth);
@@ -35,14 +30,22 @@ export function Sidebar() {
     <TooltipProvider delayDuration={200}>
       <motion.aside
         aria-label="Chat sidebar"
-        className="sidebar-glass fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden bg-[var(--sidebar-translucent-bg)] backdrop-blur-xl"
-        style={IS_DESKTOP ? { top: topOffset } : undefined}
+        className="sidebar-glass fixed inset-y-0 z-30 flex flex-col overflow-hidden bg-[var(--sidebar-translucent-bg)] backdrop-blur-xl"
+        style={{ left: ACTIVITY_RAIL_WIDTH, ...(IS_DESKTOP ? { top: topOffset } : {}) }}
         initial={false}
         animate={{ width: isCollapsed ? 0 : width }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
       >
         <SidebarHeader />
-        <SidebarNav />
+        <div className="px-3 pb-2">
+          <Link
+            href="/c/new"
+            className="flex h-9 items-center justify-center gap-2 rounded-lg bg-[var(--text-primary)] text-ui-body font-medium text-[var(--surface-primary)] transition-all hover:opacity-90 active:scale-[0.98]"
+          >
+            <Plus className="h-4 w-4" />
+            {t("newChat")}
+          </Link>
+        </div>
         <Suspense fallback={<div className="flex-1" />}>
           <SessionList />
         </Suspense>

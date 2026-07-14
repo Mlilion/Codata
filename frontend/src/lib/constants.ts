@@ -464,6 +464,8 @@ export const RIGHT_SIDEBAR_WIDTH = 360;
 export const RIGHT_SIDEBAR_MIN_WIDTH = 360;
 export const RIGHT_SIDEBAR_MAX_WIDTH = 520;
 export const MAIN_CONTENT_MIN_WIDTH = 640;
+/** Always-visible left activity rail (mode switch + shared capabilities). */
+export const ACTIVITY_RAIL_WIDTH = 52;
 export const ACTIVITY_PANEL_WIDTH = 380;
 export const ARTIFACT_PANEL_WIDTH = 520;
 export const WORKSPACE_PANEL_WIDTH = 320;
