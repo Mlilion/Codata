@@ -215,6 +215,7 @@ impl BackendState {
                 ])
                 .current_dir(&backend_dir)
                 .env("PYTHONUNBUFFERED", "1")
+                .kill_on_drop(true)
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .stdin(Stdio::null());
@@ -262,6 +263,7 @@ impl BackendState {
                     &resource_dir.to_string_lossy(),
                 ])
                 .env("PYTHONUNBUFFERED", "1")
+                .kill_on_drop(true)
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .stdin(Stdio::null());
@@ -277,6 +279,15 @@ impl BackendState {
         // Take stdout/stderr before storing child (to avoid partial move)
         let child_stdout = child.stdout.take();
         let child_stderr = child.stderr.take();
+
+        // Kill any previously-tracked backend before overwriting the field.
+        // A restart path (watchdog / exit-monitor) can reach start() while an
+        // earlier child is still tracked; overwriting without killing would
+        // orphan it. This is the guard that prevents the leaked-backend pileup.
+        if let Some(mut old) = inner.process.take() {
+            warn!("start(): killing previously-tracked backend before spawning a new one");
+            let _ = kill_process_tree(&mut old).await;
+        }
 
         // Store the process
         inner.process = Some(child);
@@ -831,6 +842,52 @@ fn read_recent_log_lines(path: &Path, max_lines: usize) -> String {
             }
         }
         Err(_) => "<backend log unavailable>".to_string(),
+    }
+}
+
+/// Kill stale backend processes left over by a previous app instance.
+///
+/// A hard crash, force-quit, or a version with the leaked-backend bug can
+/// leave `codata-backend` processes running with no parent app to reap them.
+/// The single-instance plugin guarantees only one app instance runs at a
+/// time, so any process whose command line references our backend binary
+/// path is an orphan and safe to terminate. Called once at startup, before
+/// spawning the managed backend. Best-effort: never fails startup.
+pub async fn reap_stale_backends(backend_path: &Path) {
+    let path_str = backend_path.to_string_lossy().to_string();
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        // -f matches against the full command line, so it hits the exact
+        // packaged binary path and won't touch unrelated processes.
+        let result = tokio::process::Command::new("pkill")
+            .args(["-f", &path_str])
+            .output()
+            .await;
+        match result {
+            Ok(o) if o.status.success() => {
+                warn!("reap_stale_backends: terminated leftover backend(s) matching {path_str}");
+            }
+            // pkill exits 1 when nothing matched — the common, healthy case.
+            Ok(_) => {}
+            Err(e) => warn!("reap_stale_backends: pkill failed: {e}"),
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // taskkill by image name; the backend exe is uniquely named.
+        let image = backend_path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| "codata-backend.exe".to_string());
+        let result = tokio::process::Command::new("taskkill")
+            .args(["/IM", &image, "/T", "/F"])
+            .output()
+            .await;
+        if let Err(e) = result {
+            warn!("reap_stale_backends: taskkill failed: {e}");
+        }
     }
 }
 
