@@ -9,10 +9,6 @@
     <a href="README.md">English</a>
   </p>
 
-  <p>
-    <img src="docs/assets/readme/codata-product-intro-2026-v2.gif" width="920" alt="Codata 产品介绍动画" />
-  </p>
-
   <p><sub>用自然语言问数据，看 SQL、看结果、出图表，并把有价值的分析沉淀到看板。</sub></p>
 </div>
 
@@ -144,9 +140,8 @@ User
 
 ## 下载与文档
 
-- 桌面端下载(Windows / macOS):https://mlilion.github.io/Codata/
-- 完整使用与配置文档:https://mlilion.github.io/Codata/guide.html
-- 版本发布:https://github.com/Mlilion/Codata/releases
+- 桌面端下载(Windows / macOS):https://github.com/renyichao-cyber/Codata-releases/releases/latest
+- 版本发布:https://github.com/renyichao-cyber/Codata-releases/releases
 
 > 桌面端内置自动更新:启动后与每 4 小时自动检查 GitHub Releases 上的新版本,也可在「设置 → 关于」手动检查。
 

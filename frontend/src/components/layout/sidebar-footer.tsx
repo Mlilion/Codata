@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BookOpen,
   ChevronRight,
   Download,
   Moon,
@@ -24,11 +23,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useUpdateCheck } from "@/hooks/use-update-check";
 import { useSidebarStore } from "@/stores/sidebar-store";
-import { IS_DESKTOP } from "@/lib/constants";
-import { desktopAPI } from "@/lib/tauri-api";
 import { cn } from "@/lib/utils";
-
-const USER_GUIDE_URL = "https://example.com/codata-office-user-guide.html";
 
 export function SidebarFooter() {
   const { t } = useTranslation(["common", "settings"]);
@@ -56,14 +51,6 @@ export function SidebarFooter() {
     } else {
       toast.success(t("settings:upToDate"));
     }
-  };
-
-  const openUserGuide = () => {
-    if (IS_DESKTOP) {
-      void desktopAPI.openExternal(USER_GUIDE_URL);
-      return;
-    }
-    window.open(USER_GUIDE_URL, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -148,15 +135,6 @@ export function SidebarFooter() {
               onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
               className="h-4 w-8 data-[state=checked]:[&_span]:translate-x-3.5 [&_span]:h-3 [&_span]:w-3"
             />
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={(event) => {
-              event.preventDefault();
-              openUserGuide();
-            }}
-          >
-            <BookOpen className="h-3.5 w-3.5" />
-            {t("settings:aboutUserGuideTitle")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={(event) => {

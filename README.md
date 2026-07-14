@@ -9,10 +9,6 @@
     <a href="README.zh-CN.md">简体中文</a>
   </p>
 
-  <p>
-    <img src="docs/assets/readme/codata-product-intro-2026-v2.gif" width="920" alt="Codata product intro animation" />
-  </p>
-
   <p><sub>Ask data questions. Inspect the SQL. Pin charts. Turn analysis into reusable work.</sub></p>
 </div>
 
@@ -144,9 +140,8 @@ User
 
 ## Download & Docs
 
-- Desktop download (Windows / macOS): https://mlilion.github.io/Codata/
-- Full usage & configuration docs: https://mlilion.github.io/Codata/guide.html
-- Releases: https://github.com/Mlilion/Codata/releases
+- Desktop download (Windows / macOS): https://github.com/renyichao-cyber/Codata-releases/releases/latest
+- Releases: https://github.com/renyichao-cyber/Codata-releases/releases
 
 > The desktop app auto-updates: it checks GitHub Releases for new versions on launch and every 4 hours, and you can also check manually from Settings → About.
 
