@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
+  BookOpen,
   MessageSquare,
   PlugZap,
   Radio,
@@ -42,6 +43,7 @@ export const CAPABILITY_ITEMS: { href: string; label: string; icon: LucideIcon }
   { href: "/skills", label: "技能", icon: Sparkles },
   { href: "/mcp", label: "MCP", icon: PlugZap },
   { href: "/automations", label: "自动化", icon: Zap },
+  { href: "/knowledge", label: "知识库", icon: BookOpen },
   { href: "/remote", label: "渠道", icon: Radio },
 ];
 
