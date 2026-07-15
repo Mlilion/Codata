@@ -119,6 +119,15 @@ async def delete_knowledge(
     entry = await db.get(KnowledgeEntry, entry_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="知识条目不存在")
+    if entry.raw_path:
+        try:
+            from app.knowledge import wiki_store
+
+            p = wiki_store.wiki_root() / entry.raw_path
+            if p.exists():
+                p.unlink()
+        except Exception:
+            pass
     await db.delete(entry)
     await db.flush()
     return {"ok": True}
