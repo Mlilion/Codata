@@ -66,6 +66,8 @@ class ReadKnowledgeTool(ToolDefinition):
                 return ToolResult(error="非法的 wiki 页面路径")
             if not target.exists():
                 return ToolResult(error=f"wiki 页面不存在: {page or 'index.md'}")
+            if target.is_dir():
+                return ToolResult(error=f"wiki 页面是目录,不是文件: {page or 'index.md'}")
             return ToolResult(output=target.read_text(encoding="utf-8"))
 
         entry_id = args.get("entry_id")

@@ -16,11 +16,21 @@ async def test_ingest_entry_success(tmp_path, monkeypatch, session_factory):
     async def fake_snapshot(entry):
         return "raw/e1.md"
 
-    async def fake_run_generation(*a, **k):
+    captured = {}
+
+    async def fake_run_generation(job, req, *a, **k):
+        captured["session_id"] = req.session_id
         return None
+
+    deleted = []
+
+    async def fake_delete_by_id(db, model, id):
+        deleted.append((model, id))
+        return True
 
     monkeypatch.setattr(ingest, "snapshot_raw", fake_snapshot)
     monkeypatch.setattr(ingest, "run_generation", fake_run_generation)
+    monkeypatch.setattr(ingest, "delete_by_id", fake_delete_by_id)
 
     await ingest.ingest_entry(
         "e1",
@@ -34,6 +44,9 @@ async def test_ingest_entry_success(tmp_path, monkeypatch, session_factory):
         e = await s.get(KnowledgeEntry, "e1")
         assert e.ingest_status == "done"
         assert e.raw_path == "raw/e1.md"
+
+    # the throwaway ingest session must be cleaned up (not left as a phantom chat)
+    assert deleted == [(ingest.Session, captured["session_id"])]
 
 
 @pytest.mark.asyncio

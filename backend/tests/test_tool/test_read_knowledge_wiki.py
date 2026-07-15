@@ -32,3 +32,13 @@ async def test_read_wiki_page_traversal_blocked(tmp_path, monkeypatch):
     tool = ReadKnowledgeTool()
     res = await tool.execute({"page": "../../etc/passwd"}, _ctx())
     assert res.error is not None
+
+
+@pytest.mark.asyncio
+async def test_read_wiki_page_directory_guarded(tmp_path, monkeypatch):
+    monkeypatch.setattr(wiki_store, "_resolve_data_dir", lambda: tmp_path)
+    # ensure the wiki dir exists so page="." resolves to the base dir itself
+    wiki_store.wiki_dir().mkdir(parents=True, exist_ok=True)
+    tool = ReadKnowledgeTool()
+    res = await tool.execute({"page": "."}, _ctx())
+    assert res.error is not None

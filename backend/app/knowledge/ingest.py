@@ -6,8 +6,10 @@ import logging
 from app.knowledge.feishu_reader import find_feishu_client, read_feishu_doc
 from app.knowledge import wiki_store
 from app.models.knowledge_entry import KnowledgeEntry
+from app.models.session import Session
 from app.schemas.chat import PromptRequest
 from app.session.processor import run_generation
+from app.storage.repository import delete_by_id
 from app.streaming.manager import GenerationJob
 from app.utils.id import generate_ulid
 
@@ -71,6 +73,20 @@ async def ingest_entry(
             tool_registry=tool_registry,
             index_manager=index_manager,
         )
+
+        # The headless ingest session was only a vehicle for the file edits;
+        # delete it so it never surfaces as a phantom chat in the user's history.
+        try:
+            async with session_factory() as s:
+                await delete_by_id(s, Session, session_id)
+                await s.commit()
+        except Exception as cleanup_exc:  # best-effort: never fail a good ingest
+            logger.warning(
+                "ingest_entry %s: failed to delete throwaway session %s: %s",
+                entry_id,
+                session_id,
+                cleanup_exc,
+            )
 
         async with session_factory() as s:
             e = await s.get(KnowledgeEntry, entry_id)
