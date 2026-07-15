@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from app.knowledge.feishu_reader import find_feishu_client, read_feishu_doc
 from app.knowledge import wiki_store
+from app.tool.extractors import extract_document, is_supported_binary
 from app.models.knowledge_entry import KnowledgeEntry
 from app.models.session import Session
 from app.schemas.chat import PromptRequest
@@ -17,13 +19,27 @@ logger = logging.getLogger(__name__)
 
 
 async def snapshot_raw(entry) -> str:
-    client = find_feishu_client()
-    if client is None:
-        raise RuntimeError("飞书未连接")
-    body = await read_feishu_doc(client, entry.doc_type, entry.feishu_token)
+    if getattr(entry, "source_type", "feishu") == "file":
+        body = _extract_file(entry.file_path)
+    else:
+        client = find_feishu_client()
+        if client is None:
+            raise RuntimeError("飞书未连接")
+        body = await read_feishu_doc(client, entry.doc_type, entry.feishu_token)
     path = wiki_store.raw_dir() / f"{entry.id}.md"
     path.write_text(body, encoding="utf-8")
     return f"raw/{entry.id}.md"
+
+
+def _extract_file(file_path: str) -> str:
+    p = Path(file_path)
+    if not p.is_absolute():
+        p = (wiki_store.wiki_root().parent / file_path).resolve()
+    if not p.exists():
+        raise RuntimeError(f"文件不存在: {file_path}")
+    if is_supported_binary(str(p)):
+        return extract_document(str(p))
+    return p.read_text(encoding="utf-8", errors="replace")
 
 
 async def ingest_entry(
