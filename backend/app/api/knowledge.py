@@ -2,19 +2,37 @@
 
 from __future__ import annotations
 
+from pathlib import Path as _Path
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.files import UPLOAD_DIR
 from app.dependencies import get_db
 from app.knowledge.feishu_url import parse_feishu_url
 from app.knowledge.ingest import ingest_entry
 from app.models.knowledge_entry import KnowledgeEntry
+from app.tool.extractors import is_supported_binary
+from app.utils.id import generate_ulid
 
 router = APIRouter(prefix="/knowledge")
+
+_TEXT_EXTS = {".md", ".markdown", ".txt"}
+
+
+def _is_supported_upload(name: str) -> bool:
+    ext = _Path(name).suffix.lower()
+    return ext in _TEXT_EXTS or is_supported_binary(name)
 
 
 def _entry_to_dict(e: KnowledgeEntry) -> dict[str, Any]:
@@ -28,6 +46,9 @@ def _entry_to_dict(e: KnowledgeEntry) -> dict[str, Any]:
         "enabled": e.enabled,
         "ingest_status": e.ingest_status,
         "ingest_error": e.ingest_error,
+        "source_type": e.source_type,
+        "source_name": e.source_name,
+        "file_path": e.file_path,
         "created_at": e.time_created.isoformat() if e.time_created else None,
     }
 
@@ -94,6 +115,33 @@ async def add_knowledge(
     return _entry_to_dict(entry)
 
 
+@router.post("/upload")
+async def upload_knowledge(
+    file: UploadFile,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    name = file.filename or "untitled"
+    if not _is_supported_upload(name):
+        raise HTTPException(status_code=400, detail=f"不支持的文件类型: {name}")
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    safe = _Path(name).name
+    dest = UPLOAD_DIR / f"{generate_ulid()}_{safe}"
+    dest.write_bytes(await file.read())
+    entry = KnowledgeEntry(
+        source_type="file",
+        file_path=str(dest.resolve()),
+        source_name=safe,
+        title=safe,
+    )
+    db.add(entry)
+    await db.flush()
+    await db.refresh(entry)
+    _schedule_ingest(request, background_tasks, entry.id)
+    return _entry_to_dict(entry)
+
+
 @router.patch("/{entry_id}")
 async def patch_knowledge(
     entry_id: str, body: PatchBody, db: AsyncSession = Depends(get_db)
@@ -124,6 +172,13 @@ async def delete_knowledge(
             from app.knowledge import wiki_store
 
             p = wiki_store.wiki_root() / entry.raw_path
+            if p.exists():
+                p.unlink()
+        except Exception:
+            pass
+    if entry.source_type == "file" and entry.file_path:
+        try:
+            p = _Path(entry.file_path)
             if p.exists():
                 p.unlink()
         except Exception:
