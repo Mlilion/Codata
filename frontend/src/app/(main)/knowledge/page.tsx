@@ -1,7 +1,7 @@
 "use client";
 
-import { BookOpen, Loader2, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { BookOpen, FileText, Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageContent, PageFrame, PageHeader, SurfacePanel } from "@/components/ui/page-frame";
@@ -13,8 +13,11 @@ import {
   useKnowledge,
   usePatchKnowledge,
   useReingestKnowledge,
+  useUploadKnowledge,
   type KnowledgeEntry,
 } from "@/hooks/use-knowledge";
+
+const UPLOAD_ACCEPT = ".pdf,.docx,.xlsx,.pptx,.md,.markdown,.txt";
 
 const INGEST_STATUS_LABEL: Record<KnowledgeEntry["ingest_status"], string> = {
   pending: "排队中",
@@ -29,12 +32,37 @@ export default function KnowledgePage() {
   const patchKnowledge = usePatchKnowledge();
   const deleteKnowledge = useDeleteKnowledge();
   const reingestKnowledge = useReingestKnowledge();
+  const uploadKnowledge = useUploadKnowledge();
 
   const [url, setUrl] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canSubmit = !!url.trim() && !addKnowledge.isPending;
+
+  const upload = (file: File) => {
+    setError(null);
+    uploadKnowledge.mutate(file, {
+      onSuccess: () => toast.success("已上传到知识库"),
+      onError: (err) => toast.error(apiErrorMessage(err, "上传失败")),
+    });
+  };
+
+  const onFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) upload(file);
+    e.target.value = "";
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (uploadKnowledge.isPending) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) upload(file);
+  };
 
   const submit = () => {
     if (!canSubmit) return;
@@ -86,7 +114,21 @@ export default function KnowledgePage() {
           backHref="/c/new"
         />
         <div className="mx-auto max-w-3xl">
-          <SurfacePanel className="bg-[var(--surface-secondary)] p-4">
+          <SurfacePanel
+            className={cn(
+              "bg-[var(--surface-secondary)] p-4 transition-colors",
+              isDragging && "border-[var(--border-focus)] bg-[var(--surface-primary)]",
+            )}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (!uploadKnowledge.isPending) setIsDragging(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+            }}
+            onDrop={onDrop}
+          >
             <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 value={url}
@@ -116,6 +158,32 @@ export default function KnowledgePage() {
               className="mt-2 h-10 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-focus)]"
             />
             {error && <p className="mt-2 text-sm text-[var(--color-destructive)]">{error}</p>}
+            <div className="mt-3 flex items-center gap-2 border-t border-[var(--border-default)] pt-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={UPLOAD_ACCEPT}
+                onChange={onFileSelected}
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadKnowledge.isPending}
+                className="shrink-0 gap-1.5"
+              >
+                {uploadKnowledge.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+                上传文件
+              </Button>
+              <span className="text-xs text-[var(--text-tertiary)]">
+                或把本地文件拖到这里(PDF、Word、Excel、PPT、Markdown、TXT)
+              </span>
+            </div>
           </SurfacePanel>
 
           <div className="mt-5">
@@ -139,14 +207,23 @@ export default function KnowledgePage() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <a
-                          href={entry.feishu_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block truncate text-sm font-medium text-[var(--text-primary)] hover:underline"
-                        >
-                          {entry.title || entry.feishu_url}
-                        </a>
+                        {entry.source_type === "file" ? (
+                          <span className="inline-flex min-w-0 items-center gap-1 truncate text-sm font-medium text-[var(--text-primary)]">
+                            <FileText className="h-3 w-3 shrink-0 text-[var(--text-tertiary)]" />
+                            <span className="truncate">
+                              {entry.title || entry.source_name}
+                            </span>
+                          </span>
+                        ) : (
+                          <a
+                            href={entry.feishu_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block truncate text-sm font-medium text-[var(--text-primary)] hover:underline"
+                          >
+                            {entry.title || entry.feishu_url}
+                          </a>
+                        )}
                         {entry.doc_type && (
                           <span className="shrink-0 rounded-md bg-[var(--surface-primary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-tertiary)]">
                             {entry.doc_type}

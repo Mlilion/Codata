@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, apiFetch } from "@/lib/api";
 
 export interface KnowledgeEntry {
   id: string;
@@ -13,6 +13,9 @@ export interface KnowledgeEntry {
   created_at: string;
   ingest_status: "pending" | "processing" | "done" | "failed";
   ingest_error: string;
+  source_type: "feishu" | "file";
+  source_name: string;
+  file_path: string;
 }
 
 interface KnowledgeListResponse {
@@ -55,6 +58,28 @@ export function useAddKnowledge() {
   return useMutation({
     mutationFn: (data: { feishu_url: string; note?: string }) =>
       api.post<KnowledgeEntry>("/api/knowledge", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KNOWLEDGE_KEY });
+    },
+  });
+}
+
+export function useUploadKnowledge() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await apiFetch("/api/knowledge/upload", {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        throw new Error(detail?.detail ?? "上传失败");
+      }
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: KNOWLEDGE_KEY });
     },
