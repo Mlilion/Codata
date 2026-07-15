@@ -24,11 +24,14 @@ class KnowledgeEntry(Base, TimestampMixin):
     # Reserved for personal/team visibility; default personal.
     scope: Mapped[str] = mapped_column(String, nullable=False, default="personal")
     title: Mapped[str] = mapped_column(String, nullable=False, default="")
-    feishu_url: Mapped[str] = mapped_column(Text, nullable=False)
-    feishu_token: Mapped[str] = mapped_column(String, nullable=False)
-    doc_type: Mapped[str] = mapped_column(String, nullable=False)  # docx/wiki/sheet/bitable
+    feishu_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    feishu_token: Mapped[str | None] = mapped_column(String, nullable=True)
+    doc_type: Mapped[str | None] = mapped_column(String, nullable=True)  # docx/wiki/sheet/bitable
     note: Mapped[str] = mapped_column(Text, nullable=False, default="")
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    source_type: Mapped[str] = mapped_column(String, nullable=False, default="feishu")
+    file_path: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    source_name: Mapped[str] = mapped_column(Text, nullable=False, default="")
     ingest_status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
     ingest_error: Mapped[str] = mapped_column(Text, nullable=False, default="")
     raw_path: Mapped[str] = mapped_column(Text, nullable=False, default="")
@@ -47,3 +50,6 @@ def _set_ingest_defaults(target: KnowledgeEntry, args, kwargs) -> None:
     kwargs.setdefault("ingest_error", "")
     kwargs.setdefault("raw_path", "")
     kwargs.setdefault("wiki_pages", "")
+    kwargs.setdefault("source_type", "feishu")
+    kwargs.setdefault("file_path", "")
+    kwargs.setdefault("source_name", "")
