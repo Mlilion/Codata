@@ -8,7 +8,7 @@ Open-source build is single-user, so ``user_id`` stays null; ``user_id`` and
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, String, Text
+from sqlalchemy import Boolean, String, Text, event
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin
@@ -29,3 +29,21 @@ class KnowledgeEntry(Base, TimestampMixin):
     doc_type: Mapped[str] = mapped_column(String, nullable=False)  # docx/wiki/sheet/bitable
     note: Mapped[str] = mapped_column(Text, nullable=False, default="")
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    ingest_status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
+    ingest_error: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    raw_path: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    # JSON array (string) of wiki page relative paths this entry produced.
+    wiki_pages: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+
+@event.listens_for(KnowledgeEntry, "init")
+def _set_ingest_defaults(target: KnowledgeEntry, args, kwargs) -> None:
+    """Apply ingest-status defaults at construction time.
+
+    ``mapped_column(default=...)`` only fires on flush, so a freshly
+    constructed (unpersisted) instance would otherwise read ``None``.
+    """
+    kwargs.setdefault("ingest_status", "pending")
+    kwargs.setdefault("ingest_error", "")
+    kwargs.setdefault("raw_path", "")
+    kwargs.setdefault("wiki_pages", "")
