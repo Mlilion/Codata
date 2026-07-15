@@ -4,11 +4,15 @@ from __future__ import annotations
 
 def build_ingest_prompt(entry, raw_rel_path: str, wiki_dir_abs: str) -> str:
     title = entry.title or entry.feishu_url
+    if getattr(entry, "source_type", "feishu") == "file":
+        source = entry.source_name or entry.title or "本地文件"
+    else:
+        source = entry.feishu_url
     return f"""你是知识库维护助手。把一份新资料整合进本地 Markdown wiki。
 
 ## 资料
 - 标题:{title}
-- 来源:{entry.feishu_url}
+- 来源:{source}
 - 原文文件(只读):{raw_rel_path}(相对 wiki 根目录,绝对路径在 wiki 目录的上一级 raw/ 下)
 - entry_id:{entry.id}
 

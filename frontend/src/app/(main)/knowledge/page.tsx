@@ -216,7 +216,7 @@ export default function KnowledgePage() {
                           </span>
                         ) : (
                           <a
-                            href={entry.feishu_url}
+                            href={entry.feishu_url ?? undefined}
                             target="_blank"
                             rel="noreferrer"
                             className="block truncate text-sm font-medium text-[var(--text-primary)] hover:underline"

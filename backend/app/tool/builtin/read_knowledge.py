@@ -91,6 +91,17 @@ class ReadKnowledgeTool(ToolDefinition):
         if entry is None:
             return ToolResult(error=f"知识条目不存在: {entry_id}")
 
+        if getattr(entry, "source_type", "feishu") == "file":
+            from app.knowledge.ingest import _extract_file
+            try:
+                text = _extract_file(entry.file_path)
+            except Exception as exc:
+                return ToolResult(error=f"读取文件失败: {exc}")
+            if len(text) > MAX_DOC_CHARS:
+                text = text[:MAX_DOC_CHARS] + "\n…(内容过长已截断)"
+            header = f"文档《{entry.source_name or entry.title}》\n\n"
+            return ToolResult(output=header + text)
+
         client = find_feishu_client()
         if client is None:
             return ToolResult(error="飞书未连接。请先在连接器中授权飞书,才能读取文档。")

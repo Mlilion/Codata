@@ -6,8 +6,8 @@ import { api, apiFetch } from "@/lib/api";
 export interface KnowledgeEntry {
   id: string;
   title: string;
-  feishu_url: string;
-  doc_type: string;
+  feishu_url: string | null;
+  doc_type: string | null;
   note: string;
   enabled: boolean;
   created_at: string;
