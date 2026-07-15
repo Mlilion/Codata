@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import select
 
 from app.dependencies import get_session_factory
+from app.knowledge import wiki_store
 from app.knowledge.feishu_reader import find_feishu_client, read_feishu_doc
 from app.models.knowledge_entry import KnowledgeEntry
 from app.tool.base import ToolDefinition, ToolResult
@@ -32,16 +33,22 @@ class ReadKnowledgeTool(ToolDefinition):
     @property
     def description(self) -> str:
         return (
-            "Access the user's registered Feishu knowledge base. Call with no "
-            "arguments to list the registered documents (id, title, note). Call "
-            "with an 'entry_id' to read that document's full text as authoritative "
-            "background. Cite the source link in your answer when you use it."
+            "Access the user's knowledge base. When a wiki has been generated, "
+            "call with no arguments (or 'page' omitted) to read the index.md "
+            "overview, and pass a 'page' filename (e.g. channel.md) to read that "
+            "wiki page. Falls back to the registered Feishu documents (list, or "
+            "read one by 'entry_id') when no wiki exists yet. Cite the source "
+            "link in your answer when you use it."
         )
 
     def parameters_schema(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
+                "page": {
+                    "type": "string",
+                    "description": "wiki 页面文件名(如 channel.md)。省略则返回 index.md 索引。",
+                },
                 "entry_id": {
                     "type": "string",
                     "description": "ID of a registered knowledge doc to read. Omit to list all.",
@@ -50,6 +57,17 @@ class ReadKnowledgeTool(ToolDefinition):
         }
 
     async def execute(self, args: dict[str, Any], ctx: ToolContext) -> ToolResult:
+        page = args.get("page")
+        idx = wiki_store.index_path()
+        if page is not None or idx.exists():
+            base = wiki_store.wiki_dir().resolve()
+            target = (base / (page or "index.md")).resolve()
+            if base != target and base not in target.parents:
+                return ToolResult(error="非法的 wiki 页面路径")
+            if not target.exists():
+                return ToolResult(error=f"wiki 页面不存在: {page or 'index.md'}")
+            return ToolResult(output=target.read_text(encoding="utf-8"))
+
         entry_id = args.get("entry_id")
         factory = get_session_factory()
 
