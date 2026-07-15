@@ -11,6 +11,8 @@ export interface KnowledgeEntry {
   note: string;
   enabled: boolean;
   created_at: string;
+  ingest_status: "pending" | "processing" | "done" | "failed";
+  ingest_error: string;
 }
 
 interface KnowledgeListResponse {
@@ -27,6 +29,24 @@ export function useKnowledge() {
       return data.entries ?? [];
     },
     staleTime: 5_000,
+    refetchInterval: (query) => {
+      const rows = query.state.data ?? [];
+      return rows.some(
+        (e) => e.ingest_status === "pending" || e.ingest_status === "processing",
+      )
+        ? 3000
+        : false;
+    },
+  });
+}
+
+export function useReingestKnowledge() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post(`/api/knowledge/${id}/reingest`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KNOWLEDGE_KEY });
+    },
   });
 }
 

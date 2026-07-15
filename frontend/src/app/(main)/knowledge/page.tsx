@@ -6,19 +6,29 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageContent, PageFrame, PageHeader, SurfacePanel } from "@/components/ui/page-frame";
 import { apiErrorMessage } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import {
   useAddKnowledge,
   useDeleteKnowledge,
   useKnowledge,
   usePatchKnowledge,
+  useReingestKnowledge,
   type KnowledgeEntry,
 } from "@/hooks/use-knowledge";
+
+const INGEST_STATUS_LABEL: Record<KnowledgeEntry["ingest_status"], string> = {
+  pending: "排队中",
+  processing: "处理中",
+  done: "已就绪",
+  failed: "失败",
+};
 
 export default function KnowledgePage() {
   const { data: entries = [], isLoading } = useKnowledge();
   const addKnowledge = useAddKnowledge();
   const patchKnowledge = usePatchKnowledge();
   const deleteKnowledge = useDeleteKnowledge();
+  const reingestKnowledge = useReingestKnowledge();
 
   const [url, setUrl] = useState("");
   const [note, setNote] = useState("");
@@ -56,6 +66,13 @@ export default function KnowledgePage() {
     deleteKnowledge.mutate(entry.id, {
       onSuccess: () => toast.success("已删除"),
       onError: (err) => toast.error(apiErrorMessage(err, "删除失败")),
+    });
+  };
+
+  const reingest = (entry: KnowledgeEntry) => {
+    reingestKnowledge.mutate(entry.id, {
+      onSuccess: () => toast.success("已重新排队处理"),
+      onError: (err) => toast.error(apiErrorMessage(err, "重试失败")),
     });
   };
 
@@ -135,11 +152,40 @@ export default function KnowledgePage() {
                             {entry.doc_type}
                           </span>
                         )}
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+                            entry.ingest_status === "done"
+                              ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
+                              : entry.ingest_status === "failed"
+                                ? "bg-[var(--color-destructive-soft)] text-[var(--color-destructive)]"
+                                : "bg-[var(--surface-primary)] text-[var(--text-tertiary)]",
+                          )}
+                        >
+                          {INGEST_STATUS_LABEL[entry.ingest_status] ?? entry.ingest_status}
+                        </span>
                       </div>
                       {entry.note && (
                         <p className="mt-0.5 truncate text-xs text-[var(--text-tertiary)]">
                           {entry.note}
                         </p>
+                      )}
+                      {entry.ingest_status === "failed" && (
+                        <div className="mt-0.5 flex items-center gap-2">
+                          {entry.ingest_error && (
+                            <span className="min-w-0 truncate text-xs text-[var(--text-tertiary)]">
+                              {entry.ingest_error}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => reingest(entry)}
+                            disabled={reingestKnowledge.isPending}
+                            className="shrink-0 text-xs font-medium text-[var(--data-accent)] hover:underline disabled:opacity-50"
+                          >
+                            重试
+                          </button>
+                        </div>
                       )}
                     </div>
                     <Button
