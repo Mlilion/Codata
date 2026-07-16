@@ -466,9 +466,27 @@ export default function KnowledgePage() {
             <p className="py-6 text-sm text-[var(--color-destructive)]">
               加载知识页失败,请稍后重试。
             </p>
-          ) : wikiPage ? (
-            <MarkdownRenderer content={wikiPage.content} />
-          ) : null}
+          ) : (
+            <div
+              onClick={(e) => {
+                const a = (e.target as HTMLElement).closest("a");
+                if (!a) return;
+                const href = a.getAttribute("href") ?? "";
+                // only intercept relative, in-wiki links (not http/https/mailto/#)
+                if (/^(https?:|mailto:|#)/.test(href) || href === "") return;
+                e.preventDefault();
+                e.stopPropagation();
+                // strip any leading ./ and hash/query; add .md if no extension
+                let page = decodeURIComponent(
+                  href.replace(/^\.\//, "").split(/[?#]/)[0],
+                );
+                if (page && !/\.[a-z0-9]+$/i.test(page)) page = `${page}.md`;
+                if (page) setPreviewPage(page);
+              }}
+            >
+              {wikiPage ? <MarkdownRenderer content={wikiPage.content} /> : null}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </PageFrame>

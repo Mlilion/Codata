@@ -177,12 +177,14 @@ async def knowledge_capacity(db: AsyncSession = Depends(get_db)) -> dict[str, An
 async def read_wiki_page(page: str) -> dict[str, Any]:
     from app.knowledge import wiki_store
     base = wiki_store.wiki_dir().resolve()
-    target = (base / page).resolve()
-    if base != target and base not in target.parents:
-        raise HTTPException(status_code=400, detail="非法的 wiki 页面路径")
-    if not target.exists() or not target.is_file():
-        raise HTTPException(status_code=404, detail=f"wiki 页面不存在: {page}")
-    return {"page": page, "content": target.read_text(encoding="utf-8")}
+    candidates = [page] if page.endswith(".md") else [page, f"{page}.md"]
+    for name in candidates:
+        target = (base / name).resolve()
+        if base != target and base not in target.parents:
+            raise HTTPException(status_code=400, detail="非法的 wiki 页面路径")
+        if target.exists() and target.is_file():
+            return {"page": name, "content": target.read_text(encoding="utf-8")}
+    raise HTTPException(status_code=404, detail=f"wiki 页面不存在: {page}")
 
 
 @router.patch("/{entry_id}")
