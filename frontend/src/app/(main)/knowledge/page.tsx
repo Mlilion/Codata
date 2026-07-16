@@ -9,6 +9,7 @@ import {
   FileText,
   Loader2,
   Plus,
+  ScrollText,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -220,6 +221,16 @@ export default function KnowledgePage() {
                     <span className="text-[var(--color-warning)]">
                       · 接近上限,靠后文档可能不被检索
                     </span>
+                  )}
+                  {cap.index_chars > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewPage("index.md")}
+                      className="ml-auto inline-flex shrink-0 items-center gap-1 font-medium text-[var(--data-accent)] hover:underline"
+                    >
+                      <ScrollText className="h-3 w-3 shrink-0" />
+                      查看索引
+                    </button>
                   )}
                 </div>
               </div>
