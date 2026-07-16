@@ -20,10 +20,13 @@ from app.utils.id import generate_ulid
 logger = logging.getLogger(__name__)
 
 
-def _snapshot_wiki_files() -> set[str]:
+def _snapshot_wiki_files() -> set[tuple[str, int]]:
+    """(name, mtime_ns) per wiki page, so the before/after diff catches both
+    newly-created AND edited pages — important for reingest, where the agent
+    edits existing pages rather than creating new ones."""
     d = wiki_store.wiki_dir()
     try:
-        return {p.name for p in d.glob("*.md")}
+        return {(p.name, p.stat().st_mtime_ns) for p in d.glob("*.md")}
     except Exception:
         return set()
 
@@ -144,7 +147,9 @@ async def ingest_entry(
             )
 
         after = _snapshot_wiki_files()
-        new_pages = sorted(after - before)
+        # Pages whose (name, mtime) changed = created or edited by this ingest.
+        changed = after - before
+        new_pages = sorted({name for name, _mtime in changed})
 
         async with session_factory() as s:
             e = await s.get(KnowledgeEntry, entry_id)
