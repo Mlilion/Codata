@@ -13,6 +13,7 @@ def test_cleanup_prompt_mentions_key_pieces():
     assert "[[" in p                      # 反向链检查约定
     assert "index.md" in p and "log.md" in p
     assert "孤儿" in p                     # 孤儿判定说明存在
+    assert "grep" in p                    # 反向链孤儿判定的关键手段
     assert "remove" in p                  # log 记录格式
 
 
