@@ -6,6 +6,7 @@ import json
 import logging
 from pathlib import Path
 
+from app.knowledge.cleanup_prompt import build_cleanup_prompt
 from app.knowledge.feishu_reader import read_feishu_doc
 from app.knowledge import wiki_store
 from app.tool.extractors import extract_document, is_supported_binary
@@ -157,6 +158,112 @@ async def ingest_entry(
                 await s.commit()
     except Exception as exc:
         logger.warning("ingest_entry %s failed: %s", entry_id, exc)
+        async with session_factory() as s:
+            e = await s.get(KnowledgeEntry, entry_id)
+            if e is not None:
+                e.ingest_status = "failed"
+                e.ingest_error = str(exc)
+                await s.commit()
+
+
+def _source_page_of(entry) -> str | None:
+    """The entry's own source-*.md page, parsed from wiki_pages JSON."""
+    try:
+        pages = json.loads(entry.wiki_pages or "[]")
+    except Exception:
+        pages = []
+    for name in pages:
+        if isinstance(name, str) and name.startswith("source-"):
+            return name
+    return None
+
+
+async def _run_wiki_agent(
+    prompt: str,
+    *,
+    session_factory,
+    provider_registry,
+    agent_registry,
+    tool_registry,
+    index_manager,
+) -> None:
+    """Drive a headless build agent over the wiki dir, then delete the
+    throwaway session so it never surfaces as a phantom chat."""
+    session_id = generate_ulid()
+    stream_id = generate_ulid()
+    job = GenerationJob(stream_id=stream_id, session_id=session_id)
+    req = PromptRequest(
+        session_id=session_id,
+        text=prompt,
+        agent="build",
+        workspace=str(wiki_store.wiki_root()),
+    )
+    await run_generation(
+        job,
+        req,
+        session_factory=session_factory,
+        provider_registry=provider_registry,
+        agent_registry=agent_registry,
+        tool_registry=tool_registry,
+        index_manager=index_manager,
+    )
+    try:
+        async with session_factory() as s:
+            await delete_by_id(s, Session, session_id)
+            await s.commit()
+    except Exception as cleanup_exc:  # best-effort: never fail a good run
+        logger.warning(
+            "failed to delete throwaway session %s: %s", session_id, cleanup_exc
+        )
+
+
+async def cleanup_entry(
+    entry_id,
+    *,
+    session_factory,
+    provider_registry,
+    agent_registry,
+    tool_registry,
+    index_manager=None,
+) -> None:
+    """Remove an entry's wiki footprint via a headless agent, then delete the
+    DB row and raw snapshot. Runs as a background task; NEVER raises — failures
+    are recorded as ``ingest_status="failed"`` so the user can retry the delete.
+    """
+    try:
+        async with session_factory() as s:
+            entry = await s.get(KnowledgeEntry, entry_id)
+            if entry is None:
+                return
+            raw_path = entry.raw_path
+            source_page = _source_page_of(entry)
+
+        if source_page is not None:
+            prompt = build_cleanup_prompt(entry, source_page, str(wiki_store.wiki_dir()))
+            await _run_wiki_agent(
+                prompt,
+                session_factory=session_factory,
+                provider_registry=provider_registry,
+                agent_registry=agent_registry,
+                tool_registry=tool_registry,
+                index_manager=index_manager,
+            )
+
+        # Delete raw snapshot (best-effort) then the DB row.
+        if raw_path:
+            try:
+                p = wiki_store.wiki_root() / raw_path
+                if p.exists():
+                    p.unlink()
+            except Exception:
+                logger.debug("cleanup: raw unlink failed for %s", entry_id, exc_info=True)
+        async with session_factory() as s:
+            e = await s.get(KnowledgeEntry, entry_id)
+            if e is not None:
+                await s.delete(e)
+                await s.commit()
+    except Exception as exc:
+        logger.warning("cleanup_entry %s failed: %s", entry_id, exc)
         async with session_factory() as s:
             e = await s.get(KnowledgeEntry, entry_id)
             if e is not None:
