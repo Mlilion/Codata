@@ -437,10 +437,7 @@ export default function KnowledgePage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => remove(entry)}
-                          disabled={
-                            deleteKnowledge.isPending ||
-                            entry.ingest_status === "deleting"
-                          }
+                          disabled={deleteKnowledge.isPending || ACTIVE_STATUSES.has(entry.ingest_status)}
                           className="h-8 w-8 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--color-destructive)]"
                           aria-label="删除"
                         >
