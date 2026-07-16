@@ -70,6 +70,18 @@ export function useKnowledgeCapacity() {
   });
 }
 
+export function useWikiPage(page: string | null) {
+  return useQuery({
+    queryKey: ["knowledge", "wiki", page],
+    enabled: !!page,
+    queryFn: () =>
+      api.get<{ page: string; content: string }>(
+        `/api/knowledge/wiki?page=${encodeURIComponent(page as string)}`,
+      ),
+    staleTime: 30000,
+  });
+}
+
 export function useReingestKnowledge() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -14,7 +14,14 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { MarkdownRenderer } from "@/components/artifacts/renderers/markdown-renderer";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { PageContent, PageFrame, PageHeader, SurfacePanel } from "@/components/ui/page-frame";
 import { apiErrorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -26,6 +33,7 @@ import {
   usePatchKnowledge,
   useReingestKnowledge,
   useUploadKnowledge,
+  useWikiPage,
   type KnowledgeEntry,
 } from "@/hooks/use-knowledge";
 
@@ -70,7 +78,14 @@ export default function KnowledgePage() {
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [previewPage, setPreviewPage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    data: wikiPage,
+    isLoading: wikiLoading,
+    isError: wikiError,
+  } = useWikiPage(previewPage);
 
   const canSubmit = !!url.trim() && !addKnowledge.isPending;
 
@@ -405,12 +420,15 @@ export default function KnowledgePage() {
                       {hasPages && isExpanded && (
                         <ul className="mt-2 flex flex-col gap-1 border-t border-[var(--border-default)] pt-2">
                           {entry.wiki_pages.map((page, i) => (
-                            <li
-                              key={`${entry.id}-${i}`}
-                              className="flex items-center gap-1.5 truncate text-xs text-[var(--text-secondary)]"
-                            >
-                              <FileText className="h-3 w-3 shrink-0 text-[var(--text-tertiary)]" />
-                              <span className="truncate">{page}</span>
+                            <li key={`${entry.id}-${i}`}>
+                              <button
+                                type="button"
+                                onClick={() => setPreviewPage(page)}
+                                className="flex w-full items-center gap-1.5 truncate rounded-md px-1 py-0.5 text-left text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]"
+                              >
+                                <FileText className="h-3 w-3 shrink-0 text-[var(--text-tertiary)]" />
+                                <span className="truncate">{page}</span>
+                              </button>
                             </li>
                           ))}
                         </ul>
@@ -423,6 +441,25 @@ export default function KnowledgePage() {
           </div>
         </div>
       </PageContent>
+
+      <Dialog open={!!previewPage} onOpenChange={(o) => !o && setPreviewPage(null)}>
+        <DialogContent className="max-h-[70vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="truncate">{previewPage}</DialogTitle>
+          </DialogHeader>
+          {wikiLoading ? (
+            <div className="flex items-center justify-center py-12 text-[var(--text-tertiary)]">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : wikiError ? (
+            <p className="py-6 text-sm text-[var(--color-destructive)]">
+              加载知识页失败,请稍后重试。
+            </p>
+          ) : wikiPage ? (
+            <MarkdownRenderer content={wikiPage.content} />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </PageFrame>
   );
 }
