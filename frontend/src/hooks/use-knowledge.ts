@@ -11,7 +11,15 @@ export interface KnowledgeEntry {
   note: string;
   enabled: boolean;
   created_at: string;
-  ingest_status: "pending" | "processing" | "done" | "failed";
+  ingest_status:
+    | "pending"
+    | "extracting"
+    | "building"
+    | "indexing"
+    | "processing"
+    | "done"
+    | "failed";
+  wiki_pages: string[];
   ingest_error: string;
   source_type: "feishu" | "file";
   source_name: string;
@@ -34,12 +42,31 @@ export function useKnowledge() {
     staleTime: 5_000,
     refetchInterval: (query) => {
       const rows = query.state.data ?? [];
-      return rows.some(
-        (e) => e.ingest_status === "pending" || e.ingest_status === "processing",
-      )
-        ? 3000
-        : false;
+      const active = new Set([
+        "pending",
+        "extracting",
+        "building",
+        "indexing",
+        "processing",
+      ]);
+      return rows.some((e) => active.has(e.ingest_status)) ? 3000 : false;
     },
+  });
+}
+
+export interface KnowledgeCapacity {
+  index_chars: number;
+  max_chars: number;
+  approx_docs: number;
+  entries_done: number;
+}
+
+export function useKnowledgeCapacity() {
+  return useQuery({
+    queryKey: ["knowledge", "capacity"],
+    queryFn: () => api.get<KnowledgeCapacity>("/api/knowledge/capacity"),
+    refetchInterval: 5000,
+    staleTime: 3000,
   });
 }
 

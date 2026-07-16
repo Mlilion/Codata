@@ -21,6 +21,9 @@ const UPLOAD_ACCEPT = ".pdf,.docx,.xlsx,.pptx,.md,.markdown,.txt";
 
 const INGEST_STATUS_LABEL: Record<KnowledgeEntry["ingest_status"], string> = {
   pending: "排队中",
+  extracting: "处理中",
+  building: "处理中",
+  indexing: "处理中",
   processing: "处理中",
   done: "已就绪",
   failed: "失败",
