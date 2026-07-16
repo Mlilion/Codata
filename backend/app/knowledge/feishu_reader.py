@@ -1,80 +1,81 @@
-"""Locate the connected Feishu MCP client and read a document's body.
+"""Read a Feishu document's body via the native ``lark_oapi`` SDK.
 
-The Feishu MCP server name is user-configurable, so we locate the client by
-a tool it exposes (a Feishu doc-read tool) rather than by a fixed server name
-— same principle as app/mcp/datasage_client.find_execute_sql_client.
+Uses tenant-token auth off the Feishu channel credentials (no external MCP
+process). Supports docx documents and wiki nodes (which are resolved to their
+backing docx document before reading).
+
+The ``lark_oapi`` calls are synchronous, so they are wrapped in the running
+loop's default executor to stay non-blocking.
 """
-
 from __future__ import annotations
 
-import logging
+import asyncio
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from app.knowledge.feishu_client import get_feishu_client
 
-# Tool names any Feishu MCP (official lark-openapi-mcp) exposes for reading a
-# document body. We match on presence of any of these.
-_FEISHU_READ_TOOLS = (
-    "docx.v1.document.rawContent",
-    "docx_v1_document_rawContent",
-    "docx.builtin.search",
-)
+__all__ = ["read_feishu_doc"]
 
 
-def _manager_from_singleton():
-    try:
-        from app.dependencies import get_connector_registry
-
-        registry = get_connector_registry()
-    except Exception:
-        return None
-    return getattr(registry, "mcp_manager", None) or getattr(registry, "_mcp_manager", None)
-
-
-def find_feishu_client(manager: Any | None = None):
-    """Return a connected MCP client exposing a Feishu doc-read tool, or None."""
-    if manager is None:
-        manager = _manager_from_singleton()
-    if manager is None:
-        return None
-    for client in getattr(manager, "_clients", {}).values():
-        if getattr(client, "status", None) != "connected":
-            continue
-        try:
-            tool_names = {t.name for t in client.list_tools()}
-        except Exception:
-            continue
-        if any(name in tool_names for name in _FEISHU_READ_TOOLS):
-            return client
-    return None
+def _require_client(client: Any | None) -> Any:
+    if client is not None:
+        return client
+    client = get_feishu_client()
+    if client is None:
+        raise RuntimeError(
+            "飞书未配置:请先在渠道设置里填写飞书应用 App ID/Secret"
+        )
+    return client
 
 
-def _rawcontent_tool_name(client) -> str | None:
-    try:
-        names = {t.name for t in client.list_tools()}
-    except Exception:
-        return None
-    for candidate in ("docx.v1.document.rawContent", "docx_v1_document_rawContent"):
-        if candidate in names:
-            return candidate
-    return None
+def _read_docx_sync(client: Any, document_id: str) -> str:
+    from lark_oapi.api.docx.v1 import RawContentDocumentRequest
+
+    req = RawContentDocumentRequest.builder().document_id(document_id).build()
+    resp = client.docx.v1.document.raw_content(req)
+    if not resp.success():
+        raise RuntimeError(
+            f"读取飞书文档失败(code={resp.code}): {resp.msg}. "
+            "请确认该文档已授权给此飞书应用,且应用已开通云文档只读权限。"
+        )
+    return resp.data.content or ""
 
 
-async def read_feishu_doc(client, doc_type: str, token: str) -> str:
-    """Read a Feishu doc body as plain text via the MCP client.
+def _resolve_wiki_sync(client: Any, node_token: str) -> str:
+    from lark_oapi.api.wiki.v2 import GetNodeSpaceRequest
 
-    First-cut supports docx via rawContent. Other types raise a clear error.
+    req = (
+        GetNodeSpaceRequest.builder()
+        .token(node_token)
+        .obj_type("wiki")
+        .build()
+    )
+    resp = client.wiki.v2.space.get_node(req)
+    if not resp.success():
+        raise RuntimeError(
+            f"解析飞书知识库节点失败(code={resp.code}): {resp.msg}. "
+            "请确认该知识库节点已授权给此飞书应用,且应用已开通知识库只读权限。"
+        )
+    node = resp.data.node
+    if node.obj_type != "docx":
+        raise RuntimeError(
+            f"暂只支持 docx 类型的飞书文档,当前类型: {node.obj_type}"
+        )
+    return node.obj_token
+
+
+async def read_feishu_doc(client: Any, doc_type: str, token: str) -> str:
+    """Read a Feishu doc body as plain text via the native lark_oapi client.
+
+    ``client`` may be ``None``, in which case a client is built from the Feishu
+    channel credentials. ``doc_type`` is ``"docx"`` or ``"wiki"``.
     """
-    if doc_type != "docx":
-        raise ValueError(f"暂只支持读取 docx 文档,当前类型: {doc_type}")
-    tool = _rawcontent_tool_name(client)
-    if tool is None:
-        raise RuntimeError("飞书 MCP 未提供文档读取工具")
-    # lark-openapi-mcp's rawContent tool nests the doc id under a top-level
-    # ``path`` object (verified against its inputSchema: required ["path"],
-    # path.document_id). A flat {"document_id": ...} fails schema validation
-    # before the request ever reaches Feishu.
-    result = await client.call_tool(tool, {"path": {"document_id": token}})
-    from app.mcp.datasage_client import extract_text
+    c = _require_client(client)
+    loop = asyncio.get_running_loop()
 
-    return extract_text(result)
+    if doc_type == "wiki":
+        obj_token = await loop.run_in_executor(None, _resolve_wiki_sync, c, token)
+        return await loop.run_in_executor(None, _read_docx_sync, c, obj_token)
+    if doc_type == "docx":
+        return await loop.run_in_executor(None, _read_docx_sync, c, token)
+    raise RuntimeError(f"暂只支持 docx/wiki 类型的飞书文档,当前类型: {doc_type}")
