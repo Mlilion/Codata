@@ -22,7 +22,7 @@ from app.api.files import UPLOAD_DIR
 from app.dependencies import get_db
 from app.knowledge import wiki_store
 from app.knowledge.feishu_url import parse_feishu_url
-from app.knowledge.ingest import ingest_entry
+from app.knowledge.ingest import cleanup_entry, ingest_entry
 from app.knowledge.injection import MAX_INDEX_CHARS
 from app.models.knowledge_entry import KnowledgeEntry
 from app.tool.extractors import is_supported_binary
@@ -69,6 +69,20 @@ def _schedule_ingest(request: Request, entry_id: str) -> None:
     st = request.app.state
     asyncio.create_task(
         ingest_entry(
+            entry_id,
+            session_factory=st.session_factory,
+            provider_registry=st.provider_registry,
+            agent_registry=st.agent_registry,
+            tool_registry=st.tool_registry,
+            index_manager=getattr(st, "index_manager", None),
+        )
+    )
+
+
+def _schedule_cleanup(request: Request, entry_id: str) -> None:
+    st = request.app.state
+    asyncio.create_task(
+        cleanup_entry(
             entry_id,
             session_factory=st.session_factory,
             provider_registry=st.provider_registry,
@@ -207,20 +221,16 @@ async def patch_knowledge(
 
 @router.delete("/{entry_id}")
 async def delete_knowledge(
-    entry_id: str, db: AsyncSession = Depends(get_db)
+    entry_id: str, request: Request, db: AsyncSession = Depends(get_db)
 ) -> dict[str, Any]:
     entry = await db.get(KnowledgeEntry, entry_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="知识条目不存在")
-    if entry.raw_path:
-        try:
-            from app.knowledge import wiki_store
-
-            p = wiki_store.wiki_root() / entry.raw_path
-            if p.exists():
-                p.unlink()
-        except Exception:
-            pass
+    # Idempotent: if cleanup is already running, don't reschedule.
+    if entry.ingest_status == "deleting":
+        return _entry_to_dict(entry)
+    # Uploaded files are deterministic to remove now; wiki pages + row are
+    # cleaned up asynchronously by the background agent.
     if entry.source_type == "file" and entry.file_path:
         try:
             p = _Path(entry.file_path)
@@ -228,9 +238,12 @@ async def delete_knowledge(
                 p.unlink()
         except Exception:
             pass
-    await db.delete(entry)
+    entry.ingest_status = "deleting"
+    entry.ingest_error = ""
     await db.flush()
-    return {"ok": True}
+    await db.refresh(entry)
+    _schedule_cleanup(request, entry_id=entry_id)
+    return _entry_to_dict(entry)
 
 
 @router.post("/{entry_id}/reingest")

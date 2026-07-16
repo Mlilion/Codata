@@ -33,7 +33,12 @@ class TestKnowledgeCRUD:
         )
         assert r.status_code == 400
 
-    async def test_patch_and_delete(self, app_client):
+    async def test_patch_and_delete(self, app_client, monkeypatch):
+        from app.api import knowledge as knowledge_api
+
+        monkeypatch.setattr(
+            knowledge_api, "_schedule_cleanup", lambda request, entry_id: None
+        )
         r = await app_client.post(
             "/api/knowledge", json={"feishu_url": "https://x.feishu.cn/wiki/W1"}
         )
@@ -46,9 +51,12 @@ class TestKnowledgeCRUD:
         assert rp.json()["enabled"] is False
         assert rp.json()["note"] == "n2"
 
+        # Delete now schedules async cleanup and marks the row 'deleting'
+        # instead of removing it synchronously.
         rd = await app_client.delete(f"/api/knowledge/{eid}")
         assert rd.status_code == 200
-        assert rd.json()["ok"] is True
+        assert rd.json()["ingest_status"] == "deleting"
 
+        # Row is still present until the background task removes it.
         rp2 = await app_client.patch(f"/api/knowledge/{eid}", json={"note": "x"})
-        assert rp2.status_code == 404
+        assert rp2.status_code == 200
