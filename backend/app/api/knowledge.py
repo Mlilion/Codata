@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path as _Path
 from typing import Any
 
@@ -19,8 +20,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.files import UPLOAD_DIR
 from app.dependencies import get_db
+from app.knowledge import wiki_store
 from app.knowledge.feishu_url import parse_feishu_url
 from app.knowledge.ingest import ingest_entry
+from app.knowledge.injection import MAX_INDEX_CHARS
 from app.models.knowledge_entry import KnowledgeEntry
 from app.tool.extractors import is_supported_binary
 from app.utils.id import generate_ulid
@@ -33,6 +36,14 @@ _TEXT_EXTS = {".md", ".markdown", ".txt"}
 def _is_supported_upload(name: str) -> bool:
     ext = _Path(name).suffix.lower()
     return ext in _TEXT_EXTS or is_supported_binary(name)
+
+
+def _parse_wiki_pages(raw: str) -> list[str]:
+    try:
+        v = json.loads(raw or "[]")
+        return v if isinstance(v, list) else []
+    except Exception:
+        return []
 
 
 def _entry_to_dict(e: KnowledgeEntry) -> dict[str, Any]:
@@ -49,6 +60,7 @@ def _entry_to_dict(e: KnowledgeEntry) -> dict[str, Any]:
         "source_type": e.source_type,
         "source_name": e.source_name,
         "file_path": e.file_path,
+        "wiki_pages": _parse_wiki_pages(e.wiki_pages),
         "created_at": e.time_created.isoformat() if e.time_created else None,
     }
 
@@ -141,6 +153,24 @@ async def upload_knowledge(
         result = _entry_to_dict(entry)
     _schedule_ingest(request, entry_id=result["id"])
     return result
+
+
+@router.get("/capacity")
+async def knowledge_capacity(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
+    idx = wiki_store.index_path()
+    index_chars = len(idx.read_text(encoding="utf-8")) if idx.exists() else 0
+    done = (
+        await db.execute(
+            select(KnowledgeEntry).where(KnowledgeEntry.ingest_status == "done")
+        )
+    ).scalars().all()
+    entries_done = len(done)
+    return {
+        "index_chars": index_chars,
+        "max_chars": MAX_INDEX_CHARS,
+        "approx_docs": entries_done,
+        "entries_done": entries_done,
+    }
 
 
 @router.patch("/{entry_id}")
