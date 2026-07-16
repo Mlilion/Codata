@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from app.dependencies import get_session_factory
 from app.knowledge import wiki_store
-from app.knowledge.feishu_reader import find_feishu_client, read_feishu_doc
+from app.knowledge.feishu_reader import read_feishu_doc
 from app.models.knowledge_entry import KnowledgeEntry
 from app.tool.base import ToolDefinition, ToolResult
 from app.tool.context import ToolContext
@@ -102,12 +102,8 @@ class ReadKnowledgeTool(ToolDefinition):
             header = f"文档《{entry.source_name or entry.title}》\n\n"
             return ToolResult(output=header + text)
 
-        client = find_feishu_client()
-        if client is None:
-            return ToolResult(error="飞书未连接。请先在连接器中授权飞书,才能读取文档。")
-
         try:
-            body = await read_feishu_doc(client, entry.doc_type, entry.feishu_token)
+            body = await read_feishu_doc(None, entry.doc_type, entry.feishu_token)
         except Exception as exc:  # surface for self-correction
             logger.warning("read_feishu_doc failed: %s", exc)
             return ToolResult(error=f"读取飞书文档失败: {exc}")

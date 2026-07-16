@@ -2,96 +2,87 @@ from __future__ import annotations
 
 import pytest
 
-from app.knowledge.feishu_reader import find_feishu_client, read_feishu_doc
+from app.knowledge.feishu_reader import read_feishu_doc
 
 
-class _Tool:
-    def __init__(self, name): self.name = name
+class _Resp:
+    def __init__(self, data, ok=True, code=0, msg="ok"):
+        self.data = data
+        self._ok = ok
+        self.code = code
+        self.msg = msg
+
+    def success(self):
+        return self._ok
 
 
-class _Client:
-    def __init__(self, tools, status="connected"):
-        self.status = status
-        self._tools = tools
-    def list_tools(self):
-        return [_Tool(t) for t in self._tools]
+class _DocData:
+    def __init__(self, content):
+        self.content = content
 
 
-class _Manager:
-    def __init__(self, clients):
-        self._clients = clients
+class _Node:
+    def __init__(self, obj_type, obj_token):
+        self.obj_type = obj_type
+        self.obj_token = obj_token
 
 
-class _ContentItem:
-    def __init__(self, text):
-        self.type = "text"
-        self.text = text
+class _NodeData:
+    def __init__(self, node):
+        self.node = node
 
 
-class _CallResult:
-    def __init__(self, text):
-        self.content = [_ContentItem(text)]
+class _RawContent:
+    def __init__(self, content):
+        self._content = content
+        self.requests: list = []
+
+    def raw_content(self, req):
+        self.requests.append(req)
+        return _Resp(_DocData(self._content))
 
 
-class _RecordingClient:
-    """Captures the exact (name, arguments) passed to call_tool."""
+class _SpaceNode:
+    def __init__(self, node):
+        self._node = node
+        self.requests: list = []
 
-    def __init__(self, tools):
-        self.status = "connected"
-        self._tools = tools
-        self.calls: list[tuple] = []
-
-    def list_tools(self):
-        return [_Tool(t) for t in self._tools]
-
-    async def call_tool(self, name, arguments):
-        self.calls.append((name, arguments))
-        return _CallResult('{"content":"文档正文"}')
+    def get_node(self, req):
+        self.requests.append(req)
+        return _Resp(_NodeData(self._node))
 
 
-def test_find_feishu_client_by_tool_name():
-    mgr = _Manager({
-        "a": _Client(["execute_sql"]),
-        "b": _Client(["docx.v1.document.rawContent", "wiki.v2.space.getNode"]),
-    })
-    client = find_feishu_client(mgr)
-    assert client is mgr._clients["b"]
+class _FakeClient:
+    """Mimics the native lark_oapi client surface used by read_feishu_doc."""
 
-
-def test_find_feishu_client_skips_disconnected():
-    mgr = _Manager({
-        "b": _Client(["docx.v1.document.rawContent"], status="failed"),
-    })
-    assert find_feishu_client(mgr) is None
-
-
-def test_find_feishu_client_none_when_absent():
-    mgr = _Manager({"a": _Client(["execute_sql"])})
-    assert find_feishu_client(mgr) is None
-
-
-def test_find_feishu_client_matches_underscore_tool_name():
-    # lark-openapi-mcp actually exposes the underscore form, not the dotted one.
-    mgr = _Manager({"b": _Client(["docx_v1_document_rawContent"])})
-    assert find_feishu_client(mgr) is mgr._clients["b"]
+    def __init__(self, content="文档正文", node=None):
+        raw = _RawContent(content)
+        self.docx = type("D", (), {"v1": type("V", (), {"document": raw})()})()
+        space = _SpaceNode(node) if node is not None else None
+        self.wiki = type("W", (), {"v2": type("V", (), {"space": space})()})()
+        self._raw = raw
+        self._space = space
 
 
 @pytest.mark.anyio
-async def test_read_feishu_doc_nests_document_id_under_path():
-    # Regression: lark-openapi-mcp's rawContent inputSchema requires the doc id
-    # nested under a top-level ``path`` object. A flat {"document_id": ...} fails
-    # schema validation before reaching Feishu. Lock the exact call shape.
-    client = _RecordingClient(["docx_v1_document_rawContent"])
-    await read_feishu_doc(client, "docx", "TOK123")
-    assert len(client.calls) == 1
-    name, args = client.calls[0]
-    assert name == "docx_v1_document_rawContent"
-    assert args == {"path": {"document_id": "TOK123"}}
+async def test_read_feishu_doc_reads_docx():
+    client = _FakeClient(content="文档正文")
+    body = await read_feishu_doc(client, "docx", "TOK123")
+    assert body == "文档正文"
+    assert len(client._raw.requests) == 1
 
 
 @pytest.mark.anyio
-async def test_read_feishu_doc_rejects_non_docx():
-    client = _RecordingClient(["docx_v1_document_rawContent"])
-    with pytest.raises(ValueError):
-        await read_feishu_doc(client, "wiki", "TOK123")
-    assert client.calls == []  # no MCP call attempted for unsupported type
+async def test_read_feishu_doc_resolves_wiki_to_docx():
+    client = _FakeClient(content="维基正文", node=_Node("docx", "DOCTOK"))
+    body = await read_feishu_doc(client, "wiki", "NODE123")
+    assert body == "维基正文"
+    assert len(client._space.requests) == 1
+    assert len(client._raw.requests) == 1
+
+
+@pytest.mark.anyio
+async def test_read_feishu_doc_rejects_unsupported_type():
+    client = _FakeClient()
+    with pytest.raises(RuntimeError):
+        await read_feishu_doc(client, "sheet", "TOK123")
