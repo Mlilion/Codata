@@ -92,6 +92,10 @@ backend/output/
 # reports/ dir); never track generated report artifacts.
 backend/app/data/reports/
 **/codata_written/
+# LLM wiki knowledge base: runtime data dir (raw Feishu doc snapshots +
+# LLM-generated wiki pages), resolved from the backend process cwd.
+backend/knowledge-wiki/
+**/knowledge-wiki/
 
 # === Certificates & keys ===
 *.pem
