@@ -21,6 +21,11 @@ from app.utils.id import generate_ulid
 
 logger = logging.getLogger(__name__)
 
+# Serializes wiki writes across ingest/cleanup/reingest background tasks.
+# Single-user local-first: concurrent agents editing the same index.md would
+# overwrite each other (later write wins), so only one may hold the wiki at a time.
+_WIKI_AGENT_LOCK = asyncio.Lock()
+
 
 def _snapshot_wiki_files() -> set[tuple[str, int]]:
     """(name, mtime_ns) per wiki page, so the before/after diff catches both
@@ -107,62 +112,63 @@ async def ingest_entry(
         await _set_status(session_factory, entry_id, "extracting")
         raw_rel = await snapshot_raw(entry)
 
-        before = _snapshot_wiki_files()
-        prompt = build_ingest_prompt(entry, raw_rel, str(wiki_store.wiki_dir()))
-        await _set_status(session_factory, entry_id, "building")
+        async with _WIKI_AGENT_LOCK:
+            before = _snapshot_wiki_files()
+            prompt = build_ingest_prompt(entry, raw_rel, str(wiki_store.wiki_dir()))
+            await _set_status(session_factory, entry_id, "building")
 
-        session_id = generate_ulid()
-        stream_id = generate_ulid()
-        job = GenerationJob(stream_id=stream_id, session_id=session_id)
-        model_id, provider_id = (
-            resolve_default_model(provider_registry, settings) if settings else (None, None)
-        )
-        req = PromptRequest(
-            session_id=session_id,
-            text=prompt,
-            agent="build",
-            workspace=str(wiki_store.wiki_root()),
-            model=model_id,
-            provider_id=provider_id,
-        )
-        await run_generation(
-            job,
-            req,
-            session_factory=session_factory,
-            provider_registry=provider_registry,
-            agent_registry=agent_registry,
-            tool_registry=tool_registry,
-            index_manager=index_manager,
-        )
-
-        await _set_status(session_factory, entry_id, "indexing")
-
-        # The headless ingest session was only a vehicle for the file edits;
-        # delete it so it never surfaces as a phantom chat in the user's history.
-        try:
-            async with session_factory() as s:
-                await delete_by_id(s, Session, session_id)
-                await s.commit()
-        except Exception as cleanup_exc:  # best-effort: never fail a good ingest
-            logger.warning(
-                "ingest_entry %s: failed to delete throwaway session %s: %s",
-                entry_id,
-                session_id,
-                cleanup_exc,
+            session_id = generate_ulid()
+            stream_id = generate_ulid()
+            job = GenerationJob(stream_id=stream_id, session_id=session_id)
+            model_id, provider_id = (
+                resolve_default_model(provider_registry, settings) if settings else (None, None)
+            )
+            req = PromptRequest(
+                session_id=session_id,
+                text=prompt,
+                agent="build",
+                workspace=str(wiki_store.wiki_root()),
+                model=model_id,
+                provider_id=provider_id,
+            )
+            await run_generation(
+                job,
+                req,
+                session_factory=session_factory,
+                provider_registry=provider_registry,
+                agent_registry=agent_registry,
+                tool_registry=tool_registry,
+                index_manager=index_manager,
             )
 
-        after = _snapshot_wiki_files()
-        # Pages whose (name, mtime) changed = created or edited by this ingest.
-        changed = after - before
-        new_pages = sorted({name for name, _mtime in changed})
+            await _set_status(session_factory, entry_id, "indexing")
 
-        async with session_factory() as s:
-            e = await s.get(KnowledgeEntry, entry_id)
-            if e is not None:
-                e.ingest_status = "done"
-                e.raw_path = raw_rel
-                e.wiki_pages = json.dumps(new_pages, ensure_ascii=False)
-                await s.commit()
+            # The headless ingest session was only a vehicle for the file edits;
+            # delete it so it never surfaces as a phantom chat in the user's history.
+            try:
+                async with session_factory() as s:
+                    await delete_by_id(s, Session, session_id)
+                    await s.commit()
+            except Exception as cleanup_exc:  # best-effort: never fail a good ingest
+                logger.warning(
+                    "ingest_entry %s: failed to delete throwaway session %s: %s",
+                    entry_id,
+                    session_id,
+                    cleanup_exc,
+                )
+
+            after = _snapshot_wiki_files()
+            # Pages whose (name, mtime) changed = created or edited by this ingest.
+            changed = after - before
+            new_pages = sorted({name for name, _mtime in changed})
+
+            async with session_factory() as s:
+                e = await s.get(KnowledgeEntry, entry_id)
+                if e is not None:
+                    e.ingest_status = "done"
+                    e.raw_path = raw_rel
+                    e.wiki_pages = json.dumps(new_pages, ensure_ascii=False)
+                    await s.commit()
     except Exception as exc:
         logger.warning("ingest_entry %s failed: %s", entry_id, exc)
         async with session_factory() as s:
@@ -250,35 +256,36 @@ async def cleanup_entry(
             raw_path = entry.raw_path
             source_page = _source_page_of(entry)
 
-        model_id, provider_id = (
-            resolve_default_model(provider_registry, settings) if settings else (None, None)
-        )
-        if source_page is not None:
-            prompt = build_cleanup_prompt(entry, source_page, str(wiki_store.wiki_dir()))
-            await _run_wiki_agent(
-                prompt,
-                session_factory=session_factory,
-                provider_registry=provider_registry,
-                agent_registry=agent_registry,
-                tool_registry=tool_registry,
-                index_manager=index_manager,
-                model_id=model_id,
-                provider_id=provider_id,
+        async with _WIKI_AGENT_LOCK:
+            model_id, provider_id = (
+                resolve_default_model(provider_registry, settings) if settings else (None, None)
             )
+            if source_page is not None:
+                prompt = build_cleanup_prompt(entry, source_page, str(wiki_store.wiki_dir()))
+                await _run_wiki_agent(
+                    prompt,
+                    session_factory=session_factory,
+                    provider_registry=provider_registry,
+                    agent_registry=agent_registry,
+                    tool_registry=tool_registry,
+                    index_manager=index_manager,
+                    model_id=model_id,
+                    provider_id=provider_id,
+                )
 
-        # Delete raw snapshot (best-effort) then the DB row.
-        if raw_path:
-            try:
-                p = wiki_store.wiki_root() / raw_path
-                if p.exists():
-                    p.unlink()
-            except Exception:
-                logger.debug("cleanup: raw unlink failed for %s", entry_id, exc_info=True)
-        async with session_factory() as s:
-            e = await s.get(KnowledgeEntry, entry_id)
-            if e is not None:
-                await s.delete(e)
-                await s.commit()
+            # Delete raw snapshot (best-effort) then the DB row.
+            if raw_path:
+                try:
+                    p = wiki_store.wiki_root() / raw_path
+                    if p.exists():
+                        p.unlink()
+                except Exception:
+                    logger.debug("cleanup: raw unlink failed for %s", entry_id, exc_info=True)
+            async with session_factory() as s:
+                e = await s.get(KnowledgeEntry, entry_id)
+                if e is not None:
+                    await s.delete(e)
+                    await s.commit()
     except Exception as exc:
         logger.warning("cleanup_entry %s failed: %s", entry_id, exc)
         async with session_factory() as s:
