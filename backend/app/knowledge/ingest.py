@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from pathlib import Path
 
@@ -17,6 +18,25 @@ from app.streaming.manager import GenerationJob
 from app.utils.id import generate_ulid
 
 logger = logging.getLogger(__name__)
+
+
+def _snapshot_wiki_files() -> set[str]:
+    d = wiki_store.wiki_dir()
+    try:
+        return {p.name for p in d.glob("*.md")}
+    except Exception:
+        return set()
+
+
+async def _set_status(session_factory, entry_id, status) -> None:
+    try:
+        async with session_factory() as s:
+            e = await s.get(KnowledgeEntry, entry_id)
+            if e is not None:
+                e.ingest_status = status
+                await s.commit()
+    except Exception:
+        logger.debug("stage update to %s failed for %s", status, entry_id, exc_info=True)
 
 
 async def snapshot_raw(entry) -> str:
@@ -81,8 +101,12 @@ async def ingest_entry(
         return
 
     try:
+        await _set_status(session_factory, entry_id, "extracting")
         raw_rel = await snapshot_raw(entry)
+
+        before = _snapshot_wiki_files()
         prompt = build_ingest_prompt(entry, raw_rel, str(wiki_store.wiki_dir()))
+        await _set_status(session_factory, entry_id, "building")
 
         session_id = generate_ulid()
         stream_id = generate_ulid()
@@ -103,6 +127,8 @@ async def ingest_entry(
             index_manager=index_manager,
         )
 
+        await _set_status(session_factory, entry_id, "indexing")
+
         # The headless ingest session was only a vehicle for the file edits;
         # delete it so it never surfaces as a phantom chat in the user's history.
         try:
@@ -117,11 +143,15 @@ async def ingest_entry(
                 cleanup_exc,
             )
 
+        after = _snapshot_wiki_files()
+        new_pages = sorted(after - before)
+
         async with session_factory() as s:
             e = await s.get(KnowledgeEntry, entry_id)
             if e is not None:
                 e.ingest_status = "done"
                 e.raw_path = raw_rel
+                e.wiki_pages = json.dumps(new_pages, ensure_ascii=False)
                 await s.commit()
     except Exception as exc:
         logger.warning("ingest_entry %s failed: %s", entry_id, exc)
