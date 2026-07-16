@@ -9,6 +9,7 @@ import {
   FileText,
   Loader2,
   Plus,
+  RefreshCw,
   ScrollText,
   Trash2,
   Upload,
@@ -419,6 +420,19 @@ export default function KnowledgePage() {
                         >
                           {entry.enabled ? "已启用" : "已停用"}
                         </Button>
+                        {entry.ingest_status === "done" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => reingest(entry)}
+                            disabled={reingestKnowledge.isPending}
+                            className="h-8 w-8 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--data-accent)]"
+                            aria-label="重新加载"
+                            title="重新加载(飞书/文件更新后刷新)"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
