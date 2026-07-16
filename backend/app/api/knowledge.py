@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path as _Path
 from typing import Any
 
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Depends,
     HTTPException,
     Request,
@@ -53,18 +53,17 @@ def _entry_to_dict(e: KnowledgeEntry) -> dict[str, Any]:
     }
 
 
-def _schedule_ingest(
-    request: Request, background_tasks: BackgroundTasks, entry_id: str
-) -> None:
+def _schedule_ingest(request: Request, entry_id: str) -> None:
     st = request.app.state
-    background_tasks.add_task(
-        ingest_entry,
-        entry_id,
-        session_factory=st.session_factory,
-        provider_registry=st.provider_registry,
-        agent_registry=st.agent_registry,
-        tool_registry=st.tool_registry,
-        index_manager=getattr(st, "index_manager", None),
+    asyncio.create_task(
+        ingest_entry(
+            entry_id,
+            session_factory=st.session_factory,
+            provider_registry=st.provider_registry,
+            agent_registry=st.agent_registry,
+            tool_registry=st.tool_registry,
+            index_manager=getattr(st, "index_manager", None),
+        )
     )
 
 
@@ -94,33 +93,32 @@ async def list_knowledge(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
 async def add_knowledge(
     body: AddBody,
     request: Request,
-    background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     try:
         doc_type, token = parse_feishu_url(body.feishu_url)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-    entry = KnowledgeEntry(
-        feishu_url=body.feishu_url.strip(),
-        feishu_token=token,
-        doc_type=doc_type,
-        note=(body.note or "").strip(),
-        title=(body.title or "").strip(),
-    )
-    db.add(entry)
-    await db.flush()
-    await db.refresh(entry)
-    _schedule_ingest(request, background_tasks, entry.id)
-    return _entry_to_dict(entry)
+    factory = request.app.state.session_factory
+    async with factory() as s:
+        entry = KnowledgeEntry(
+            feishu_url=body.feishu_url.strip(),
+            feishu_token=token,
+            doc_type=doc_type,
+            note=(body.note or "").strip(),
+            title=(body.title or "").strip(),
+        )
+        s.add(entry)
+        await s.commit()
+        await s.refresh(entry)
+        result = _entry_to_dict(entry)
+    _schedule_ingest(request, entry_id=result["id"])
+    return result
 
 
 @router.post("/upload")
 async def upload_knowledge(
     file: UploadFile,
     request: Request,
-    background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     name = file.filename or "untitled"
     if not _is_supported_upload(name):
@@ -129,17 +127,20 @@ async def upload_knowledge(
     safe = _Path(name).name
     dest = UPLOAD_DIR / f"{generate_ulid()}_{safe}"
     dest.write_bytes(await file.read())
-    entry = KnowledgeEntry(
-        source_type="file",
-        file_path=str(dest.resolve()),
-        source_name=safe,
-        title=safe,
-    )
-    db.add(entry)
-    await db.flush()
-    await db.refresh(entry)
-    _schedule_ingest(request, background_tasks, entry.id)
-    return _entry_to_dict(entry)
+    factory = request.app.state.session_factory
+    async with factory() as s:
+        entry = KnowledgeEntry(
+            source_type="file",
+            file_path=str(dest.resolve()),
+            source_name=safe,
+            title=safe,
+        )
+        s.add(entry)
+        await s.commit()
+        await s.refresh(entry)
+        result = _entry_to_dict(entry)
+    _schedule_ingest(request, entry_id=result["id"])
+    return result
 
 
 @router.patch("/{entry_id}")
@@ -192,14 +193,16 @@ async def delete_knowledge(
 async def reingest_knowledge(
     entry_id: str,
     request: Request,
-    background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    entry = await db.get(KnowledgeEntry, entry_id)
-    if entry is None:
-        raise HTTPException(status_code=404, detail="知识条目不存在")
-    entry.ingest_status = "pending"
-    entry.ingest_error = ""
-    await db.flush()
-    _schedule_ingest(request, background_tasks, entry.id)
-    return _entry_to_dict(entry)
+    factory = request.app.state.session_factory
+    async with factory() as s:
+        entry = await s.get(KnowledgeEntry, entry_id)
+        if entry is None:
+            raise HTTPException(status_code=404, detail="知识条目不存在")
+        entry.ingest_status = "pending"
+        entry.ingest_error = ""
+        await s.commit()
+        await s.refresh(entry)
+        result = _entry_to_dict(entry)
+    _schedule_ingest(request, entry_id=entry_id)
+    return result

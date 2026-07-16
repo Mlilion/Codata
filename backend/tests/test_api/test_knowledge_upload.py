@@ -10,7 +10,11 @@ from app.models import knowledge_entry as _knowledge_entry_models  # noqa: F401
 async def test_upload_creates_file_entry_and_schedules(app_client, monkeypatch):
     scheduled = {}
     from app.api import knowledge as kmod
-    monkeypatch.setattr(kmod, "_schedule_ingest", lambda req, bg, eid: scheduled.setdefault("id", eid))
+    monkeypatch.setattr(
+        kmod,
+        "_schedule_ingest",
+        lambda req, entry_id: scheduled.setdefault("id", entry_id),
+    )
     files = {"file": ("note.md", io.BytesIO("# hi\n正文".encode()), "text/markdown")}
     resp = await app_client.post("/api/knowledge/upload", files=files)
     assert resp.status_code == 200
