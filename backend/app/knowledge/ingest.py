@@ -12,6 +12,7 @@ from app.knowledge import wiki_store
 from app.tool.extractors import extract_document, is_supported_binary
 from app.models.knowledge_entry import KnowledgeEntry
 from app.models.session import Session
+from app.provider.resolve import resolve_default_model
 from app.schemas.chat import PromptRequest
 from app.session.processor import run_generation
 from app.storage.repository import delete_by_id
@@ -72,6 +73,7 @@ async def ingest_entry(
     agent_registry,
     tool_registry,
     index_manager=None,
+    settings=None,
 ) -> None:
     """Snapshot the Feishu doc then drive a headless agent to build wiki pages.
 
@@ -112,11 +114,16 @@ async def ingest_entry(
         session_id = generate_ulid()
         stream_id = generate_ulid()
         job = GenerationJob(stream_id=stream_id, session_id=session_id)
+        model_id, provider_id = (
+            resolve_default_model(provider_registry, settings) if settings else (None, None)
+        )
         req = PromptRequest(
             session_id=session_id,
             text=prompt,
             agent="build",
             workspace=str(wiki_store.wiki_root()),
+            model=model_id,
+            provider_id=provider_id,
         )
         await run_generation(
             job,
@@ -186,6 +193,8 @@ async def _run_wiki_agent(
     agent_registry,
     tool_registry,
     index_manager,
+    model_id=None,
+    provider_id=None,
 ) -> None:
     """Drive a headless build agent over the wiki dir, then delete the
     throwaway session so it never surfaces as a phantom chat."""
@@ -197,6 +206,8 @@ async def _run_wiki_agent(
         text=prompt,
         agent="build",
         workspace=str(wiki_store.wiki_root()),
+        model=model_id,
+        provider_id=provider_id,
     )
     await run_generation(
         job,
@@ -225,6 +236,7 @@ async def cleanup_entry(
     agent_registry,
     tool_registry,
     index_manager=None,
+    settings=None,
 ) -> None:
     """Remove an entry's wiki footprint via a headless agent, then delete the
     DB row and raw snapshot. Runs as a background task; NEVER raises — failures
@@ -238,6 +250,9 @@ async def cleanup_entry(
             raw_path = entry.raw_path
             source_page = _source_page_of(entry)
 
+        model_id, provider_id = (
+            resolve_default_model(provider_registry, settings) if settings else (None, None)
+        )
         if source_page is not None:
             prompt = build_cleanup_prompt(entry, source_page, str(wiki_store.wiki_dir()))
             await _run_wiki_agent(
@@ -247,6 +262,8 @@ async def cleanup_entry(
                 agent_registry=agent_registry,
                 tool_registry=tool_registry,
                 index_manager=index_manager,
+                model_id=model_id,
+                provider_id=provider_id,
             )
 
         # Delete raw snapshot (best-effort) then the DB row.

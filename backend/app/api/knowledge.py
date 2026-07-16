@@ -75,6 +75,7 @@ def _schedule_ingest(request: Request, entry_id: str) -> None:
             agent_registry=st.agent_registry,
             tool_registry=st.tool_registry,
             index_manager=getattr(st, "index_manager", None),
+            settings=getattr(st, "settings", None),
         )
     )
 
@@ -89,6 +90,7 @@ def _schedule_cleanup(request: Request, entry_id: str) -> None:
             agent_registry=st.agent_registry,
             tool_registry=st.tool_registry,
             index_manager=getattr(st, "index_manager", None),
+            settings=getattr(st, "settings", None),
         )
     )
 
