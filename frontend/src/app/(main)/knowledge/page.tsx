@@ -46,6 +46,7 @@ const INGEST_STATUS_LABEL: Record<KnowledgeEntry["ingest_status"], string> = {
   building: "构建知识页中",
   indexing: "更新索引中",
   processing: "处理中",
+  deleting: "清理中",
   done: "已就绪",
   failed: "失败",
 };
@@ -56,6 +57,7 @@ const ACTIVE_STATUSES = new Set<KnowledgeEntry["ingest_status"]>([
   "building",
   "indexing",
   "processing",
+  "deleting",
 ]);
 
 // active first (处理中置顶), then done, then failed
@@ -421,7 +423,10 @@ export default function KnowledgePage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => remove(entry)}
-                          disabled={deleteKnowledge.isPending}
+                          disabled={
+                            deleteKnowledge.isPending ||
+                            entry.ingest_status === "deleting"
+                          }
                           className="h-8 w-8 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--color-destructive)]"
                           aria-label="删除"
                         >

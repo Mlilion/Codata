@@ -17,6 +17,7 @@ export interface KnowledgeEntry {
     | "building"
     | "indexing"
     | "processing"
+    | "deleting"
     | "done"
     | "failed";
   wiki_pages: string[];
@@ -48,6 +49,7 @@ export function useKnowledge() {
         "building",
         "indexing",
         "processing",
+        "deleting",
       ]);
       return rows.some((e) => active.has(e.ingest_status)) ? 3000 : false;
     },
