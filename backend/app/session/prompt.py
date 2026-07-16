@@ -464,13 +464,22 @@ class SessionPrompt:
         # docs precisely. The default selectedAgent is "build", so gating on the
         # data agent alone meant the wiki was built but never used. Subagents and
         # internal agents (explore/general/compaction/title/summary) are excluded.
+        # Gate on the agent NAME, not its runtime mode: the codata data agent
+        # can run with mode="subagent" (dispatched path), so a mode gate wrongly
+        # excludes it. These are the user-facing agents that should see the wiki.
         _KNOWLEDGE_BASE_ENABLED = True
-        if _KNOWLEDGE_BASE_ENABLED and self.agent.mode == "primary":
+        _KNOWLEDGE_AGENTS = {"build", "plan", "data"}
+        if _KNOWLEDGE_BASE_ENABLED and self.agent.name in _KNOWLEDGE_AGENTS:
             try:
                 from app.knowledge.injection import build_knowledge_section
 
                 self.knowledge_section = await build_knowledge_section(
                     self.session_factory
+                )
+                logger.debug(
+                    "Knowledge injection: agent=%s section=%s chars",
+                    self.agent.name,
+                    len(self.knowledge_section) if self.knowledge_section else 0,
                 )
             except Exception:
                 logger.debug("Knowledge section injection skipped", exc_info=True)
