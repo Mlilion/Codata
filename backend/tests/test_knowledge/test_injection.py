@@ -2,8 +2,27 @@
 
 from __future__ import annotations
 
+from app.agent.agent import AgentRegistry
 from app.knowledge.injection import build_knowledge_section
 from app.models.knowledge_entry import KnowledgeEntry
+
+
+def test_knowledge_gate_targets_primary_agents():
+    """The prompt assembler injects the wiki for agents whose mode == 'primary'.
+
+    Guards the widened gate: build/plan/data (primary) get the knowledge base;
+    internal agents (title/compaction/summary, mode 'hidden') do not. The
+    default selectedAgent is 'build', so gating on the data agent alone left
+    the wiki built-but-unused.
+    """
+    registry = AgentRegistry()
+    for name in ("build", "plan", "data"):
+        agent = registry.get(name)
+        assert agent is not None, name
+        assert hasattr(agent, "mode")
+        assert agent.mode == "primary", name
+    for name in ("title", "compaction", "summary"):
+        assert registry.get(name).mode == "hidden", name
 
 
 async def test_build_knowledge_section_none_when_empty(session_factory):

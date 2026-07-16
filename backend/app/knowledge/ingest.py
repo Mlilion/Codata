@@ -1,6 +1,7 @@
 """Ingest a knowledge entry: snapshot raw text, then build wiki pages."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 
@@ -59,13 +60,25 @@ async def ingest_entry(
     """
     from app.knowledge.ingest_prompt import build_ingest_prompt
 
-    async with session_factory() as s:
-        entry = await s.get(KnowledgeEntry, entry_id)
-        if entry is None:
-            return
-        entry.ingest_status = "processing"
-        entry.ingest_error = ""
-        await s.commit()
+    # The creating request commits the new row only AFTER its response is sent
+    # (get_db wraps the request in a single transaction), and BackgroundTasks
+    # run after the response too — so this fresh session may not see the row on
+    # the first try. Retry with a short backoff; the commit lands within ms.
+    entry = None
+    for attempt in range(10):
+        async with session_factory() as s:
+            entry = await s.get(KnowledgeEntry, entry_id)
+            if entry is not None:
+                entry.ingest_status = "processing"
+                entry.ingest_error = ""
+                await s.commit()
+                break
+        await asyncio.sleep(0.2)
+    if entry is None:
+        logger.warning(
+            "ingest_entry %s: entry not found after retries; skipping", entry_id
+        )
+        return
 
     try:
         raw_rel = await snapshot_raw(entry)

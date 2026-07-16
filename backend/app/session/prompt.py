@@ -459,10 +459,13 @@ class SessionPrompt:
                 logger.debug("Analysis memory injection skipped", exc_info=True)
 
         # --- Knowledge-base (LLM wiki) injection ---
-        # Injects the LLM-built wiki index.md (built on Feishu-doc import) into
-        # the data agent's prompt so it locates relevant docs precisely.
+        # Injects the LLM-built wiki index.md (built on doc/file import) into
+        # every PRIMARY agent's prompt (build/plan/data) so it locates relevant
+        # docs precisely. The default selectedAgent is "build", so gating on the
+        # data agent alone meant the wiki was built but never used. Subagents and
+        # internal agents (explore/general/compaction/title/summary) are excluded.
         _KNOWLEDGE_BASE_ENABLED = True
-        if _KNOWLEDGE_BASE_ENABLED and self.agent.name == "data":
+        if _KNOWLEDGE_BASE_ENABLED and self.agent.mode == "primary":
             try:
                 from app.knowledge.injection import build_knowledge_section
 
