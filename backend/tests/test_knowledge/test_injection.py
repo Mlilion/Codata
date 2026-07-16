@@ -25,14 +25,18 @@ def test_knowledge_gate_targets_primary_agents():
         assert registry.get(name).mode == "hidden", name
 
 
-async def test_build_knowledge_section_none_when_empty(session_factory):
+async def test_build_knowledge_section_none_when_empty(tmp_path, monkeypatch, session_factory):
+    from app.knowledge import wiki_store
+    monkeypatch.setattr(wiki_store, "_resolve_data_dir", lambda: tmp_path)
     # db_engine (and thus session_factory) is a fresh in-memory DB per test,
     # so an untouched factory has no enabled entries.
     section = await build_knowledge_section(session_factory)
     assert section is None
 
 
-async def test_build_knowledge_section_lists_enabled(session_factory):
+async def test_build_knowledge_section_lists_enabled(tmp_path, monkeypatch, session_factory):
+    from app.knowledge import wiki_store
+    monkeypatch.setattr(wiki_store, "_resolve_data_dir", lambda: tmp_path)
     async with session_factory() as s:
         s.add(KnowledgeEntry(
             feishu_url="https://x.feishu.cn/docx/T1", feishu_token="T1",
