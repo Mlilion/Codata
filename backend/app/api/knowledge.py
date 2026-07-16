@@ -22,7 +22,7 @@ from app.api.files import UPLOAD_DIR
 from app.dependencies import get_db
 from app.knowledge import wiki_store
 from app.knowledge.feishu_url import parse_feishu_url
-from app.knowledge.ingest import cleanup_entry, ingest_entry
+from app.knowledge.ingest import cleanup_entry, ingest_entry, reingest_entry
 from app.knowledge.injection import MAX_INDEX_CHARS
 from app.models.knowledge_entry import KnowledgeEntry
 from app.tool.extractors import is_supported_binary
@@ -69,6 +69,21 @@ def _schedule_ingest(request: Request, entry_id: str) -> None:
     st = request.app.state
     asyncio.create_task(
         ingest_entry(
+            entry_id,
+            session_factory=st.session_factory,
+            provider_registry=st.provider_registry,
+            agent_registry=st.agent_registry,
+            tool_registry=st.tool_registry,
+            index_manager=getattr(st, "index_manager", None),
+            settings=getattr(st, "settings", None),
+        )
+    )
+
+
+def _schedule_reingest(request: Request, entry_id: str) -> None:
+    st = request.app.state
+    asyncio.create_task(
+        reingest_entry(
             entry_id,
             session_factory=st.session_factory,
             provider_registry=st.provider_registry,
@@ -263,5 +278,5 @@ async def reingest_knowledge(
         await s.commit()
         await s.refresh(entry)
         result = _entry_to_dict(entry)
-    _schedule_ingest(request, entry_id=entry_id)
+    _schedule_reingest(request, entry_id=entry_id)
     return result

@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 
 from app.knowledge.cleanup_prompt import build_cleanup_prompt
+from app.knowledge.ingest_prompt import build_ingest_prompt
 from app.knowledge.feishu_reader import read_feishu_doc
 from app.knowledge import wiki_store
 from app.tool.extractors import extract_document, is_supported_binary
@@ -288,6 +289,81 @@ async def cleanup_entry(
                     await s.commit()
     except Exception as exc:
         logger.warning("cleanup_entry %s failed: %s", entry_id, exc)
+        async with session_factory() as s:
+            e = await s.get(KnowledgeEntry, entry_id)
+            if e is not None:
+                e.ingest_status = "failed"
+                e.ingest_error = str(exc)
+                await s.commit()
+
+
+async def reingest_entry(
+    entry_id,
+    *,
+    session_factory,
+    provider_registry,
+    agent_registry,
+    tool_registry,
+    index_manager=None,
+    settings=None,
+) -> None:
+    """Reload an entry: remove its stale wiki pages, then re-snapshot the
+    source and rebuild. Unlike delete, the DB row and (re-fetched) raw
+    snapshot are preserved. Never raises; failures set ingest_status=failed.
+    """
+    try:
+        async with session_factory() as s:
+            entry = await s.get(KnowledgeEntry, entry_id)
+            if entry is None:
+                return
+            source_page = _source_page_of(entry)
+
+        async with _WIKI_AGENT_LOCK:
+            model_id, provider_id = (
+                resolve_default_model(provider_registry, settings) if settings else (None, None)
+            )
+            # 1. Clean stale wiki pages (skip if never ingested).
+            if source_page is not None:
+                cleanup_prompt = build_cleanup_prompt(
+                    entry, source_page, str(wiki_store.wiki_dir())
+                )
+                await _run_wiki_agent(
+                    cleanup_prompt,
+                    session_factory=session_factory,
+                    provider_registry=provider_registry,
+                    agent_registry=agent_registry,
+                    tool_registry=tool_registry,
+                    index_manager=index_manager,
+                    model_id=model_id,
+                    provider_id=provider_id,
+                )
+            # 2. Re-snapshot source and rebuild.
+            await _set_status(session_factory, entry_id, "extracting")
+            raw_rel = await snapshot_raw(entry)
+            before = _snapshot_wiki_files()
+            ingest_prompt = build_ingest_prompt(entry, raw_rel, str(wiki_store.wiki_dir()))
+            await _set_status(session_factory, entry_id, "building")
+            await _run_wiki_agent(
+                ingest_prompt,
+                session_factory=session_factory,
+                provider_registry=provider_registry,
+                agent_registry=agent_registry,
+                tool_registry=tool_registry,
+                index_manager=index_manager,
+                model_id=model_id,
+                provider_id=provider_id,
+            )
+            after = _snapshot_wiki_files()
+            new_pages = sorted({name for name, _mtime in (after - before)})
+            async with session_factory() as s:
+                e = await s.get(KnowledgeEntry, entry_id)
+                if e is not None:
+                    e.ingest_status = "done"
+                    e.raw_path = raw_rel
+                    e.wiki_pages = json.dumps(new_pages, ensure_ascii=False)
+                    await s.commit()
+    except Exception as exc:
+        logger.warning("reingest_entry %s failed: %s", entry_id, exc)
         async with session_factory() as s:
             e = await s.get(KnowledgeEntry, entry_id)
             if e is not None:

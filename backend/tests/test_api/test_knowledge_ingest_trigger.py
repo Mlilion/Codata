@@ -50,6 +50,15 @@ async def test_reingest_resets_status_and_triggers(app_client, monkeypatch):
     # for real (asyncio.create_task fires eagerly) and can't race the reingest.
     calls, kmod = _record_schedule(monkeypatch)
 
+    # Reingest now schedules the CLEAN reingest runner (cleanup-then-rebuild),
+    # not the plain ingest runner. Capture that call separately.
+    reingest_calls = []
+    monkeypatch.setattr(
+        kmod,
+        "_schedule_reingest",
+        lambda request, entry_id: reingest_calls.append(entry_id),
+    )
+
     # Create an entry first (this also schedules an ingest — we clear calls).
     resp = await app_client.post(
         "/api/knowledge",
@@ -67,7 +76,8 @@ async def test_reingest_resets_status_and_triggers(app_client, monkeypatch):
     assert body["ingest_status"] == "pending"
     assert body["ingest_error"] == ""
 
-    assert calls == [entry_id]
+    assert reingest_calls == [entry_id]
+    assert calls == []  # reingest no longer fires the plain ingest runner
 
 
 @pytest.mark.asyncio
