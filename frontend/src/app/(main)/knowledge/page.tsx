@@ -115,7 +115,10 @@ export default function KnowledgePage() {
   const upload = (file: File) => {
     setError(null);
     uploadKnowledge.mutate(file, {
-      onSuccess: () => toast.success("已上传到知识库"),
+      onSuccess: () => {
+        toast.success("已上传到知识库");
+        setAddOpen(false);
+      },
       onError: (err) => toast.error(apiErrorMessage(err, "上传失败")),
     });
   };
@@ -143,6 +146,7 @@ export default function KnowledgePage() {
         onSuccess: () => {
           toast.success("已添加到知识库");
           setUrl("");
+          setAddOpen(false);
         },
         onError: (err) =>
           setError(apiErrorMessage(err, "添加失败,请检查飞书链接是否正确")),
@@ -368,6 +372,54 @@ export default function KnowledgePage() {
           </div>
         </div>
       </PageContent>
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>添加文档</DialogTitle>
+          </DialogHeader>
+          <div
+            className={cn(
+              "rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] p-4 transition-colors",
+              isDragging && "border-[var(--border-focus)] bg-[var(--surface-primary)]",
+            )}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (!uploadKnowledge.isPending) setIsDragging(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+            }}
+            onDrop={onDrop}
+          >
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+                placeholder="粘贴飞书文档链接,如 https://xxx.feishu.cn/docx/..."
+                className="h-10 flex-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-focus)]"
+              />
+              <Button onClick={submit} disabled={!canSubmit} className="shrink-0 gap-1.5">
+                {addKnowledge.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                添加
+              </Button>
+            </div>
+            {error && <p className="mt-2 text-sm text-[var(--color-destructive)]">{error}</p>}
+            <div className="mt-3 flex items-center gap-2 border-t border-[var(--border-default)] pt-3">
+              <input ref={fileInputRef} type="file" accept={UPLOAD_ACCEPT} onChange={onFileSelected} className="hidden" />
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadKnowledge.isPending} className="shrink-0 gap-1.5">
+                {uploadKnowledge.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                上传文件
+              </Button>
+              <span className="text-xs text-[var(--text-tertiary)]">
+                或把本地文件拖到这里(PDF、Word、Excel、PPT、Markdown、TXT)
+              </span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!previewPage} onOpenChange={(o) => !o && setPreviewPage(null)}>
         <DialogContent className="max-h-[70vh] max-w-2xl overflow-y-auto">
