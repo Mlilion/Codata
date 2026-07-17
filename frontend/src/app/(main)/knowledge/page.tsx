@@ -453,7 +453,13 @@ export default function KnowledgePage() {
                             role="button"
                             tabIndex={0}
                             onClick={(e) => { e.stopPropagation(); toggle(entry); }}
-                            onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); toggle(entry); } }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggle(entry);
+                              }
+                            }}
                             className={cn(
                               "shrink-0 rounded-md border px-2 py-1 text-xs font-medium transition-colors",
                               entry.enabled
@@ -525,7 +531,13 @@ export default function KnowledgePage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog
+        open={addOpen}
+        onOpenChange={(o) => {
+          setAddOpen(o);
+          if (!o) { setError(null); }
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>添加文档</DialogTitle>
