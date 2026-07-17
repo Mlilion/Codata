@@ -223,6 +223,151 @@ export default function KnowledgePage() {
     </>
   ) : null;
 
+  // 详情面板(桌面右栏与窄屏抽屉共用) —— 三分支:选中项 → 面板;仅预览 → 预览;否则引导
+  const detailPanel = selectedEntry ? (
+    <SurfacePanel className="flex flex-col gap-3 bg-[var(--surface-secondary)] p-4">
+      {/* 元信息头 */}
+      <div>
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            {selectedEntry.source_type === "file" ? (
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-primary)]">
+                <FileText className="h-4 w-4 shrink-0 text-[var(--text-tertiary)]" />
+                <span className="truncate">{selectedEntry.title || selectedEntry.source_name}</span>
+              </div>
+            ) : (
+              <a
+                href={selectedEntry.feishu_url ?? undefined}
+                target="_blank"
+                rel="noreferrer"
+                className="block truncate text-sm font-semibold text-[var(--text-primary)] hover:underline"
+              >
+                {selectedEntry.title || selectedEntry.feishu_url}
+              </a>
+            )}
+          </div>
+          {selectedEntry.doc_type && (
+            <span className="shrink-0 rounded-md bg-[var(--surface-primary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-tertiary)]">
+              {selectedEntry.doc_type}
+            </span>
+          )}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <span
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+              selectedEntry.ingest_status === "done"
+                ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
+                : selectedEntry.ingest_status === "failed"
+                  ? "bg-[var(--color-destructive-soft)] text-[var(--color-destructive)]"
+                  : "bg-[var(--surface-primary)] text-[var(--text-tertiary)]",
+            )}
+          >
+            {ACTIVE_STATUSES.has(selectedEntry.ingest_status) && (
+              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+            )}
+            {INGEST_STATUS_LABEL[selectedEntry.ingest_status] ?? selectedEntry.ingest_status}
+          </span>
+          <Button
+            variant={selectedEntry.enabled ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => toggle(selectedEntry)}
+            disabled={patchKnowledge.isPending}
+            className="ml-auto"
+          >
+            {selectedEntry.enabled ? "已启用" : "已停用"}
+          </Button>
+          {selectedEntry.ingest_status === "done" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => reingest(selectedEntry)}
+              disabled={reingestKnowledge.isPending}
+              className="h-8 w-8 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--data-accent)]"
+              aria-label="重新加载"
+              title="重新加载(飞书/文件更新后刷新)"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => remove(selectedEntry)}
+            disabled={deleteKnowledge.isPending || ACTIVE_STATUSES.has(selectedEntry.ingest_status)}
+            className="h-8 w-8 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--color-destructive)]"
+            aria-label="删除"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+        {selectedEntry.ingest_status === "failed" && selectedEntry.ingest_error && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="min-w-0 flex-1 text-xs text-[var(--text-tertiary)]">
+              {selectedEntry.ingest_error}
+            </span>
+            <button
+              type="button"
+              onClick={() => reingest(selectedEntry)}
+              disabled={reingestKnowledge.isPending}
+              className="shrink-0 text-xs font-medium text-[var(--data-accent)] hover:underline disabled:opacity-50"
+            >
+              重试
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* 知识页列表 */}
+      {selectedEntry.ingest_status === "done" && selectedEntry.wiki_pages.length > 0 && (
+        <div className="border-t border-[var(--border-default)] pt-3">
+          <div className="mb-1.5 text-xs font-medium text-[var(--text-secondary)]">
+            知识页 ({selectedEntry.wiki_pages.length})
+          </div>
+          <ul className="flex flex-col gap-0.5">
+            {selectedEntry.wiki_pages.map((page, i) => (
+              <li key={`${selectedEntry.id}-${i}`}>
+                <button
+                  type="button"
+                  onClick={() => setPreviewPage(page)}
+                  className={cn(
+                    "flex w-full items-center gap-1.5 truncate rounded-md px-1.5 py-1 text-left text-xs transition-colors",
+                    previewPage === page
+                      ? "bg-[var(--surface-primary)] text-[var(--text-primary)]"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]",
+                  )}
+                >
+                  <FileText className="h-3 w-3 shrink-0 text-[var(--text-tertiary)]" />
+                  <span className="truncate">{page}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 内联预览 */}
+      {previewPage && (
+        <div className="border-t border-[var(--border-default)] pt-3">{previewBlock}</div>
+      )}
+      {selectedEntry.ingest_status !== "done" && selectedEntry.ingest_status !== "failed" && (
+        <p className="border-t border-[var(--border-default)] pt-3 text-xs text-[var(--text-tertiary)]">
+          知识页构建中,完成后可预览。
+        </p>
+      )}
+    </SurfacePanel>
+  ) : previewPage ? (
+    // 「查看索引」等无选中项时的仅预览面板(如 index.md)
+    <SurfacePanel className="flex flex-col gap-3 bg-[var(--surface-secondary)] p-4">
+      {previewBlock}
+    </SurfacePanel>
+  ) : (
+    <SurfacePanel className="flex flex-col items-center justify-center gap-2 bg-[var(--surface-secondary)] px-6 py-16 text-center">
+      <BookOpen className="h-8 w-8 text-[var(--text-tertiary)]" />
+      <p className="text-sm text-[var(--text-secondary)]">从左侧选择一篇文档,查看其知识页与内容。</p>
+    </SurfacePanel>
+  );
+
   return (
     <PageFrame className="flex-1">
       <PageContent className="max-w-6xl lg:py-8">
@@ -377,153 +522,22 @@ export default function KnowledgePage() {
               </ul>
             )}
           </div>
-          <div className="hidden min-w-0 xl:block">
-            {selectedEntry ? (
-              <SurfacePanel className="flex flex-col gap-3 bg-[var(--surface-secondary)] p-4">
-                {/* 元信息头 */}
-                <div>
-                  <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      {selectedEntry.source_type === "file" ? (
-                        <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-primary)]">
-                          <FileText className="h-4 w-4 shrink-0 text-[var(--text-tertiary)]" />
-                          <span className="truncate">{selectedEntry.title || selectedEntry.source_name}</span>
-                        </div>
-                      ) : (
-                        <a
-                          href={selectedEntry.feishu_url ?? undefined}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block truncate text-sm font-semibold text-[var(--text-primary)] hover:underline"
-                        >
-                          {selectedEntry.title || selectedEntry.feishu_url}
-                        </a>
-                      )}
-                    </div>
-                    {selectedEntry.doc_type && (
-                      <span className="shrink-0 rounded-md bg-[var(--surface-primary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-tertiary)]">
-                        {selectedEntry.doc_type}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
-                        selectedEntry.ingest_status === "done"
-                          ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
-                          : selectedEntry.ingest_status === "failed"
-                            ? "bg-[var(--color-destructive-soft)] text-[var(--color-destructive)]"
-                            : "bg-[var(--surface-primary)] text-[var(--text-tertiary)]",
-                      )}
-                    >
-                      {ACTIVE_STATUSES.has(selectedEntry.ingest_status) && (
-                        <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                      )}
-                      {INGEST_STATUS_LABEL[selectedEntry.ingest_status] ?? selectedEntry.ingest_status}
-                    </span>
-                    <Button
-                      variant={selectedEntry.enabled ? "secondary" : "outline"}
-                      size="sm"
-                      onClick={() => toggle(selectedEntry)}
-                      disabled={patchKnowledge.isPending}
-                      className="ml-auto"
-                    >
-                      {selectedEntry.enabled ? "已启用" : "已停用"}
-                    </Button>
-                    {selectedEntry.ingest_status === "done" && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => reingest(selectedEntry)}
-                        disabled={reingestKnowledge.isPending}
-                        className="h-8 w-8 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--data-accent)]"
-                        aria-label="重新加载"
-                        title="重新加载(飞书/文件更新后刷新)"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => remove(selectedEntry)}
-                      disabled={deleteKnowledge.isPending || ACTIVE_STATUSES.has(selectedEntry.ingest_status)}
-                      className="h-8 w-8 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--color-destructive)]"
-                      aria-label="删除"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {selectedEntry.ingest_status === "failed" && selectedEntry.ingest_error && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="min-w-0 flex-1 text-xs text-[var(--text-tertiary)]">
-                        {selectedEntry.ingest_error}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => reingest(selectedEntry)}
-                        disabled={reingestKnowledge.isPending}
-                        className="shrink-0 text-xs font-medium text-[var(--data-accent)] hover:underline disabled:opacity-50"
-                      >
-                        重试
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 知识页列表 */}
-                {selectedEntry.ingest_status === "done" && selectedEntry.wiki_pages.length > 0 && (
-                  <div className="border-t border-[var(--border-default)] pt-3">
-                    <div className="mb-1.5 text-xs font-medium text-[var(--text-secondary)]">
-                      知识页 ({selectedEntry.wiki_pages.length})
-                    </div>
-                    <ul className="flex flex-col gap-0.5">
-                      {selectedEntry.wiki_pages.map((page, i) => (
-                        <li key={`${selectedEntry.id}-${i}`}>
-                          <button
-                            type="button"
-                            onClick={() => setPreviewPage(page)}
-                            className={cn(
-                              "flex w-full items-center gap-1.5 truncate rounded-md px-1.5 py-1 text-left text-xs transition-colors",
-                              previewPage === page
-                                ? "bg-[var(--surface-primary)] text-[var(--text-primary)]"
-                                : "text-[var(--text-secondary)] hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]",
-                            )}
-                          >
-                            <FileText className="h-3 w-3 shrink-0 text-[var(--text-tertiary)]" />
-                            <span className="truncate">{page}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* 内联预览 */}
-                {previewPage && (
-                  <div className="border-t border-[var(--border-default)] pt-3">{previewBlock}</div>
-                )}
-                {selectedEntry.ingest_status !== "done" && selectedEntry.ingest_status !== "failed" && (
-                  <p className="border-t border-[var(--border-default)] pt-3 text-xs text-[var(--text-tertiary)]">
-                    知识页构建中,完成后可预览。
-                  </p>
-                )}
-              </SurfacePanel>
-            ) : previewPage ? (
-              // 「查看索引」等无选中项时的仅预览面板(如 index.md)
-              <SurfacePanel className="flex flex-col gap-3 bg-[var(--surface-secondary)] p-4">
-                {previewBlock}
-              </SurfacePanel>
-            ) : (
-              <SurfacePanel className="flex flex-col items-center justify-center gap-2 bg-[var(--surface-secondary)] px-6 py-16 text-center">
-                <BookOpen className="h-8 w-8 text-[var(--text-tertiary)]" />
-                <p className="text-sm text-[var(--text-secondary)]">从左侧选择一篇文档,查看其知识页与内容。</p>
-              </SurfacePanel>
-            )}
-          </div>
+          <div className="hidden min-w-0 xl:block">{detailPanel}</div>
         </div>
       </PageContent>
+
+      {/* 窄屏(<xl)详情抽屉 —— 仅在用户显式点选卡片时弹出,桌面用 xl:hidden 屏蔽 */}
+      <Dialog
+        open={!!selectedId && !!selectedEntry}
+        onOpenChange={(o) => { if (!o) setSelectedId(null); }}
+      >
+        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto xl:hidden">
+          <DialogHeader>
+            <DialogTitle className="sr-only">文档详情</DialogTitle>
+          </DialogHeader>
+          {detailPanel}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-lg">
