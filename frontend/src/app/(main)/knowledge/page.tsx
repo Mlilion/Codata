@@ -245,7 +245,7 @@ export default function KnowledgePage() {
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="min-w-0">
-            {/* 左栏列表 —— Task 3 重写;先临时保留现有 <ul> 列表渲染 */}
+            {/* 左栏列表 —— 可选中卡片,操作已移至右栏详情 */}
             {isLoading ? (
               <div className="flex items-center justify-center py-16 text-[var(--text-tertiary)]">
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -253,114 +253,78 @@ export default function KnowledgePage() {
             ) : entries.length === 0 ? (
               <div className="rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--surface-secondary)] px-6 py-12 text-center">
                 <BookOpen className="mx-auto mb-3 h-8 w-8 text-[var(--text-tertiary)]" />
-                <p className="text-sm text-[var(--text-secondary)]">
-                  还没有知识文档,粘贴一个飞书链接开始。
-                </p>
+                <p className="text-sm text-[var(--text-secondary)]">还没有知识文档,点右上角「添加文档」开始。</p>
               </div>
             ) : (
               <ul className="flex flex-col gap-2">
                 {sortedEntries.map((entry) => {
                   const isActive = ACTIVE_STATUSES.has(entry.ingest_status);
+                  const isSelected = entry.id === selectedEntry?.id;
                   return (
-                    <li
-                      key={entry.id}
-                      className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            {entry.source_type === "file" ? (
-                              <span className="inline-flex min-w-0 items-center gap-1 truncate text-sm font-medium text-[var(--text-primary)]">
-                                <FileText className="h-3 w-3 shrink-0 text-[var(--text-tertiary)]" />
-                                <span className="truncate">
-                                  {entry.title || entry.source_name}
-                                </span>
-                              </span>
-                            ) : (
-                              <a
-                                href={entry.feishu_url ?? undefined}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="block truncate text-sm font-medium text-[var(--text-primary)] hover:underline"
-                              >
-                                {entry.title || entry.feishu_url}
-                              </a>
-                            )}
-                            {entry.doc_type && (
-                              <span className="shrink-0 rounded-md bg-[var(--surface-primary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-tertiary)]">
-                                {entry.doc_type}
-                              </span>
-                            )}
-                            <span
-                              className={cn(
-                                "inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
-                                entry.ingest_status === "done"
-                                  ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
-                                  : entry.ingest_status === "failed"
-                                    ? "bg-[var(--color-destructive-soft)] text-[var(--color-destructive)]"
-                                    : "bg-[var(--surface-primary)] text-[var(--text-tertiary)]",
-                              )}
-                            >
-                              {isActive && <Loader2 className="h-2.5 w-2.5 animate-spin" />}
-                              {INGEST_STATUS_LABEL[entry.ingest_status] ?? entry.ingest_status}
-                            </span>
-                          </div>
-                          {entry.note && (
-                            <p className="mt-0.5 truncate text-xs text-[var(--text-tertiary)]">
-                              {entry.note}
-                            </p>
-                          )}
-                          {entry.ingest_status === "failed" && (
-                            <div className="mt-0.5 flex items-center gap-2">
-                              {entry.ingest_error && (
-                                <span className="min-w-0 truncate text-xs text-[var(--text-tertiary)]">
-                                  {entry.ingest_error}
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => reingest(entry)}
-                                disabled={reingestKnowledge.isPending}
-                                className="shrink-0 text-xs font-medium text-[var(--data-accent)] hover:underline disabled:opacity-50"
-                              >
-                                重试
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          variant={entry.enabled ? "secondary" : "outline"}
-                          size="sm"
-                          onClick={() => toggle(entry)}
-                          disabled={patchKnowledge.isPending}
-                          className="shrink-0"
-                        >
-                          {entry.enabled ? "已启用" : "已停用"}
-                        </Button>
-                        {entry.ingest_status === "done" && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => reingest(entry)}
-                            disabled={reingestKnowledge.isPending}
-                            className="h-8 w-8 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--data-accent)]"
-                            aria-label="重新加载"
-                            title="重新加载(飞书/文件更新后刷新)"
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </Button>
+                    <li key={entry.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(entry.id)}
+                        className={cn(
+                          "w-full rounded-xl border px-4 py-3 text-left transition-colors",
+                          isSelected
+                            ? "border-[var(--border-focus)] bg-[var(--surface-primary)]"
+                            : "border-[var(--border-default)] bg-[var(--surface-secondary)] hover:bg-[var(--surface-primary)]",
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => remove(entry)}
-                          disabled={deleteKnowledge.isPending || ACTIVE_STATUSES.has(entry.ingest_status)}
-                          className="h-8 w-8 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--color-destructive)]"
-                          aria-label="删除"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex min-w-0 items-center gap-1 text-sm font-medium text-[var(--text-primary)]">
+                                {entry.source_type === "file"
+                                  ? <FileText className="h-3 w-3 shrink-0 text-[var(--text-tertiary)]" />
+                                  : <BookOpen className="h-3 w-3 shrink-0 text-[var(--text-tertiary)]" />}
+                                <span className="truncate">{entry.title || entry.source_name || entry.feishu_url}</span>
+                              </span>
+                              {entry.doc_type && (
+                                <span className="shrink-0 rounded-md bg-[var(--surface-primary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-tertiary)]">
+                                  {entry.doc_type}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-1 flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+                                  entry.ingest_status === "done"
+                                    ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
+                                    : entry.ingest_status === "failed"
+                                      ? "bg-[var(--color-destructive-soft)] text-[var(--color-destructive)]"
+                                      : "bg-[var(--surface-primary)] text-[var(--text-tertiary)]",
+                                )}
+                              >
+                                {isActive && <Loader2 className="h-2.5 w-2.5 animate-spin" />}
+                                {INGEST_STATUS_LABEL[entry.ingest_status] ?? entry.ingest_status}
+                              </span>
+                              {entry.ingest_status === "done" && entry.wiki_pages.length > 0 && (
+                                <span className="text-xs text-[var(--text-tertiary)]">
+                                  {entry.wiki_pages.length} 个知识页
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => { e.stopPropagation(); toggle(entry); }}
+                            onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); toggle(entry); } }}
+                            className={cn(
+                              "shrink-0 rounded-md border px-2 py-1 text-xs font-medium transition-colors",
+                              entry.enabled
+                                ? "border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)]"
+                                : "border-[var(--border-default)] text-[var(--text-tertiary)]",
+                              patchKnowledge.isPending && "opacity-50",
+                            )}
+                          >
+                            {entry.enabled ? "已启用" : "已停用"}
+                          </span>
+                        </div>
+                      </button>
                     </li>
                   );
                 })}
