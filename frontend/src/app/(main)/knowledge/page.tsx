@@ -12,7 +12,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { MarkdownRenderer } from "@/components/artifacts/renderers/markdown-renderer";
 import { Button } from "@/components/ui/button";
@@ -104,6 +104,17 @@ export default function KnowledgePage() {
     sortedEntries[0] ??
     null;
 
+  useEffect(() => {
+    if (!selectedEntry) { setPreviewPage(null); return; }
+    if (selectedEntry.ingest_status === "done" && selectedEntry.wiki_pages.length > 0) {
+      setPreviewPage((prev) =>
+        prev && selectedEntry.wiki_pages.includes(prev) ? prev : selectedEntry.wiki_pages[0],
+      );
+    } else {
+      setPreviewPage(null);
+    }
+  }, [selectedEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const pct = cap ? Math.min(100, Math.round((cap.index_chars / cap.max_chars) * 100)) : 0;
   const barColor =
     pct >= 100
@@ -165,7 +176,7 @@ export default function KnowledgePage() {
 
   const remove = (entry: KnowledgeEntry) => {
     deleteKnowledge.mutate(entry.id, {
-      onSuccess: () => toast.success("已删除"),
+      onSuccess: () => { toast.success("已删除"); setSelectedId(null); },
       onError: (err) => toast.error(apiErrorMessage(err, "删除失败")),
     });
   };
@@ -176,6 +187,41 @@ export default function KnowledgePage() {
       onError: (err) => toast.error(apiErrorMessage(err, "重试失败")),
     });
   };
+
+  // 内联预览块(详情面板与"仅预览"面板共用) —— 含 [[backlink]] 点击拦截
+  const previewBlock = previewPage ? (
+    <>
+      <div className="mb-1.5 truncate text-xs font-medium text-[var(--text-secondary)]">
+        预览:{previewPage}
+      </div>
+      <div
+        className="max-h-[50vh] overflow-y-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3"
+        onClick={(e) => {
+          const a = (e.target as HTMLElement).closest("a");
+          if (!a) return;
+          const href = a.getAttribute("href") ?? "";
+          // only intercept relative, in-wiki links (not http/https/mailto/#)
+          if (/^(https?:|mailto:|#)/.test(href) || href === "") return;
+          e.preventDefault();
+          e.stopPropagation();
+          // strip any leading ./ and hash/query; add .md if no extension
+          let page = decodeURIComponent(href.replace(/^\.\//, "").split(/[?#]/)[0]);
+          if (page && !/\.[a-z0-9]+$/i.test(page)) page = `${page}.md`;
+          if (page) setPreviewPage(page);
+        }}
+      >
+        {wikiLoading ? (
+          <div className="flex items-center justify-center py-8 text-[var(--text-tertiary)]">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </div>
+        ) : wikiError ? (
+          <p className="py-4 text-sm text-[var(--color-destructive)]">加载知识页失败,请稍后重试。</p>
+        ) : wikiPage ? (
+          <MarkdownRenderer content={wikiPage.content} />
+        ) : null}
+      </div>
+    </>
+  ) : null;
 
   return (
     <PageFrame className="flex-1">
@@ -332,7 +378,149 @@ export default function KnowledgePage() {
             )}
           </div>
           <div className="hidden min-w-0 xl:block">
-            {/* 右栏详情 —— Task 4 */}
+            {selectedEntry ? (
+              <SurfacePanel className="flex flex-col gap-3 bg-[var(--surface-secondary)] p-4">
+                {/* 元信息头 */}
+                <div>
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      {selectedEntry.source_type === "file" ? (
+                        <div className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-primary)]">
+                          <FileText className="h-4 w-4 shrink-0 text-[var(--text-tertiary)]" />
+                          <span className="truncate">{selectedEntry.title || selectedEntry.source_name}</span>
+                        </div>
+                      ) : (
+                        <a
+                          href={selectedEntry.feishu_url ?? undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block truncate text-sm font-semibold text-[var(--text-primary)] hover:underline"
+                        >
+                          {selectedEntry.title || selectedEntry.feishu_url}
+                        </a>
+                      )}
+                    </div>
+                    {selectedEntry.doc_type && (
+                      <span className="shrink-0 rounded-md bg-[var(--surface-primary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-tertiary)]">
+                        {selectedEntry.doc_type}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+                        selectedEntry.ingest_status === "done"
+                          ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
+                          : selectedEntry.ingest_status === "failed"
+                            ? "bg-[var(--color-destructive-soft)] text-[var(--color-destructive)]"
+                            : "bg-[var(--surface-primary)] text-[var(--text-tertiary)]",
+                      )}
+                    >
+                      {ACTIVE_STATUSES.has(selectedEntry.ingest_status) && (
+                        <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                      )}
+                      {INGEST_STATUS_LABEL[selectedEntry.ingest_status] ?? selectedEntry.ingest_status}
+                    </span>
+                    <Button
+                      variant={selectedEntry.enabled ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => toggle(selectedEntry)}
+                      disabled={patchKnowledge.isPending}
+                      className="ml-auto"
+                    >
+                      {selectedEntry.enabled ? "已启用" : "已停用"}
+                    </Button>
+                    {selectedEntry.ingest_status === "done" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => reingest(selectedEntry)}
+                        disabled={reingestKnowledge.isPending}
+                        className="h-8 w-8 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--data-accent)]"
+                        aria-label="重新加载"
+                        title="重新加载(飞书/文件更新后刷新)"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => remove(selectedEntry)}
+                      disabled={deleteKnowledge.isPending || ACTIVE_STATUSES.has(selectedEntry.ingest_status)}
+                      className="h-8 w-8 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--color-destructive)]"
+                      aria-label="删除"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {selectedEntry.ingest_status === "failed" && selectedEntry.ingest_error && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="min-w-0 flex-1 text-xs text-[var(--text-tertiary)]">
+                        {selectedEntry.ingest_error}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => reingest(selectedEntry)}
+                        disabled={reingestKnowledge.isPending}
+                        className="shrink-0 text-xs font-medium text-[var(--data-accent)] hover:underline disabled:opacity-50"
+                      >
+                        重试
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* 知识页列表 */}
+                {selectedEntry.ingest_status === "done" && selectedEntry.wiki_pages.length > 0 && (
+                  <div className="border-t border-[var(--border-default)] pt-3">
+                    <div className="mb-1.5 text-xs font-medium text-[var(--text-secondary)]">
+                      知识页 ({selectedEntry.wiki_pages.length})
+                    </div>
+                    <ul className="flex flex-col gap-0.5">
+                      {selectedEntry.wiki_pages.map((page, i) => (
+                        <li key={`${selectedEntry.id}-${i}`}>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewPage(page)}
+                            className={cn(
+                              "flex w-full items-center gap-1.5 truncate rounded-md px-1.5 py-1 text-left text-xs transition-colors",
+                              previewPage === page
+                                ? "bg-[var(--surface-primary)] text-[var(--text-primary)]"
+                                : "text-[var(--text-secondary)] hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]",
+                            )}
+                          >
+                            <FileText className="h-3 w-3 shrink-0 text-[var(--text-tertiary)]" />
+                            <span className="truncate">{page}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* 内联预览 */}
+                {previewPage && (
+                  <div className="border-t border-[var(--border-default)] pt-3">{previewBlock}</div>
+                )}
+                {selectedEntry.ingest_status !== "done" && selectedEntry.ingest_status !== "failed" && (
+                  <p className="border-t border-[var(--border-default)] pt-3 text-xs text-[var(--text-tertiary)]">
+                    知识页构建中,完成后可预览。
+                  </p>
+                )}
+              </SurfacePanel>
+            ) : previewPage ? (
+              // 「查看索引」等无选中项时的仅预览面板(如 index.md)
+              <SurfacePanel className="flex flex-col gap-3 bg-[var(--surface-secondary)] p-4">
+                {previewBlock}
+              </SurfacePanel>
+            ) : (
+              <SurfacePanel className="flex flex-col items-center justify-center gap-2 bg-[var(--surface-secondary)] px-6 py-16 text-center">
+                <BookOpen className="h-8 w-8 text-[var(--text-tertiary)]" />
+                <p className="text-sm text-[var(--text-secondary)]">从左侧选择一篇文档,查看其知识页与内容。</p>
+              </SurfacePanel>
+            )}
           </div>
         </div>
       </PageContent>
@@ -382,43 +570,6 @@ export default function KnowledgePage() {
               </span>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!previewPage} onOpenChange={(o) => !o && setPreviewPage(null)}>
-        <DialogContent className="max-h-[70vh] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="truncate">{previewPage}</DialogTitle>
-          </DialogHeader>
-          {wikiLoading ? (
-            <div className="flex items-center justify-center py-12 text-[var(--text-tertiary)]">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
-          ) : wikiError ? (
-            <p className="py-6 text-sm text-[var(--color-destructive)]">
-              加载知识页失败,请稍后重试。
-            </p>
-          ) : (
-            <div
-              onClick={(e) => {
-                const a = (e.target as HTMLElement).closest("a");
-                if (!a) return;
-                const href = a.getAttribute("href") ?? "";
-                // only intercept relative, in-wiki links (not http/https/mailto/#)
-                if (/^(https?:|mailto:|#)/.test(href) || href === "") return;
-                e.preventDefault();
-                e.stopPropagation();
-                // strip any leading ./ and hash/query; add .md if no extension
-                let page = decodeURIComponent(
-                  href.replace(/^\.\//, "").split(/[?#]/)[0],
-                );
-                if (page && !/\.[a-z0-9]+$/i.test(page)) page = `${page}.md`;
-                if (page) setPreviewPage(page);
-              }}
-            >
-              {wikiPage ? <MarkdownRenderer content={wikiPage.content} /> : null}
-            </div>
-          )}
         </DialogContent>
       </Dialog>
     </PageFrame>
