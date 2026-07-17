@@ -104,16 +104,15 @@ export default function KnowledgePage() {
     sortedEntries[0] ??
     null;
 
+  // SSR-safe narrow-screen detection (< xl / 1280px) —— gates the detail drawer
+  const [isNarrow, setIsNarrow] = useState(false);
   useEffect(() => {
-    if (!selectedEntry) { setPreviewPage(null); return; }
-    if (selectedEntry.ingest_status === "done" && selectedEntry.wiki_pages.length > 0) {
-      setPreviewPage((prev) =>
-        prev && selectedEntry.wiki_pages.includes(prev) ? prev : selectedEntry.wiki_pages[0],
-      );
-    } else {
-      setPreviewPage(null);
-    }
-  }, [selectedEntry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    const mq = window.matchMedia("(max-width: 1279px)"); // < xl (1280px)
+    const on = () => setIsNarrow(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
 
   const pct = cap ? Math.min(100, Math.round((cap.index_chars / cap.max_chars) * 100)) : 0;
   const barColor =
@@ -188,42 +187,7 @@ export default function KnowledgePage() {
     });
   };
 
-  // 内联预览块(详情面板与"仅预览"面板共用) —— 含 [[backlink]] 点击拦截
-  const previewBlock = previewPage ? (
-    <>
-      <div className="mb-1.5 truncate text-xs font-medium text-[var(--text-secondary)]">
-        预览:{previewPage}
-      </div>
-      <div
-        className="max-h-[50vh] overflow-y-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3"
-        onClick={(e) => {
-          const a = (e.target as HTMLElement).closest("a");
-          if (!a) return;
-          const href = a.getAttribute("href") ?? "";
-          // only intercept relative, in-wiki links (not http/https/mailto/#)
-          if (/^(https?:|mailto:|#)/.test(href) || href === "") return;
-          e.preventDefault();
-          e.stopPropagation();
-          // strip any leading ./ and hash/query; add .md if no extension
-          let page = decodeURIComponent(href.replace(/^\.\//, "").split(/[?#]/)[0]);
-          if (page && !/\.[a-z0-9]+$/i.test(page)) page = `${page}.md`;
-          if (page) setPreviewPage(page);
-        }}
-      >
-        {wikiLoading ? (
-          <div className="flex items-center justify-center py-8 text-[var(--text-tertiary)]">
-            <Loader2 className="h-4 w-4 animate-spin" />
-          </div>
-        ) : wikiError ? (
-          <p className="py-4 text-sm text-[var(--color-destructive)]">加载知识页失败,请稍后重试。</p>
-        ) : wikiPage ? (
-          <MarkdownRenderer content={wikiPage.content} />
-        ) : null}
-      </div>
-    </>
-  ) : null;
-
-  // 详情面板(桌面右栏与窄屏抽屉共用) —— 三分支:选中项 → 面板;仅预览 → 预览;否则引导
+  // 详情面板(桌面右栏与窄屏抽屉共用) —— 两分支:选中项 → 面板;否则引导
   const detailPanel = selectedEntry ? (
     <SurfacePanel className="flex flex-col gap-3 bg-[var(--surface-secondary)] p-4">
       {/* 元信息头 */}
@@ -330,12 +294,7 @@ export default function KnowledgePage() {
                 <button
                   type="button"
                   onClick={() => setPreviewPage(page)}
-                  className={cn(
-                    "flex w-full items-center gap-1.5 truncate rounded-md px-1.5 py-1 text-left text-xs transition-colors",
-                    previewPage === page
-                      ? "bg-[var(--surface-primary)] text-[var(--text-primary)]"
-                      : "text-[var(--text-secondary)] hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]",
-                  )}
+                  className="flex w-full items-center gap-1.5 truncate rounded-md px-1.5 py-1 text-left text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]"
                 >
                   <FileText className="h-3 w-3 shrink-0 text-[var(--text-tertiary)]" />
                   <span className="truncate">{page}</span>
@@ -346,20 +305,11 @@ export default function KnowledgePage() {
         </div>
       )}
 
-      {/* 内联预览 */}
-      {previewPage && (
-        <div className="border-t border-[var(--border-default)] pt-3">{previewBlock}</div>
-      )}
       {selectedEntry.ingest_status !== "done" && selectedEntry.ingest_status !== "failed" && (
         <p className="border-t border-[var(--border-default)] pt-3 text-xs text-[var(--text-tertiary)]">
           知识页构建中,完成后可预览。
         </p>
       )}
-    </SurfacePanel>
-  ) : previewPage ? (
-    // 「查看索引」等无选中项时的仅预览面板(如 index.md)
-    <SurfacePanel className="flex flex-col gap-3 bg-[var(--surface-secondary)] p-4">
-      {previewBlock}
     </SurfacePanel>
   ) : (
     <SurfacePanel className="flex flex-col items-center justify-center gap-2 bg-[var(--surface-secondary)] px-6 py-16 text-center">
@@ -526,16 +476,52 @@ export default function KnowledgePage() {
         </div>
       </PageContent>
 
-      {/* 窄屏(<xl)详情抽屉 —— 仅在用户显式点选卡片时弹出,桌面用 xl:hidden 屏蔽 */}
-      <Dialog
-        open={!!selectedId && !!selectedEntry}
-        onOpenChange={(o) => { if (!o) setSelectedId(null); }}
-      >
-        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto xl:hidden">
+      {/* 窄屏(<xl)详情抽屉 —— 仅在窄屏挂载,避免桌面下 Radix 遮罩/滚动锁泄漏 */}
+      {isNarrow && (
+        <Dialog
+          open={isNarrow && !!selectedId && !!selectedEntry}
+          onOpenChange={(o) => { if (!o) setSelectedId(null); }}
+        >
+          <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto xl:hidden">
+            <DialogHeader>
+              <DialogTitle className="sr-only">文档详情</DialogTitle>
+            </DialogHeader>
+            {detailPanel}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* 知识页预览弹窗 —— 含 [[backlink]] 点击拦截(站内相对链接跳转,http/mailto/# 放行) */}
+      <Dialog open={!!previewPage} onOpenChange={(o) => { if (!o) setPreviewPage(null); }}>
+        <DialogContent className="max-h-[70vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="sr-only">文档详情</DialogTitle>
+            <DialogTitle className="truncate pr-6">{previewPage}</DialogTitle>
           </DialogHeader>
-          {detailPanel}
+          <div
+            onClick={(e) => {
+              const a = (e.target as HTMLElement).closest("a");
+              if (!a) return;
+              const href = a.getAttribute("href") ?? "";
+              // only intercept relative, in-wiki links (not http/https/mailto/#)
+              if (/^(https?:|mailto:|#)/.test(href) || href === "") return;
+              e.preventDefault();
+              e.stopPropagation();
+              // strip any leading ./ and hash/query; add .md if no extension
+              let page = decodeURIComponent(href.replace(/^\.\//, "").split(/[?#]/)[0]);
+              if (page && !/\.[a-z0-9]+$/i.test(page)) page = `${page}.md`;
+              if (page) setPreviewPage(page);
+            }}
+          >
+            {wikiLoading ? (
+              <div className="flex items-center justify-center py-8 text-[var(--text-tertiary)]">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            ) : wikiError ? (
+              <p className="py-4 text-sm text-[var(--color-destructive)]">加载知识页失败,请稍后重试。</p>
+            ) : wikiPage ? (
+              <MarkdownRenderer content={wikiPage.content} />
+            ) : null}
+          </div>
         </DialogContent>
       </Dialog>
 
