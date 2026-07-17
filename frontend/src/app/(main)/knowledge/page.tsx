@@ -2,8 +2,6 @@
 
 import {
   BookOpen,
-  ChevronDown,
-  ChevronRight,
   Database,
   FileStack,
   FileText,
@@ -78,10 +76,10 @@ export default function KnowledgePage() {
   const uploadKnowledge = useUploadKnowledge();
 
   const [url, setUrl] = useState("");
-  const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [addOpen, setAddOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewPage, setPreviewPage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -100,6 +98,12 @@ export default function KnowledgePage() {
     (a, b) => STATUS_ORDER(a.ingest_status) - STATUS_ORDER(b.ingest_status),
   );
 
+  const selectedEntry =
+    sortedEntries.find((e) => e.id === selectedId) ??
+    sortedEntries.find((e) => e.ingest_status === "done") ??
+    sortedEntries[0] ??
+    null;
+
   const pct = cap ? Math.min(100, Math.round((cap.index_chars / cap.max_chars) * 100)) : 0;
   const barColor =
     pct >= 100
@@ -107,15 +111,6 @@ export default function KnowledgePage() {
       : pct >= 80
         ? "var(--color-warning)"
         : "var(--data-accent)";
-
-  const toggleExpand = (id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   const upload = (file: File) => {
     setError(null);
@@ -143,12 +138,11 @@ export default function KnowledgePage() {
     if (!canSubmit) return;
     setError(null);
     addKnowledge.mutate(
-      { feishu_url: url.trim(), note: note.trim() || undefined },
+      { feishu_url: url.trim() },
       {
         onSuccess: () => {
           toast.success("已添加到知识库");
           setUrl("");
-          setNote("");
         },
         onError: (err) =>
           setError(apiErrorMessage(err, "添加失败,请检查飞书链接是否正确")),
@@ -181,16 +175,21 @@ export default function KnowledgePage() {
 
   return (
     <PageFrame className="flex-1">
-      <PageContent className="max-w-4xl lg:py-8">
+      <PageContent className="max-w-6xl lg:py-8">
         <PageHeader
           title="知识库"
-          description="把飞书文档链接添加进来，分析时 AI 就能参考它们作为权威背景。"
+          description="把飞书文档或本地文件加进来,分析时 AI 就能参考它们作为权威背景。"
           icon={BookOpen}
           backHref="/c/new"
+          actions={
+            <Button onClick={() => setAddOpen(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" />
+              添加文档
+            </Button>
+          }
         />
-        <div className="mx-auto max-w-3xl">
-          {/* 概览 + 容量条 */}
-          <SurfacePanel className="mb-4 bg-[var(--surface-secondary)] p-4">
+        {/* 概览 + 容量条(横跨两栏) */}
+        <SurfacePanel className="mb-4 bg-[var(--surface-secondary)] p-4">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
               <span className="inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
                 <FileStack className="h-4 w-4 text-[var(--text-tertiary)]" />
@@ -238,81 +237,11 @@ export default function KnowledgePage() {
                 </div>
               </div>
             )}
-          </SurfacePanel>
+        </SurfacePanel>
 
-          <SurfacePanel
-            className={cn(
-              "bg-[var(--surface-secondary)] p-4 transition-colors",
-              isDragging && "border-[var(--border-focus)] bg-[var(--surface-primary)]",
-            )}
-            onDragOver={(e) => {
-              e.preventDefault();
-              if (!uploadKnowledge.isPending) setIsDragging(true);
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              setIsDragging(false);
-            }}
-            onDrop={onDrop}
-          >
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") submit();
-                }}
-                placeholder="粘贴飞书文档链接,如 https://xxx.feishu.cn/docx/..."
-                className="h-10 flex-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-focus)]"
-              />
-              <Button onClick={submit} disabled={!canSubmit} className="shrink-0 gap-1.5">
-                {addKnowledge.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-                添加
-              </Button>
-            </div>
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") submit();
-              }}
-              placeholder="备注(可选):这篇文档讲什么,帮助 AI 判断何时用它"
-              className="mt-2 h-10 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-focus)]"
-            />
-            {error && <p className="mt-2 text-sm text-[var(--color-destructive)]">{error}</p>}
-            <div className="mt-3 flex items-center gap-2 border-t border-[var(--border-default)] pt-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={UPLOAD_ACCEPT}
-                onChange={onFileSelected}
-                className="hidden"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadKnowledge.isPending}
-                className="shrink-0 gap-1.5"
-              >
-                {uploadKnowledge.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )}
-                上传文件
-              </Button>
-              <span className="text-xs text-[var(--text-tertiary)]">
-                或把本地文件拖到这里(PDF、Word、Excel、PPT、Markdown、TXT)
-              </span>
-            </div>
-          </SurfacePanel>
-
-          <div className="mt-5">
+        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="min-w-0">
+            {/* 左栏列表 —— Task 3 重写;先临时保留现有 <ul> 列表渲染 */}
             {isLoading ? (
               <div className="flex items-center justify-center py-16 text-[var(--text-tertiary)]">
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -328,8 +257,6 @@ export default function KnowledgePage() {
               <ul className="flex flex-col gap-2">
                 {sortedEntries.map((entry) => {
                   const isActive = ACTIVE_STATUSES.has(entry.ingest_status);
-                  const isExpanded = expanded.has(entry.id);
-                  const hasPages = entry.ingest_status === "done" && entry.wiki_pages.length > 0;
                   return (
                     <li
                       key={entry.id}
@@ -378,20 +305,6 @@ export default function KnowledgePage() {
                             <p className="mt-0.5 truncate text-xs text-[var(--text-tertiary)]">
                               {entry.note}
                             </p>
-                          )}
-                          {hasPages && (
-                            <button
-                              type="button"
-                              onClick={() => toggleExpand(entry.id)}
-                              className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-[var(--data-accent)] hover:underline"
-                            >
-                              {isExpanded ? (
-                                <ChevronDown className="h-3 w-3" />
-                              ) : (
-                                <ChevronRight className="h-3 w-3" />
-                              )}
-                              {entry.wiki_pages.length} 个知识页
-                            </button>
                           )}
                           {entry.ingest_status === "failed" && (
                             <div className="mt-0.5 flex items-center gap-2">
@@ -444,27 +357,14 @@ export default function KnowledgePage() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      {hasPages && isExpanded && (
-                        <ul className="mt-2 flex flex-col gap-1 border-t border-[var(--border-default)] pt-2">
-                          {entry.wiki_pages.map((page, i) => (
-                            <li key={`${entry.id}-${i}`}>
-                              <button
-                                type="button"
-                                onClick={() => setPreviewPage(page)}
-                                className="flex w-full items-center gap-1.5 truncate rounded-md px-1 py-0.5 text-left text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]"
-                              >
-                                <FileText className="h-3 w-3 shrink-0 text-[var(--text-tertiary)]" />
-                                <span className="truncate">{page}</span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
                     </li>
                   );
                 })}
               </ul>
             )}
+          </div>
+          <div className="hidden min-w-0 xl:block">
+            {/* 右栏详情 —— Task 4 */}
           </div>
         </div>
       </PageContent>
