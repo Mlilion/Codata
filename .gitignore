@@ -97,6 +97,23 @@ backend/app/data/reports/
 backend/knowledge-wiki/
 **/knowledge-wiki/
 
+# === Local-only docs ===
+# User guide + its screenshots and build script (generated/large binaries).
+docs/Codata-完整配置与使用说明-*.md
+docs/Codata-完整配置与使用说明-*.docx
+docs/assets/
+docs/build_codata_user_guide.py
+# Individual plans/specs kept local. The rest of docs/superpowers/ stays
+# tracked, so these are listed by path rather than as a directory glob.
+docs/superpowers/plans/2026-07-15-knowledge-local-file-import.md
+docs/superpowers/plans/2026-07-15-llm-wiki-knowledge-base.md
+docs/superpowers/plans/2026-07-16-feishu-knowledge-native-sdk.md
+docs/superpowers/plans/2026-07-16-knowledge-ui-redesign.md
+docs/superpowers/specs/2026-07-15-knowledge-local-file-import-design.md
+docs/superpowers/specs/2026-07-15-llm-wiki-knowledge-base-design.md
+docs/superpowers/specs/2026-07-16-feishu-knowledge-native-sdk-design.md
+docs/superpowers/specs/2026-07-16-knowledge-ui-redesign-design.md
+
 # === Certificates & keys ===
 *.pem
 .local-secrets/
