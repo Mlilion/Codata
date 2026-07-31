@@ -97,7 +97,7 @@ export function useSetConnectorToken() {
 export function useAddCustomConnector() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { id: string; name: string; url: string; description?: string; category?: string }) =>
+    mutationFn: (body: { id: string; name: string; url: string; description?: string; category?: string; auth?: string }) =>
       api.post<{ success: boolean }>(API.CONNECTORS.ADD, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.connectors });

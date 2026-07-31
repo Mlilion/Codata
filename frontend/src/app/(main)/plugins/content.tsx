@@ -14,6 +14,7 @@ import {
   Sparkles,
   Star,
   Store,
+  Trash2,
   Unplug,
   Workflow,
 } from "lucide-react";
@@ -42,6 +43,7 @@ import {
   useConnectorDisconnect,
   useConnectorReconnect,
   useAddCustomConnector,
+  useRemoveConnector,
   useSetConnectorToken,
 } from "@/hooks/use-connectors";
 import type { PluginInfo, SkillInfo, StoreSkill } from "@/types/plugins";
@@ -231,8 +233,10 @@ function ConnectorRow({
   const disconnect = useConnectorDisconnect();
   const reconnect = useConnectorReconnect();
   const setToken = useSetConnectorToken();
+  const remove = useRemoveConnector();
   const [tokenInput, setTokenInput] = useState("");
   const [showUrlForm, setShowUrlForm] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const isPending =
     toggle.isPending || connect.isPending || disconnect.isPending || reconnect.isPending;
@@ -339,7 +343,7 @@ function ConnectorRow({
 
       {/* Action buttons */}
       <div className="flex items-center gap-1.5 shrink-0">
-        {connector.status === "needs_auth" && (
+        {connector.status === "needs_auth" && connector.auth !== "token" && (
           <Button
             variant="outline"
             size="sm"
@@ -417,6 +421,20 @@ function ConnectorRow({
           </Button>
         )}
 
+        {/* Remove custom connector (backend only allows removing source=custom) */}
+        {connector.source === "custom" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-ui-3xs px-1.5 text-[var(--text-tertiary)] hover:text-red-400"
+            onClick={() => setConfirmRemove(true)}
+            disabled={remove.isPending}
+            title={t("remove")}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        )}
+
         {/* Enable/disable toggle */}
         <Switch
           checked={connector.enabled}
@@ -469,6 +487,56 @@ function ConnectorRow({
         />
       </div>
     )}
+    {confirmRemove && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        onClick={() => setConfirmRemove(false)}
+      >
+        <div
+          className="w-full max-w-sm mx-4 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="px-4 py-4">
+            <p className="text-sm text-[var(--text-primary)]">{t("removeConfirmTitle")}</p>
+            <p className="text-xs text-[var(--text-tertiary)] mt-1">
+              {t("removeConfirmBody", { name: connector.name })}
+            </p>
+          </div>
+          <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border-default)]">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setConfirmRemove(false)}
+            >
+              {t("cancel")}
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 text-xs bg-red-600 hover:bg-red-700 text-white"
+              disabled={remove.isPending}
+              onClick={async () => {
+                try {
+                  // The API reports failure as {success:false} with 200, so
+                  // check the payload rather than relying on mutateAsync to throw.
+                  const result = await remove.mutateAsync(id);
+                  if (!result.success) {
+                    toast.error(t("removeFailed"));
+                    return;
+                  }
+                  setConfirmRemove(false);
+                } catch {
+                  toast.error(t("removeFailed"));
+                }
+              }}
+            >
+              {remove.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+              {t("remove")}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 }
@@ -484,20 +552,29 @@ function AddConnectorForm({
   const addConnector = useAddCustomConnector();
   const [name, setName] = useState(prefill?.name ?? "");
   const [url, setUrl] = useState("");
+  // Bearer Token is the most common auth for self-hosted MCP servers, so it's
+  // the default. A seed claim (prefill) inherits the catalog's auth on the
+  // backend, so the selector is only shown for genuinely custom connectors.
+  const [auth, setAuth] = useState<"token" | "oauth" | "none">("token");
+  const AUTH_OPTIONS: ReadonlyArray<"token" | "oauth" | "none"> = ["token", "oauth", "none"];
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!name || !url) return;
     // For a seed connector keep its stable id so it claims the placeholder;
     // otherwise derive an id from the name (custom connector).
-    const id =
-      prefill?.id ?? name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    // A name with no ASCII alphanumerics (e.g. all-CJK "知识库") slugifies to
+    // an empty string, which would register with an empty id and 404 on
+    // /connectors//enable — fall back to a unique id in that case.
+    const derived = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const id = prefill?.id ?? (derived || `connector-${Date.now()}`);
     await addConnector.mutateAsync({
       id,
       name,
       url,
       description: prefill?.description,
       category: prefill?.category,
+      auth,
     });
     onClose();
   };
@@ -526,6 +603,29 @@ function AddConnectorForm({
         className="w-full h-7 rounded-md border border-[var(--border-default)] bg-transparent px-2.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[var(--border-focus)]"
         required
       />
+      {!prefill && (
+        <div className="space-y-1">
+          <label className="text-ui-3xs text-[var(--text-tertiary)]">
+            {t("authMethod")}
+          </label>
+          <div className="flex gap-1">
+            {AUTH_OPTIONS.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setAuth(opt)}
+                className={`flex-1 h-7 rounded-md border text-ui-3xs transition-colors ${
+                  auth === opt
+                    ? "border-[var(--border-focus)] bg-[var(--surface-tertiary)] text-[var(--text-primary)]"
+                    : "border-[var(--border-default)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                {t(`auth_${opt}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex justify-end gap-2">
         <Button variant="ghost" size="sm" className="h-7 text-ui-2xs" onClick={onClose} type="button">
           {t("cancel")}

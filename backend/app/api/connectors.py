@@ -85,6 +85,8 @@ class AddConnectorBody(BaseModel):
     url: str
     description: str = ""
     category: str = "custom"
+    # How the connector authenticates: "oauth" | "token" | "none".
+    auth: str = "oauth"
 
 
 @router.post("")
@@ -100,6 +102,7 @@ async def add_custom_connector(body: AddConnectorBody, request: Request) -> dict
             url=body.url,
             description=body.description,
             category=body.category,
+            auth=body.auth,
         )
         return {"success": True, "connector": connector.to_dict()}
     except ValueError as e:

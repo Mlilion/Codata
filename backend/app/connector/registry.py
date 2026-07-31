@@ -135,6 +135,7 @@ class ConnectorRegistry:
         url: str,
         description: str = "",
         category: str = "custom",
+        auth: str = "oauth",
     ) -> ConnectorInfo:
         """Add a user-defined custom connector.
 
@@ -142,6 +143,9 @@ class ConnectorRegistry:
         (the seed exists only to be discoverable — the real URL is supplied
         here), replacing it. Any other id collision is rejected.
         """
+        if not id or not id.strip():
+            raise ValueError("Connector id must not be empty")
+
         existing = self._connectors.get(id)
         claimable_placeholder = (
             existing is not None
@@ -168,10 +172,23 @@ class ConnectorRegistry:
             enabled=False,
             source="builtin" if is_seed else "custom",
             # Claiming a seed placeholder inherits the seed's auth mode (e.g.
-            # datasage stays "token"); a genuinely new custom connector is oauth.
-            auth=catalog_entry.get("auth", "oauth"),
+            # datasage stays "token"); a genuinely new custom connector uses
+            # the auth mode the user picked in the add form.
+            auth=catalog_entry.get("auth", auth) if is_seed else auth,
         )
         self._connectors[id] = connector
+
+        # Make the new connector visible to the MCP manager. ``_config`` is
+        # built once at startup, so a connector added at runtime is otherwise
+        # invisible to ``reconnect``/``enable`` (client build falls through to
+        # ``_config.get(id) is None`` → returns False, no connection ever
+        # attempted). Register it here so it can connect without a restart.
+        if self._mcp_manager is not None:
+            self._mcp_manager._config[id] = {
+                "type": "remote",
+                "url": url,
+                "enabled": connector.enabled,
+            }
 
         # Persist custom connector
         customs = self._persisted_state.setdefault("custom", [])
@@ -181,6 +198,7 @@ class ConnectorRegistry:
             "url": url,
             "description": description,
             "category": category,
+            "auth": auth,
         })
         self._persist_state()
 
@@ -193,6 +211,12 @@ class ConnectorRegistry:
             return False
 
         del self._connectors[id]
+
+        # Drop it from the MCP manager too (mirror of register_custom), so a
+        # removed connector doesn't linger in _config / _clients.
+        if self._mcp_manager is not None:
+            self._mcp_manager._config.pop(id, None)
+            self._mcp_manager._clients.pop(id, None)
 
         # Remove from persisted custom list
         customs = self._persisted_state.get("custom", [])
@@ -239,6 +263,19 @@ class ConnectorRegistry:
 
     async def startup(self) -> None:
         """Build McpManager config from enabled connectors and start connections."""
+        # Self-heal: drop any empty-id custom records (a pre-fix bug persisted
+        # connectors whose name slugified to "", e.g. all-CJK names). They can
+        # never be enabled (they'd 404 on /connectors//enable) and re-persist
+        # themselves on every save, so purge them once at startup.
+        customs = self._persisted_state.get("custom", [])
+        cleaned = [c for c in customs if (c.get("id") or "").strip()]
+        if len(cleaned) != len(customs):
+            self._persisted_state["custom"] = cleaned
+            self._persisted_state["enabled"] = [
+                e for e in self._persisted_state.get("enabled", []) if (e or "").strip()
+            ]
+            self._persist_state()
+
         # Restore custom connectors from persisted state. An id that is a seed
         # in the catalog was a claimed placeholder (URL filled in by the user),
         # so it stays a builtin — only genuinely new ids are "custom".
@@ -256,7 +293,13 @@ class ConnectorRegistry:
                     category=custom.get("category", "custom"),
                     enabled=cid in self._persisted_state.get("enabled", []),
                     source="builtin" if is_seed else "custom",
-                    auth=catalog_entry.get("auth", "oauth"),
+                    # Seed claims inherit the catalog's auth mode; genuinely
+                    # custom connectors restore the auth the user picked.
+                    auth=(
+                        catalog_entry.get("auth", "oauth")
+                        if is_seed
+                        else custom.get("auth", "oauth")
+                    ),
                 )
 
         # Register seed connectors (discoverable catalog cards) — after custom
@@ -463,6 +506,20 @@ class ConnectorRegistry:
             # transport to "needs_auth" until the credential is actually present,
             # so the UI never shows a green dot the agent can't use.
             if mcp_connected and not self._has_required_credential(cid, connector):
+                mcp_connected = False
+                effective_status = "needs_auth"
+
+            # The mirror case: a token-auth server that *rejects* the
+            # unauthenticated handshake (e.g. WeKnora returns 401) lands in
+            # "failed"/"disconnected", so the credential-missing branch above
+            # never fires and the UI would show no token input. When a token
+            # connector is enabled but has no stored token, surface needs_auth
+            # regardless of transport status so the token field appears.
+            elif (
+                connector.enabled
+                and connector.auth == "token"
+                and not self._has_required_credential(cid, connector)
+            ):
                 mcp_connected = False
                 effective_status = "needs_auth"
 
