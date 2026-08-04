@@ -141,9 +141,16 @@ async def app_client(db_engine, session_factory):
         set_skill_registry,
     )
 
+    # Pin every field a test might assert on. Settings reads backend/.env
+    # (pytest runs from backend/), and pydantic-settings resolves that at
+    # construction — so a developer's local .env would otherwise bleed real
+    # values into tests. Passing them explicitly here beats chdir-ing in each
+    # test, which happens too late to matter.
     settings = Settings(
         openrouter_api_key="test-key",
         database_url="sqlite+aiosqlite://",
+        default_model="",
+        default_provider_id="",
     )
     app = create_app(settings)
 
