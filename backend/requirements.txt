@@ -2,80 +2,84 @@
 # Generated from local environment. Only packages actually used by the app.
 
 # ── Web Framework ────────────────────────────────────────────────────────
-fastapi==0.115.6
-uvicorn==0.35.0
-starlette==0.41.3
-sse-starlette==3.0.3
-python-multipart==0.0.12
+fastapi==0.139.0
+uvicorn==0.49.0
+starlette==1.3.1
+sse-starlette==3.4.5
+python-multipart==0.0.32
 
 # ── Data Validation & Config ────────────────────────────────────────────
-pydantic==2.12.2
-pydantic-core==2.41.4
-pydantic-settings==2.10.1
+pydantic==2.13.4
+pydantic-core==2.46.4
+pydantic-settings==2.14.2
 jsonschema>=4.23.0
 annotated-types==0.7.0
-typing-extensions==4.15.0
+typing-extensions==4.16.0
 
 # ── Database ─────────────────────────────────────────────────────────────
-sqlalchemy==2.0.46
-aiosqlite==0.21.0
-alembic==1.17.1
-greenlet==3.1.1
-mako==1.3.10
+sqlalchemy==2.0.51
+aiosqlite==0.22.1
+alembic==1.18.5
+greenlet==3.5.3
+mako==1.3.12
 
 # ── LLM Client ──────────────────────────────────────────────────────────
-openai==1.97.1
+openai==2.44.0
 httpx==0.28.1
 httpcore==1.0.9
 h11==0.16.0
-anyio==4.10.0
+anyio==4.14.1
 sniffio==1.3.1
-certifi==2025.8.3
-idna==3.10
+certifi==2026.6.17
+idna==3.18
 
 # ── Utilities ────────────────────────────────────────────────────────────
 python-ulid==3.1.0
-tiktoken==0.8.0
-aiofiles==24.1.0
-pyyaml==6.0.2
-mcp>=1.25.0
+tiktoken==0.13.0
+aiofiles==25.1.0
+pyyaml==6.0.3
+# mcp 2.0 renamed streamablehttp_client -> streamable_http_client
+# (app/mcp/client.py), so cap below the breaking major.
+mcp>=1.25.0,<2
 croniter>=2.0.0
 wcmatch>=10.0
-click==8.2.1
-regex==2026.2.28
-jinja2==3.1.2
-markupsafe==3.0.2
+click==8.4.2
+regex==2026.6.28
+# jinja2 is not imported by the app; it arrives transitively (fastapi and
+# pandas extras both require >=3.1.5). The old ==3.1.2 pin contradicted them,
+# so leave the version to the resolver rather than re-pinning it here.
+markupsafe==3.0.3
 
 # ── Office Document Processing ──────────────────────────────────────────
-pypdf==6.6.0
-python-docx==1.1.2
+pypdf==6.14.2
+python-docx==1.2.0
 openpyxl==3.1.5
 python-pptx==1.0.2
 
 # ── PDF Generation ──────────────────────────────────────────────────────
-markdown==3.9
+markdown==3.10.2
 xhtml2pdf==0.2.17
-reportlab==4.4.5
-pillow==10.1.0
+reportlab==4.5.1
+pillow==12.3.0
 html5lib==1.1
-cssselect2==0.8.0
+cssselect2==0.9.0
 tinycss2==1.5.1
-arabic-reshaper==3.0.0
-python-bidi==0.6.7
+arabic-reshaper==3.0.1
+python-bidi==0.6.11
 
 # ── Data Science (code_execute sandbox) ─────────────────────────────────
-pandas==2.3.3
-numpy==1.26.4
-matplotlib==3.10.8
+pandas==3.0.3
+numpy==2.5.0
+matplotlib==3.11.0
 
 # ── Messaging Channels ───────────────────────────────────────────────────
 dingtalk-stream==0.24.3
-python-telegram-bot==22.7
-lark-oapi==1.6.6
+python-telegram-bot==22.8
+lark-oapi==1.7.0
 qq-botpy==1.2.1
-wecom-aibot-sdk==1.0.7
-aiohttp==3.13.5
-aiohappyeyeballs==2.6.2
+wecom-aibot-sdk==1.0.8
+aiohttp==3.14.1
+aiohappyeyeballs==2.7.1
 aiosignal==1.4.0
 attrs==26.1.0
 charset-normalizer==3.4.7
