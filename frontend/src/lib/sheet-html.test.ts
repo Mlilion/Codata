@@ -23,20 +23,43 @@ describe("sanitizeSheetHtml", () => {
   // is fine and expected (a spreadsheet may legitimately contain markup-like
   // text). The security property is that it produces no live element and no
   // attribute, so assert on the parsed DOM rather than on the string.
-  it("strips the attribute-breaking img payload that used to execute", () => {
-    const raw = sheetHtmlFor([['"><img src=x onerror="window.__XSS__=1">']]);
+  // The exact HTML xlsx 0.18.5 produced for a cell whose value is
+  // `"><img src=x onerror=…>`: the raw value went into data-v unescaped, so
+  // the attribute closed early and the img became a live element. 0.20.3
+  // escapes data-v and no longer emits this, so it is pinned here as a
+  // literal — the sanitiser must keep neutralising it regardless of which
+  // SheetJS version is installed, in case a future release regresses.
+  // Captured verbatim from xlsx@0.18.5.
+  const VULNERABLE_0_18_5_OUTPUT =
+    '<html><head><meta charset="utf-8"/><title>SheetJS Table Export</title>' +
+    '</head><body><table id="xlsx-table"><tr><td data-t="s" data-v="">' +
+    '<img src=x onerror="window.__XSS__=1">" id="xlsx-table-A1">' +
+    "&quot;&gt;&lt;img src=x onerror=&quot;window.__XSS__=1&quot;&gt;" +
+    "</td></tr></table></body></html>";
 
-    // Precondition: SheetJS really does leak the raw value into data-v, so
-    // this test is exercising the actual bug and not a strawman.
-    expect(raw).toContain("<img src=x");
+  it("neutralises the attribute-breaking img payload that used to execute", () => {
+    // Precondition: the fixture carries an unescaped <img …onerror> that
+    // escaped its attribute, so the test exercises the real bug rather than a
+    // strawman. Asserted on the string — parsing it would have jsdom
+    // construct an HTMLImageElement, which throws against this repo's
+    // canvas stub (and would attempt a load in a real browser).
+    expect(VULNERABLE_0_18_5_OUTPUT).toContain('<img src=x onerror="');
 
     const host = document.createElement("div");
-    host.innerHTML = sanitizeSheetHtml(raw);
+    host.innerHTML = sanitizeSheetHtml(VULNERABLE_0_18_5_OUTPUT);
     expect(host.querySelectorAll("img")).toHaveLength(0);
     // No element anywhere carries an event handler.
     for (const el of Array.from(host.querySelectorAll("*"))) {
       expect(el.getAttributeNames().filter((n) => n.startsWith("on"))).toEqual([]);
     }
+  });
+
+  it("escapes the cell value in data-v (xlsx >= 0.20.2 behaviour)", () => {
+    // Guards the upgrade away from 0.18.5: if a future install regresses to a
+    // version that leaks the raw value again, the sanitiser above still holds
+    // the line, but this tells us the underlying library changed.
+    const raw = sheetHtmlFor([['"><img src=x onerror="window.__XSS__=1">']]);
+    expect(raw).not.toContain("<img src=x");
   });
 
   it("neutralises a payload that closes the table and appends markup", () => {
