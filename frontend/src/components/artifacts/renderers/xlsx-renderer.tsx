@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { api, apiErrorMessage } from "@/lib/api";
 import { API } from "@/lib/constants";
 import { useWorkspaceStore } from "@/stores/workspace-store";
+import { sanitizeSheetHtml } from "@/lib/sheet-html";
 
 interface XlsxRendererProps {
   filePath?: string;
@@ -23,41 +24,6 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 interface SheetData {
   name: string;
   html: string;
-}
-
-/**
- * Make SheetJS's `sheet_to_html` output safe to inject.
- *
- * `sheet_to_html` escapes a cell's *text* but writes the raw cell value into
- * the `data-v` attribute, so a cell containing `"><img src=x onerror=...>`
- * closes the attribute and injects live markup. React does not sanitise
- * `dangerouslySetInnerHTML`, so that markup executes.
- *
- * Parse the string with DOMParser — which builds an inert document, running
- * no scripts and firing no load handlers — then keep only the table structure
- * and each cell's textContent. Attributes are dropped wholesale (the renderer
- * reads none of them), so there is no attribute left to break out of.
- */
-function sanitizeSheetHtml(rawHtml: string): string {
-  const doc = new DOMParser().parseFromString(rawHtml, "text/html");
-  const table = doc.querySelector("table");
-  if (!table) return "";
-
-  const out = doc.createElement("table");
-  for (const row of Array.from(table.rows)) {
-    const tr = doc.createElement("tr");
-    for (const cell of Array.from(row.cells)) {
-      const td = doc.createElement(cell.tagName.toLowerCase() === "th" ? "th" : "td");
-      // textContent assignment escapes on serialisation, so cell text that
-      // looks like markup stays text.
-      td.textContent = cell.textContent ?? "";
-      if (cell.colSpan > 1) td.setAttribute("colspan", String(cell.colSpan));
-      if (cell.rowSpan > 1) td.setAttribute("rowspan", String(cell.rowSpan));
-      tr.appendChild(td);
-    }
-    out.appendChild(tr);
-  }
-  return out.outerHTML;
 }
 
 export function XlsxRenderer({ filePath }: XlsxRendererProps) {

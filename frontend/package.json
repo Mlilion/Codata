@@ -10,6 +10,8 @@
     "build": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs 2>/dev/null || true; rm -rf public/cmaps public/standard_fonts 2>/dev/null; cp -R node_modules/pdfjs-dist/cmaps public/cmaps 2>/dev/null || true; cp -R node_modules/pdfjs-dist/standard_fonts public/standard_fonts 2>/dev/null || true; next build",
     "start": "next start",
     "lint": "eslint .",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "test:ui": "node scripts/playwright-env.mjs test",
     "test:ui:headed": "node scripts/playwright-env.mjs test --headed",
     "test:ui:headless": "node scripts/playwright-env.mjs --headless test",
@@ -83,8 +85,10 @@
     "canvas": "file:./canvas-stub",
     "eslint": "^9",
     "eslint-config-next": "^15.3.0",
+    "jsdom": "^25.0.1",
     "postcss": "^8.5.0",
     "tailwindcss": "^4.1.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.7"
   }
 }
