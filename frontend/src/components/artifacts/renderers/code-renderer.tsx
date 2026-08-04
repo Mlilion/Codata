@@ -1,12 +1,43 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Copy, Check, WrapText } from "lucide-react";
+import hljs from "highlight.js/lib/common";
 import { Button } from "@/components/ui/button";
 
 interface CodeRendererProps {
   content: string;
   language?: string;
+}
+
+// SQL dialects we may be handed (from a query result's `dialect`) that
+// highlight.js has no grammar for, but which are SQL for highlighting
+// purposes. Anything unknown falls back to plain text.
+const LANGUAGE_ALIASES: Record<string, string> = {
+  starrocks: "sql",
+  doris: "sql",
+  mysql: "sql",
+  mariadb: "sql",
+  postgresql: "sql",
+  postgres: "sql",
+  sqlite: "sql",
+  bigquery: "sql",
+  snowflake: "sql",
+  redshift: "sql",
+  hive: "sql",
+  spark: "sql",
+  trino: "sql",
+  presto: "sql",
+  clickhouse: "sql",
+  duckdb: "sql",
+  tsql: "sql",
+};
+
+function resolveLanguage(language?: string): string | null {
+  if (!language) return null;
+  const key = language.toLowerCase();
+  const mapped = LANGUAGE_ALIASES[key] ?? key;
+  return hljs.getLanguage(mapped) ? mapped : null;
 }
 
 export function CodeRenderer({ content, language }: CodeRendererProps) {
@@ -20,6 +51,20 @@ export function CodeRenderer({ content, language }: CodeRendererProps) {
   }, [content]);
 
   const lines = content.split("\n");
+
+  // Highlight the block in one pass so multi-line strings/comments keep their
+  // styling. The gutter is a sibling column with the same line-height, so
+  // alignment holds without needing per-line markup. `null` = no grammar for
+  // this language, in which case we render the raw text instead of HTML.
+  const highlightedHtml = useMemo(() => {
+    const lang = resolveLanguage(language);
+    if (!lang) return null;
+    try {
+      return hljs.highlight(content, { language: lang, ignoreIllegals: true }).value;
+    } catch {
+      return null;
+    }
+  }, [content, language]);
 
   return (
     <div className="flex flex-col h-full">
@@ -62,11 +107,14 @@ export function CodeRenderer({ content, language }: CodeRendererProps) {
           </div>
           {/* Code content */}
           <pre
-            className={`flex-1 px-4 py-3 text-[13px] leading-[1.6] font-mono text-[var(--text-primary)] ${
+            className={`hljs flex-1 bg-transparent px-4 py-3 text-[13px] leading-[1.6] font-mono text-[var(--text-primary)] ${
               wrap ? "whitespace-pre-wrap break-all" : "overflow-x-auto"
             }`}
+            {...(highlightedHtml !== null
+              ? { dangerouslySetInnerHTML: { __html: highlightedHtml } }
+              : {})}
           >
-            {content}
+            {highlightedHtml !== null ? undefined : content}
           </pre>
         </div>
       </div>

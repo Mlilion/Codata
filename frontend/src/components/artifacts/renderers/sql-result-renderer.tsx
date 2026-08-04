@@ -247,7 +247,7 @@ export function SqlResultRenderer({ artifact, pinnable = true }: SqlResultRender
             </div>
           </>
         )}
-        {activeTab === "sql" && <CodeRenderer content={sql} language={sqlResult?.dialect || "sql"} />}
+        {activeTab === "sql" && <CodeRenderer content={sql} language="sql" />}
       </div>
     </div>
   );
