@@ -17,6 +17,10 @@ EXPECTED_PRESET_IDS = {
     "ops-daily-diagnosis",
     "retention-cohort",
     "ab-experiment",
+    "data-modeling-engineering",
+    "etl-delivery-engineering",
+    "data-governance-engineering",
+    "data-quality-monitoring",
 }
 
 
@@ -29,7 +33,7 @@ def _registry(tmp_path: Path) -> ExpertTeamRegistry:
     return registry
 
 
-def test_builtin_presets_include_office_expert_teams(tmp_path: Path) -> None:
+def test_builtin_presets_include_data_engineering_expert_teams(tmp_path: Path) -> None:
     registry = _registry(tmp_path)
 
     preset_ids = {team.id for team in registry.list_teams() if team.is_preset}

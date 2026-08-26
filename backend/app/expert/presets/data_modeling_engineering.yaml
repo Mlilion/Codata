@@ -1,0 +1,181 @@
+team:
+  id: data-modeling-engineering
+  name: 数据建模专家团
+  description: 面向主题域、数仓分层、事实表/维表和指标落表设计,从业务过程、粒度、口径、血缘和刷新策略出发,交付可落地的数据模型方案。
+  icon: table-2
+  category: 数据工程
+  tags: [数据工程, 数据建模, 数仓, 维度建模, 指标口径, datasage]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 10
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是数据建模专家团协调者。把业务需求、源表发现、口径确认、模型结构和工程落地约束整合成一份可执行的数据建模方案。
+    不要臆造表名、字段或指标口径;凡是未通过 datasage 或用户输入确认的信息,必须标注为假设或待确认。
+  finalization:
+    mode: deliverable
+    member: reviewer
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: html
+      title: 数据建模方案
+      filename_template: data-modeling-engineering.html
+      source: final_modeling_plan
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: modeling_goal
+      description: 要建设或改造的主题域/数据产品/分析场景,例如订单主题域、用户行为宽表、收入指标层。
+      required: true
+    - name: grain_requirement
+      description: 期望的数据粒度,例如用户日、订单明细、商品日汇总;不确定则留空。
+      required: false
+      default: ""
+    - name: refresh_requirement
+      description: 刷新频率、时效要求或 SLA,例如 T+1、小时级、准实时;不确定则留空。
+      required: false
+      default: ""
+  skills: [data-analysis, charting, report, data-report-html]
+  members:
+    - id: requirement_analyst
+      name: 需求与口径分析
+      role: 数据建模需求分析专家
+      goal: 把业务问题转成可建模的业务过程、核心指标、维度、粒度和使用场景。
+      system_prompt: |
+        你是数据建模需求分析专家。你的职责是把业务需求拆成清晰的数据建模输入:业务过程、分析对象、事实事件、维度、指标口径、粒度、刷新周期和服务对象。
+        你必须区分用户已确认的信息、合理假设和待确认问题。不要设计表结构细节,而是为后续源表发现和模型设计提供边界清楚的需求说明。
+      tools: [search, skill]
+      skills: [data-analysis]
+      icon: clipboard-list
+    - id: source_explorer
+      name: 源表与血缘发现
+      role: SQL 与数据发现专家
+      goal: 用 datasage 发现相关源表、字段、指标和现有模型,确认可复用资产与血缘风险。
+      role_ref: data/sql-query-expert
+      tools: [search, run_query, skill]
+      skills: [data-analysis]
+      icon: database
+    - id: model_architect
+      name: 模型架构设计
+      role: 维度建模与数仓分层专家
+      goal: 设计事实表、维表、汇总表、主键、分区、字段、口径落表和刷新策略。
+      system_prompt: |
+        你是维度建模与数仓分层专家。你擅长把已确认的业务过程和源表资产设计成可维护的数据模型。
+        工作时优先明确粒度,再设计事实表、维表、桥表或汇总表;说明主键、外键、分区、增量字段、历史拉链、指标口径、命名规范和刷新策略。
+        你不能编造不存在的源字段;如果需要新字段或上游改造,要标注为依赖项。
+      tools: [run_query, chart_spec, skill]
+      skills: [data-analysis, charting]
+      icon: network
+    - id: reviewer
+      name: 建模评审交付
+      role: 数据架构评审与方案交付专家
+      goal: 检查模型方案的可维护性、成本、血缘、口径一致性和落地风险,输出最终方案。
+      system_prompt: |
+        你是数据架构评审与方案交付专家。你审查数据模型是否能被开发、测试、治理和长期维护。
+        重点检查:粒度是否单一,事实/维度边界是否清楚,指标口径是否可追溯,分区和刷新是否支撑 SLA,是否存在重复建设、血缘断点、权限风险和成本风险。
+        最终交付要给出表结构建议、字段清单、血缘关系、刷新策略、风险清单和实施步骤。
+      tools: [run_query, chart_spec, write, present_file, artifact, build_report, skill]
+      skills: [report, charting]
+      icon: file-check-2
+  tasks:
+    - id: clarify_modeling_scope
+      name: 建模范围与口径拆解
+      member: requirement_analyst
+      task: |
+        梳理本次数据建模需求。
+
+        用户需求:
+        {{user_input}}
+
+        建模目标:
+        {{modeling_goal}}
+
+        期望粒度:
+        {{grain_requirement}}
+
+        刷新要求:
+        {{refresh_requirement}}
+
+        输出:业务过程、核心事实事件、候选指标、分析维度、目标粒度、刷新/SLA 要求、使用方、必须确认的问题。
+        对不确定信息标注"假设"或"待确认",不要臆造源表或字段。
+      expected_output: 建模需求与口径拆解。
+      output: modeling_scope
+      context_policy: explicit
+      context_max_chars: 14000
+      timeout_seconds: 300
+      retry_count: 1
+    - id: discover_sources
+      name: 源表、指标与现有模型发现
+      member: source_explorer
+      depends_on: [clarify_modeling_scope]
+      context: [clarify_modeling_scope]
+      task: |
+        基于建模范围发现可用数据资产。
+
+        建模需求:
+        {{modeling_scope}}
+
+        步骤:用 search 找到相关源表、现有模型、注册指标和字段说明;必要时用 run_query 做小样本试查,验证主键、时间字段、分区字段、枚举值、重复/空值和数据范围。
+        输出:可用源表/模型/指标清单、字段说明、建议血缘、可复用资产、数据风险、缺口与依赖。
+      expected_output: 源表与血缘发现结果。
+      output: source_inventory
+      context_policy: explicit
+      context_max_chars: 22000
+      timeout_seconds: 480
+      retry_count: 1
+    - id: design_model
+      name: 模型结构与刷新策略设计
+      member: model_architect
+      depends_on: [clarify_modeling_scope, discover_sources]
+      context: [clarify_modeling_scope, discover_sources]
+      task: |
+        设计可落地的数据模型。
+
+        建模需求:
+        {{modeling_scope}}
+
+        源表与血缘:
+        {{source_inventory}}
+
+        输出必须包含:数仓分层建议、事实表/维表/汇总表设计、每张表的粒度、主键、分区、核心字段、指标口径落表方式、增量/全量刷新策略、血缘依赖、样例 SQL 或伪 SQL。
+        对任何未确认字段用"待确认字段"标注,不要把假设写成事实。
+      expected_output: 数据模型设计草案。
+      output: model_design
+      context_policy: explicit
+      context_max_chars: 26000
+      timeout_seconds: 540
+      retry_count: 1
+    - id: review_and_deliver
+      name: 建模评审与最终方案
+      member: reviewer
+      depends_on: [clarify_modeling_scope, discover_sources, design_model]
+      context: [clarify_modeling_scope, discover_sources, design_model]
+      task: |
+        评审数据模型并生成最终方案。
+
+        建模需求:
+        {{modeling_scope}}
+
+        源表与血缘:
+        {{source_inventory}}
+
+        模型设计:
+        {{model_design}}
+
+        检查粒度、口径、血缘、分区、刷新、性能、权限、成本和维护风险。最终报告包含:方案摘要、模型清单、字段设计、血缘图式说明、刷新策略、验收标准、实施步骤、风险与待确认事项。
+      expected_output: 可交付的数据建模方案。
+      output: final_modeling_plan
+      context_policy: explicit
+      context_max_chars: 34000
+      timeout_seconds: 420
+      retry_count: 1

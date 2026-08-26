@@ -69,7 +69,9 @@ import type {
 import type { SessionResponse } from "@/types/session";
 import { useQueryClient } from "@tanstack/react-query";
 
-const CATEGORIES = ["全部", "综合分析", "经营诊断", "转化漏斗", "用户留存", "实验分析"];
+const ALL_CATEGORY_LABEL = "全部";
+const BASE_CATEGORY_OPTIONS = ["综合分析", "经营诊断", "转化漏斗", "用户留存", "实验分析", "数据工程", "数据分析"];
+const HIDDEN_FILTER_TAGS = new Set(["datasage"]);
 
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   code: Code2,
@@ -173,6 +175,10 @@ function teamProcessDescription(process: ExpertTeamSummary["process"]) {
   if (process === "workflow") return "按依赖图执行，支持并发步骤";
   if (process === "sequential") return "按任务顺序逐步执行";
   return "按普通专家团流程执行";
+}
+
+function visibleTeamTags(team: Pick<ExpertTeamSummary, "tags">) {
+  return (team.tags ?? []).map((tag) => tag.trim()).filter((tag) => tag && !HIDDEN_FILTER_TAGS.has(tag));
 }
 
 function isVideoExpertTeam(team: Pick<ExpertTeamSummary, "id">) {
@@ -451,7 +457,7 @@ export default function ExpertsPage() {
   const router = useRouter();
   const { data, isLoading, isError } = useExpertTeams();
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("全部");
+  const [category, setCategory] = useState(ALL_CATEGORY_LABEL);
   const [selected, setSelected] = useState<ExpertTeamSummary | null>(null);
   const [detailDismissed, setDetailDismissed] = useState(false);
   const [editing, setEditing] = useState<{ team: ExpertTeamConfig; mode: "create" | "edit" } | null>(null);
@@ -473,15 +479,27 @@ export default function ExpertsPage() {
   };
 
   const teams = data?.teams ?? EMPTY_TEAMS;
+  const categoryOptions = useMemo(() => {
+    const options = new Set(BASE_CATEGORY_OPTIONS);
+    teams.forEach((team) => {
+      const value = team.category.trim();
+      if (value) options.add(value);
+    });
+    return [ALL_CATEGORY_LABEL, ...BASE_CATEGORY_OPTIONS.filter((item) => options.has(item)), ...Array.from(options).filter((item) => !BASE_CATEGORY_OPTIONS.includes(item)).sort((a, b) => a.localeCompare(b))];
+  }, [teams]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return teams.filter((team) => {
-      const matchesCategory = category === "全部" || team.category === category || team.tags.includes(category);
+      const tags = visibleTeamTags(team);
+      const matchesCategory =
+        category === ALL_CATEGORY_LABEL ||
+        team.category === category ||
+        tags.includes(category);
       const matchesQuery =
         !q ||
         team.name.toLowerCase().includes(q) ||
         team.description.toLowerCase().includes(q) ||
-        team.tags.some((tag) => tag.toLowerCase().includes(q)) ||
+        tags.some((tag) => tag.toLowerCase().includes(q)) ||
         team.members.some((member) => member.name.toLowerCase().includes(q) || member.role.toLowerCase().includes(q));
       return matchesCategory && matchesQuery;
     });
@@ -581,22 +599,15 @@ export default function ExpertsPage() {
       <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--surface-chat)] px-5 pb-5 pt-0 lg:px-7 xl:overflow-hidden">
         <div className="grid min-h-0 gap-5 xl:h-full xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="min-h-0 pr-1 xl:overflow-y-auto xl:scrollbar-auto">
-            <div className="mb-4 flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
-              {CATEGORIES.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setCategory(item)}
-                  className={cn(
-                    "h-8 shrink-0 rounded-lg border px-4 text-[13px] font-medium transition-colors cursor-pointer",
-                    category === item
-                      ? "border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--text-accent)]"
-                      : "border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--border-default)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]",
-                  )}
-                >
-                  {item}
-                </button>
-              ))}
+            <div className="mb-4 space-y-3">
+              <FilterChipRow
+                label="分类"
+                Icon={Layers}
+                options={categoryOptions}
+                value={category}
+                onChange={setCategory}
+                ariaLabelPrefix="分类"
+              />
             </div>
             {isLoading ? (
               <div className="space-y-2.5">
@@ -614,7 +625,7 @@ export default function ExpertsPage() {
               <ExpertTeamStatus
                 icon={Sparkles}
                 title="未找到专家团"
-                description={query || category !== "全部" ? "换个关键词或分类试试。" : "当前还没有可用的专家团。"}
+                description={query || category !== ALL_CATEGORY_LABEL ? "换个关键词或分类试试。" : "当前还没有可用的专家团。"}
               />
             ) : (
               <div className="space-y-2.5">
@@ -726,6 +737,50 @@ function ExpertTeamStatus({
       </div>
       <p className="text-sm font-medium text-[var(--text-secondary)]">{title}</p>
       <p className="mt-1 text-ui-2xs text-[var(--text-tertiary)]">{description}</p>
+    </div>
+  );
+}
+
+function FilterChipRow({
+  label,
+  Icon,
+  options,
+  value,
+  onChange,
+  ariaLabelPrefix,
+}: {
+  label: string;
+  Icon: ComponentType<{ className?: string }>;
+  options: string[];
+  value: string;
+  onChange: (value: string) => void;
+  ariaLabelPrefix: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5 text-ui-2xs font-medium text-[var(--text-tertiary)]">
+        <Icon className="h-3.5 w-3.5" />
+        <span>{label}</span>
+      </div>
+      <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+        {options.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onChange(item)}
+            aria-pressed={value === item}
+            aria-label={`${ariaLabelPrefix}：${item}`}
+            className={cn(
+              "h-8 shrink-0 rounded-lg border px-4 text-[13px] font-medium transition-colors cursor-pointer",
+              value === item
+                ? "border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--text-accent)]"
+                : "border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--border-default)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]",
+            )}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

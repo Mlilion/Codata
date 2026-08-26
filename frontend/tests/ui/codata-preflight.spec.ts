@@ -184,6 +184,25 @@ test.describe("Codata UI preflight", () => {
     await expect(page.getByRole("button", { name: "Chat", exact: true })).toHaveAttribute("aria-pressed", "true");
   });
 
+  test("desktop experts path: category filters include data domains", async ({ page }) => {
+    await page.goto("/experts");
+    await expect(page.getByRole("heading", { name: "专家团", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "分类：数据工程" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "分类：数据分析" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "标签：数据工程" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "标签：数据分析" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "标签：ETL" })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "分类：数据工程" }).click();
+    await expect(page.getByText("ETL 开发测试部署专家团").first()).toBeVisible();
+    await expect(page.getByText("数据建模专家团").first()).toBeVisible();
+    await expect(page.getByText("数据分析专家团")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "分类：数据分析" }).click();
+    await expect(page.getByText("数据分析专家团").first()).toBeVisible();
+    await expect(page.getByText("ETL 开发测试部署专家团")).toHaveCount(0);
+  });
+
   test("desktop dashboard path: pin a chart, then view it on the dashboard page", async ({ page }) => {
     await page.goto("/c/session-data");
     await expect(page.getByText("下面是近三天各渠道的活跃用户数。")).toBeVisible();

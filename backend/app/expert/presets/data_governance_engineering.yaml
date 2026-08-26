@@ -1,0 +1,175 @@
+team:
+  id: data-governance-engineering
+  name: 数据治理专家团
+  description: 面向数据资产、指标、元数据、权限、分层、命名和生命周期治理,盘点问题并输出可执行治理路线图。
+  icon: shield-check
+  category: 数据工程
+  tags: [数据工程, 数据治理, 元数据, 指标治理, 权限, 数据资产, datasage]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 10
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是数据治理专家团协调者。把资产盘点、标准规范、权限合规、治理优先级和落地路线图整合为一份可执行治理方案。
+    治理建议必须结合已发现的数据资产和用户目标;无法确认的范围、owner、权限或生命周期信息必须标注为待确认。
+  finalization:
+    mode: deliverable
+    member: governance_lead
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: html
+      title: 数据治理方案
+      filename_template: data-governance-engineering.html
+      source: final_governance_plan
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: governance_scope
+      description: 治理范围,例如某主题域、某业务线、指标体系、数据集市或高风险数据资产。
+      required: true
+    - name: governance_goal
+      description: 治理目标,例如减少重复表、统一指标口径、补齐 owner、收敛权限、提升资产可发现性。
+      required: false
+      default: ""
+    - name: priority_constraint
+      description: 优先级或约束,例如先治理 P0 指标、只看生产表、一个月内落地。
+      required: false
+      default: ""
+  skills: [data-analysis, charting, report, data-report-html]
+  members:
+    - id: asset_auditor
+      name: 资产盘点
+      role: 数据资产盘点专家
+      goal: 发现范围内表、指标、字段、使用痕迹和重复资产,形成资产问题清单。
+      role_ref: data/sql-query-expert
+      tools: [search, run_query, skill]
+      skills: [data-analysis]
+      icon: database
+    - id: standards_architect
+      name: 标准规范
+      role: 数据标准与指标治理专家
+      goal: 设计命名、分层、字段、指标口径、元数据和生命周期治理标准。
+      system_prompt: |
+        你是数据标准与指标治理专家。你负责把混乱的数据资产治理成可发现、可理解、可复用、可追责的体系。
+        重点输出:数仓分层规范、表/字段命名规范、指标口径管理、元数据必填项、owner 机制、生命周期规则、重复资产合并策略和验收标准。
+        不要泛泛而谈,每条建议都要绑定治理对象、落地动作和验收方式。
+      tools: [search, run_query, skill]
+      skills: [data-analysis]
+      icon: ruler
+    - id: compliance_reviewer
+      name: 权限与合规
+      role: 数据权限与合规评审专家
+      goal: 识别敏感字段、权限风险、跨域共享风险和审计缺口,给出控制建议。
+      system_prompt: |
+        你是数据权限与合规评审专家。你关注敏感数据、访问边界、最小权限、脱敏、审计、跨部门共享和数据保留周期。
+        在证据不足时不要做合规结论,而是列出需要补充确认的权限、字段分类、审计记录和制度依据。
+      tools: [search, run_query, skill]
+      skills: [data-analysis]
+      icon: lock-keyhole
+    - id: governance_lead
+      name: 治理路线图
+      role: 数据治理负责人
+      goal: 汇总治理问题,按收益、风险和实施成本排序,输出路线图、RACI 和验收标准。
+      system_prompt: |
+        你是数据治理负责人。你把资产、标准和权限评审结论转成可执行路线图。
+        输出必须包含问题分级、优先级、owner/RACI、短中长期动作、依赖、风险、里程碑和验收指标。避免空泛原则,每条动作都要能执行。
+      tools: [run_query, chart_spec, write, present_file, artifact, build_report, skill]
+      skills: [report, charting]
+      icon: route
+  tasks:
+    - id: audit_assets
+      name: 数据资产盘点与问题识别
+      member: asset_auditor
+      task: |
+        盘点治理范围内的数据资产。
+
+        用户需求:
+        {{user_input}}
+
+        治理范围:
+        {{governance_scope}}
+
+        治理目标:
+        {{governance_goal}}
+
+        优先级约束:
+        {{priority_constraint}}
+
+        步骤:用 search 找表、指标、模型、字段说明和现有口径;必要时 run_query 验证数据规模、刷新痕迹、重复资产、空字段和疑似废弃表。
+        输出:资产清单、关键指标/表、重复或冲突资产、owner/元数据缺口、治理风险。
+      expected_output: 数据资产盘点与问题清单。
+      output: asset_audit
+      context_policy: explicit
+      context_max_chars: 24000
+      timeout_seconds: 480
+      retry_count: 1
+    - id: define_standards
+      name: 治理标准与指标规范
+      member: standards_architect
+      depends_on: [audit_assets]
+      context: [audit_assets]
+      task: |
+        基于资产盘点设计治理标准。
+
+        资产盘点:
+        {{asset_audit}}
+
+        输出必须包含:分层规范、命名规范、指标口径管理方式、字段字典、元数据必填项、owner 机制、重复资产合并策略、生命周期规则和验收标准。
+      expected_output: 数据标准与指标治理建议。
+      output: governance_standards
+      context_policy: explicit
+      context_max_chars: 26000
+      timeout_seconds: 420
+      retry_count: 1
+    - id: review_access
+      name: 权限、敏感数据与合规评审
+      member: compliance_reviewer
+      depends_on: [audit_assets]
+      context: [audit_assets]
+      task: |
+        评审治理范围内的权限与合规风险。
+
+        资产盘点:
+        {{asset_audit}}
+
+        输出必须包含:疑似敏感字段、权限边界、共享风险、脱敏建议、审计缺口、保留周期风险、必须由人工确认的合规问题。
+      expected_output: 权限与合规风险评审。
+      output: compliance_review
+      context_policy: explicit
+      context_max_chars: 22000
+      timeout_seconds: 420
+      retry_count: 1
+    - id: build_roadmap
+      name: 治理路线图与最终方案
+      member: governance_lead
+      depends_on: [audit_assets, define_standards, review_access]
+      context: [audit_assets, define_standards, review_access]
+      task: |
+        生成数据治理最终方案。
+
+        资产盘点:
+        {{asset_audit}}
+
+        治理标准:
+        {{governance_standards}}
+
+        权限合规:
+        {{compliance_review}}
+
+        报告包含:治理目标、资产现状、问题分级、标准规范、权限与合规建议、优先级路线图、RACI、里程碑、验收指标、风险与待确认事项。
+      expected_output: 可执行的数据治理方案。
+      output: final_governance_plan
+      context_policy: explicit
+      context_max_chars: 34000
+      timeout_seconds: 420
+      retry_count: 1

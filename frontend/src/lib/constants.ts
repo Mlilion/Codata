@@ -2,6 +2,7 @@
 
 import { desktopAPI } from "./tauri-api";
 import { getRemoteConfig } from "./remote-connection";
+import { resolveBrowserBackendUrl } from "./backend-url";
 
 /** Whether we are running inside a desktop shell (Tauri). */
 export const IS_DESKTOP =
@@ -26,8 +27,7 @@ let _backendToken: string | null = null;
 let _backendTokenPromise: Promise<string> | null = null;
 
 /** Direct backend URL for SSE streams (avoids Next.js proxy buffering). */
-const FALLBACK_BACKEND_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const FALLBACK_BACKEND_URL = resolveBrowserBackendUrl();
 const WEB_DEV_BACKEND_TOKEN =
   process.env.NEXT_PUBLIC_CODATA_DEV_SESSION_TOKEN || "";
 

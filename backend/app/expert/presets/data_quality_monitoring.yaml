@@ -1,0 +1,178 @@
+team:
+  id: data-quality-monitoring
+  name: 数据质量监控专家团
+  description: 为核心表、指标和链路设计数据质量规则、异常检测、告警分级、SLA 巡检和处置流程。
+  icon: gauge
+  category: 数据工程
+  tags: [数据工程, 数据质量, 质量监控, 告警, SLA, 对账, datasage]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 10
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是数据质量监控专家团协调者。把质量画像、规则设计、告警策略和处置流程整合成一套可落地的数据质量监控方案。
+    质量规则必须说明检查对象、SQL/逻辑、阈值、频率、负责人和失败处置;不要只给原则。
+  finalization:
+    mode: deliverable
+    member: monitoring_reporter
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: html
+      title: 数据质量监控方案
+      filename_template: data-quality-monitoring.html
+      source: final_monitoring_plan
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: monitored_scope
+      description: 要监控的表、指标、数据链路或主题域,例如核心订单链路、GMV 指标、用户标签表。
+      required: true
+    - name: quality_focus
+      description: 重点质量问题,例如延迟、重复、空值、金额对不上、指标波动异常;不确定则留空。
+      required: false
+      default: ""
+    - name: alert_requirement
+      description: 告警频率、接收人、SLA 或处置要求;不确定则留空。
+      required: false
+      default: ""
+  skills: [data-analysis, charting, report, data-report-html]
+  members:
+    - id: profiler
+      name: 质量画像
+      role: SQL 与数据发现专家
+      goal: 探查监控对象的数据规模、刷新、空值、重复、枚举、波动和上下游依赖。
+      role_ref: data/sql-query-expert
+      tools: [search, run_query, chart_spec, skill]
+      skills: [data-analysis, charting]
+      icon: database
+    - id: rule_designer
+      name: 规则设计
+      role: 数据质量规则设计专家
+      goal: 设计完整性、唯一性、有效性、一致性、及时性、波动性和对账规则。
+      system_prompt: |
+        你是数据质量规则设计专家。你把质量画像和业务重要性转成可执行监控规则。
+        每条规则必须包含:规则名称、检查对象、质量维度、检查 SQL 或逻辑、阈值、检查频率、严重级别、失败说明和建议处置。
+        规则要避免噪音过多;阈值需要说明依据,没有历史数据时标注为初始阈值。
+      tools: [run_query, chart_spec, skill]
+      skills: [data-analysis, charting]
+      icon: list-checks
+    - id: alert_engineer
+      name: 告警与处置
+      role: 数据质量告警与值班流程专家
+      goal: 设计告警分级、通知路由、SLA、自动恢复、人工排障和升级机制。
+      system_prompt: |
+        你是数据质量告警与值班流程专家。你关注异常被发现后是否能被快速定位、定责、修复和复盘。
+        输出要包含告警分级、抑制/去重、通知对象、SLA、处置 SOP、升级路径、恢复验证和复盘字段。
+      tools: [search, run_query, skill]
+      skills: [data-analysis]
+      icon: bell-ring
+    - id: monitoring_reporter
+      name: 监控方案交付
+      role: 数据质量报告交付专家
+      goal: 汇总规则、告警和处置流程,形成可落地的数据质量监控方案。
+      system_prompt: |
+        你是数据质量报告交付专家。你把质量画像、规则设计和告警处置方案整理成工程团队可以实施的文档。
+        报告必须包含质量现状、规则矩阵、示例 SQL、阈值依据、告警流程、SLA、看板建议、上线步骤和后续迭代计划。
+      tools: [run_query, chart_spec, write, present_file, artifact, build_report, skill]
+      skills: [report, charting]
+      icon: file-text
+  tasks:
+    - id: profile_quality
+      name: 质量画像与风险识别
+      member: profiler
+      task: |
+        探查监控范围的数据质量现状。
+
+        用户需求:
+        {{user_input}}
+
+        监控范围:
+        {{monitored_scope}}
+
+        质量重点:
+        {{quality_focus}}
+
+        告警要求:
+        {{alert_requirement}}
+
+        步骤:用 search 找监控对象、上游依赖和指标口径;用 run_query 做空值、重复、枚举、行数、刷新时间、分区完整性、历史波动等画像;关键波动用 chart_spec 出图。
+        输出:质量画像、历史波动、关键风险、监控优先级和需要确认的问题。
+      expected_output: 数据质量画像与风险清单。
+      output: quality_profile
+      context_policy: explicit
+      context_max_chars: 24000
+      timeout_seconds: 480
+      retry_count: 1
+    - id: design_rules
+      name: 质量规则矩阵设计
+      member: rule_designer
+      depends_on: [profile_quality]
+      context: [profile_quality]
+      task: |
+        设计数据质量监控规则。
+
+        质量画像:
+        {{quality_profile}}
+
+        输出规则矩阵,覆盖完整性、唯一性、有效性、一致性、及时性、波动性和对账。每条规则包含检查对象、SQL/逻辑、阈值、频率、严重级别、失败处置。
+      expected_output: 数据质量规则矩阵。
+      output: quality_rules
+      context_policy: explicit
+      context_max_chars: 28000
+      timeout_seconds: 480
+      retry_count: 1
+    - id: design_alerts
+      name: 告警分级与处置流程
+      member: alert_engineer
+      depends_on: [profile_quality, design_rules]
+      context: [profile_quality, design_rules]
+      task: |
+        设计质量告警和处置流程。
+
+        质量画像:
+        {{quality_profile}}
+
+        质量规则:
+        {{quality_rules}}
+
+        输出必须包含:告警分级、通知路由、SLA、抑制/去重策略、处置 SOP、升级路径、恢复验证、复盘字段和 owner 建议。
+      expected_output: 告警与处置流程设计。
+      output: alerting_plan
+      context_policy: explicit
+      context_max_chars: 24000
+      timeout_seconds: 420
+      retry_count: 1
+    - id: deliver_monitoring_plan
+      name: 监控上线方案
+      member: monitoring_reporter
+      depends_on: [profile_quality, design_rules, design_alerts]
+      context: [profile_quality, design_rules, design_alerts]
+      task: |
+        生成数据质量监控最终方案。
+
+        质量画像:
+        {{quality_profile}}
+
+        质量规则:
+        {{quality_rules}}
+
+        告警处置:
+        {{alerting_plan}}
+
+        报告包含:监控范围、质量现状、规则矩阵、示例 SQL、阈值依据、告警流程、SLA、看板建议、上线步骤、后续迭代计划、风险与待确认事项。
+      expected_output: 可交付的数据质量监控方案。
+      output: final_monitoring_plan
+      context_policy: explicit
+      context_max_chars: 34000
+      timeout_seconds: 420
+      retry_count: 1

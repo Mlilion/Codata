@@ -1,0 +1,178 @@
+team:
+  id: etl-delivery-engineering
+  name: ETL 开发测试部署专家团
+  description: 面向 ETL/ELT 作业交付,完成源数据探查、转换逻辑设计、测试用例、调度部署、回滚与上线检查。
+  icon: workflow
+  category: 数据工程
+  tags: [数据工程, ETL, ELT, SQL开发, 测试, 部署, 调度, datasage]
+  version: "1.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 10
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是 ETL 交付专家团协调者。把数据需求、源表探查、转换逻辑、测试计划、部署步骤和回滚方案整合为一份可执行交付方案。
+    不能臆造生产环境能力或表字段;需要权限、调度器、上游 SLA 或目标表变更时必须标注依赖。
+  finalization:
+    mode: deliverable
+    member: release_engineer
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: html
+      title: ETL 开发测试部署方案
+      filename_template: etl-delivery-engineering.html
+      source: final_delivery_plan
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: pipeline_goal
+      description: ETL/ELT 要建设或改造的目标,例如新增用户标签宽表、订单明细同步、指标层每日刷新。
+      required: true
+    - name: target_table
+      description: 目标表、数据集或输出位置;不确定则留空。
+      required: false
+      default: ""
+    - name: schedule_requirement
+      description: 调度周期、依赖和 SLA,例如每日 08:00 产出、小时级增量、依赖上游 T+1。
+      required: false
+      default: ""
+  skills: [data-analysis, charting, report, data-report-html]
+  members:
+    - id: source_profiler
+      name: 源数据探查
+      role: SQL 与数据发现专家
+      goal: 确认源表、字段、数据范围、分区、主键、增量字段和数据风险。
+      role_ref: data/sql-query-expert
+      tools: [search, run_query, skill]
+      skills: [data-analysis]
+      icon: database
+    - id: transformation_engineer
+      name: 转换开发
+      role: ETL 转换逻辑开发专家
+      goal: 设计转换 SQL/伪代码、DAG 依赖、幂等策略、增量策略和性能优化点。
+      system_prompt: |
+        你是 ETL 转换逻辑开发专家。你把已确认的源表和目标产物转成可实现的 ETL/ELT 作业设计。
+        你必须明确输入、输出、过滤条件、JOIN 关系、主键去重、增量字段、分区写入、失败重跑、幂等性和性能风险。
+        你不能引用未确认字段;如果需要上游新增字段、调度器能力或目标表权限,必须列为依赖。
+      tools: [run_query, skill]
+      skills: [data-analysis]
+      icon: code-2
+    - id: data_tester
+      name: 数据测试
+      role: 数据测试与校验专家
+      goal: 设计单元测试、对账测试、边界测试、回归测试和上线验收 SQL。
+      system_prompt: |
+        你是数据测试与校验专家。你为 ETL 作业设计能发现真实问题的测试:源目标对账、行数波动、主键唯一、空值、枚举、金额/数量守恒、迟到数据、重跑幂等和历史回归。
+        每条测试必须说明检查目的、执行时机、示例 SQL 或检查逻辑、失败阈值和处理建议。
+      tools: [run_query, chart_spec, skill]
+      skills: [data-analysis, charting]
+      icon: flask-conical
+    - id: release_engineer
+      name: 部署发布
+      role: 数据作业部署与运维专家
+      goal: 设计发布步骤、调度配置、依赖检查、灰度/回滚、监控和交接文档。
+      system_prompt: |
+        你是数据作业部署与运维专家。你关注 ETL 上线是否可控:环境差异、调度依赖、权限、资源、补数、重跑、回滚、监控、告警和交接。
+        最终交付必须给出上线前检查表、部署步骤、回滚步骤、首次运行验证和后续监控。
+      tools: [run_query, chart_spec, write, present_file, artifact, build_report, skill]
+      skills: [report, charting]
+      icon: rocket
+  tasks:
+    - id: profile_sources
+      name: 源表与目标约束确认
+      member: source_profiler
+      task: |
+        探查 ETL 需求相关的数据源。
+
+        用户需求:
+        {{user_input}}
+
+        作业目标:
+        {{pipeline_goal}}
+
+        目标表:
+        {{target_table}}
+
+        调度/SLA:
+        {{schedule_requirement}}
+
+        步骤:用 search 找相关源表、目标表和指标口径;用 run_query 小样本验证字段、分区、主键、增量字段、数据范围、空值、重复和枚举。
+        输出:源表清单、目标约束、字段映射初稿、增量字段建议、数据风险和需要确认的问题。
+      expected_output: 源数据画像与目标约束。
+      output: source_profile
+      context_policy: explicit
+      context_max_chars: 22000
+      timeout_seconds: 480
+      retry_count: 1
+    - id: design_transform
+      name: 转换逻辑与 DAG 设计
+      member: transformation_engineer
+      depends_on: [profile_sources]
+      context: [profile_sources]
+      task: |
+        设计 ETL/ELT 转换逻辑。
+
+        源数据画像:
+        {{source_profile}}
+
+        输出必须包含:作业 DAG、输入输出、字段映射、核心 SQL 或伪 SQL、JOIN/过滤/聚合逻辑、增量策略、幂等策略、补数策略、性能风险与优化建议。
+      expected_output: ETL 转换设计。
+      output: transform_design
+      context_policy: explicit
+      context_max_chars: 26000
+      timeout_seconds: 540
+      retry_count: 1
+    - id: design_tests
+      name: 测试用例与验收 SQL
+      member: data_tester
+      depends_on: [profile_sources, design_transform]
+      context: [profile_sources, design_transform]
+      task: |
+        为 ETL 作业设计测试和验收。
+
+        源数据画像:
+        {{source_profile}}
+
+        转换设计:
+        {{transform_design}}
+
+        输出必须包含:开发阶段测试、上线前对账、上线后验收、每日巡检规则;每条测试给出目的、示例 SQL 或检查逻辑、阈值、失败处理建议。
+      expected_output: ETL 测试与验收计划。
+      output: test_plan
+      context_policy: explicit
+      context_max_chars: 26000
+      timeout_seconds: 420
+      retry_count: 1
+    - id: release_plan
+      name: 部署上线与回滚方案
+      member: release_engineer
+      depends_on: [profile_sources, design_transform, design_tests]
+      context: [profile_sources, design_transform, design_tests]
+      task: |
+        生成 ETL 开发测试部署最终方案。
+
+        源数据画像:
+        {{source_profile}}
+
+        转换设计:
+        {{transform_design}}
+
+        测试计划:
+        {{test_plan}}
+
+        报告包含:方案摘要、DAG 与依赖、转换逻辑、测试用例、上线步骤、权限与环境检查、首次运行验证、回滚方案、补数方案、监控与交接事项。
+      expected_output: 可交付的 ETL 开发测试部署方案。
+      output: final_delivery_plan
+      context_policy: explicit
+      context_max_chars: 34000
+      timeout_seconds: 420
+      retry_count: 1

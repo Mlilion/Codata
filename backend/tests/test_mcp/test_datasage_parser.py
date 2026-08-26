@@ -79,6 +79,66 @@ def test_search_indicators():
     assert md["total"] == 1
 
 
+def test_codataadmin_query_indicator_rows_becomes_sql_result():
+    raw = json.dumps({
+        "ok": True,
+        "rows": [
+            {"business_unit": "企业服务", "total_revenue": "123.45"},
+            {"business_unit": "消费业务", "total_revenue": "67.89"},
+        ],
+        "row_count": 2,
+        "executed_sql": (
+            "SELECT business_unit, SUM(revenue) AS total_revenue "
+            "FROM finance_demo_pnl_monthly GROUP BY business_unit"
+        ),
+    }, ensure_ascii=False)
+
+    md = parse_datasage_result("codataadmin_query_indicator", {}, raw)
+
+    assert md["codata_kind"] == "sql_result"
+    assert md["sql"].startswith("SELECT business_unit")
+    assert md["columns"] == [{"name": "business_unit"}, {"name": "total_revenue"}]
+    assert md["rows"] == [["企业服务", "123.45"], ["消费业务", "67.89"]]
+    assert md["row_count"] == 2
+    assert md["truncated"] is False
+
+
+def test_codataadmin_search_semantic_items_become_indicator_list():
+    raw = json.dumps({
+        "ok": True,
+        "items": [
+            {
+                "type": "indicator",
+                "code": "total_revenue",
+                "name": "营业收入",
+                "unit": "元",
+                "score": 0.97,
+                "match": "exact",
+            },
+            {
+                "type": "dimension",
+                "code": "business_unit",
+                "name": "业务单元",
+            },
+        ],
+        "total": 2,
+    }, ensure_ascii=False)
+
+    md = parse_datasage_result("codataadmin_search_semantic", {}, raw)
+
+    assert md["codata_kind"] == "indicator"
+    assert md["indicators"] == [
+        {
+            "code": "total_revenue",
+            "name": "营业收入",
+            "unit": "元",
+            "sql": None,
+            "description": "match: exact; score: 0.97",
+        }
+    ]
+    assert md["total"] == 1
+
+
 def test_unknown_tool_returns_none():
     raw = json.dumps({"mode": "sync", "columns": ["n"], "data": [[1]]})
     assert parse_datasage_result("Datasage_list_tables", {}, raw) is None

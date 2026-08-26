@@ -416,6 +416,511 @@ function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+type ExpertTeamMemberFixture = {
+  id: string;
+  name: string;
+  role: string;
+  icon: string;
+  goal: string;
+  backstory?: string;
+};
+
+type ExpertTeamTaskFixture = {
+  id: string;
+  name: string;
+  description: string;
+  expected_output: string;
+  member: string;
+  context: string[];
+};
+
+type ExpertTeamFixture = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  tags: string[];
+  coordinator_prompt: string;
+  finalizationMember: string;
+  finalizationTitle: string;
+  finalizationFilename: string;
+  finalizationSource: string;
+  inputs: Array<{
+    name: string;
+    description: string;
+    required: boolean;
+    default?: string;
+  }>;
+  members: ExpertTeamMemberFixture[];
+  tasks: ExpertTeamTaskFixture[];
+};
+
+type ExpertTeamSummaryFixture = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  process: "sequential" | "hierarchical" | "workflow";
+  tags: string[];
+  category: string;
+  member_count: number;
+  task_count: number;
+  is_preset: boolean;
+  editable: boolean;
+  origin: "preset";
+  source: string;
+  remote_id: null;
+  remote_version: null;
+  remote_channel: null;
+  members: Array<{
+    id: string;
+    name: string;
+    role: string;
+    icon: string;
+  }>;
+};
+
+function makeExpertTeamFixture(detail: ExpertTeamFixture) {
+  return {
+    id: detail.id,
+    name: detail.name,
+    description: detail.description,
+    icon: detail.icon,
+    version: "1.0",
+    process: "workflow" as const,
+    concurrency: 2,
+    inputs: detail.inputs,
+    tags: detail.tags,
+    category: detail.category,
+    members: detail.members,
+    tasks: detail.tasks,
+    skills: ["data-analysis", "charting", "report", "data-report-html"],
+    connectors: [],
+    metadata: {},
+    default_max_tool_rounds: 10,
+    finalization: {
+      mode: "deliverable" as const,
+      member: detail.finalizationMember,
+      tools: ["write", "present_file", "artifact"],
+      deliverable: {
+        required: true,
+        type: "html" as const,
+        title: detail.finalizationTitle,
+        filename_template: detail.finalizationFilename,
+        source: detail.finalizationSource,
+        presentation: "both" as const,
+        tools: ["write", "present_file", "artifact"],
+      },
+    },
+    manager: null,
+    max_delegations: 12,
+    interaction_mode: "auto" as const,
+    max_clarifying_questions: 4,
+    question_timeout_seconds: 300,
+    on_question_timeout: "continue_with_assumptions" as const,
+    expert_output_style: "concise" as const,
+    expert_visible_max_chars: 1800,
+    coordinator_visible_max_chars: 2400,
+    coordinator_context_policy: "summary" as const,
+    coordinator_context_max_chars: 36000,
+    coordinator_prompt: detail.coordinator_prompt,
+  };
+}
+
+function summarizeExpertTeam(detail: ReturnType<typeof makeExpertTeamFixture>): ExpertTeamSummaryFixture {
+  return {
+    id: detail.id,
+    name: detail.name,
+    description: detail.description,
+    icon: detail.icon,
+    process: detail.process,
+    tags: detail.tags,
+    category: detail.category,
+    member_count: detail.members.length,
+    task_count: detail.tasks.length,
+    is_preset: true,
+    editable: false,
+    origin: "preset",
+    source: `backend/app/expert/presets/${detail.id}.yaml`,
+    remote_id: null,
+    remote_version: null,
+    remote_channel: null,
+    members: detail.members.map((member) => ({
+      id: member.id,
+      name: member.name,
+      role: member.role,
+      icon: member.icon,
+    })),
+  };
+}
+
+const expertTeamDetails = [
+  makeExpertTeamFixture({
+    id: "data-modeling-engineering",
+    name: "数据建模专家团",
+    description: "面向主题域、数仓分层、事实表/维表和指标落表设计,从业务过程、粒度、口径、血缘和刷新策略出发,交付可落地的数据模型方案。",
+    icon: "table-2",
+    category: "数据工程",
+    tags: ["数据工程", "数据建模", "数仓", "维度建模", "指标口径"],
+    coordinator_prompt:
+      "你是数据建模专家团协调者。把业务需求、源表发现、口径确认、模型结构和工程落地约束整合成一份可执行的数据建模方案。",
+    finalizationMember: "reviewer",
+    finalizationTitle: "数据建模方案",
+    finalizationFilename: "data-modeling-engineering.html",
+    finalizationSource: "final_modeling_plan",
+    inputs: [
+      { name: "modeling_goal", description: "要建设或改造的主题域/数据产品/分析场景。", required: true },
+      { name: "grain_requirement", description: "期望的数据粒度,不确定则留空。", required: false, default: "" },
+      { name: "refresh_requirement", description: "刷新频率、时效要求或 SLA,不确定则留空。", required: false, default: "" },
+    ],
+    members: [
+      {
+        id: "requirement_analyst",
+        name: "需求与口径分析",
+        role: "数据建模需求分析专家",
+        icon: "clipboard-list",
+        goal: "把业务问题转成可建模的业务过程、核心指标、维度、粒度和使用场景。",
+      },
+      {
+        id: "source_explorer",
+        name: "源表与血缘发现",
+        role: "SQL 与数据发现专家",
+        icon: "database",
+        goal: "发现相关源表、字段、指标和现有模型,确认可复用资产与血缘风险。",
+      },
+      {
+        id: "model_architect",
+        name: "模型架构设计",
+        role: "维度建模与数仓分层专家",
+        icon: "network",
+        goal: "设计事实表、维表、汇总表、主键、分区、字段、口径落表和刷新策略。",
+      },
+      {
+        id: "reviewer",
+        name: "建模评审交付",
+        role: "数据架构评审与方案交付专家",
+        icon: "file-check-2",
+        goal: "检查模型方案的可维护性、成本、血缘、口径一致性和落地风险,输出最终方案。",
+      },
+    ],
+    tasks: [
+      {
+        id: "clarify_modeling_scope",
+        name: "建模范围与口径拆解",
+        description: "梳理业务过程、核心事实事件、候选指标和目标粒度。",
+        expected_output: "建模需求与口径拆解。",
+        member: "requirement_analyst",
+        context: [],
+      },
+      {
+        id: "discover_sources",
+        name: "源表、指标与现有模型发现",
+        description: "找出可复用源表、字段和血缘风险。",
+        expected_output: "源表清单与字段初稿。",
+        member: "source_explorer",
+        context: ["clarify_modeling_scope"],
+      },
+      {
+        id: "design_model",
+        name: "模型结构与落表设计",
+        description: "设计事实表、维表、粒度和刷新策略。",
+        expected_output: "可落地的数据模型方案。",
+        member: "model_architect",
+        context: ["discover_sources"],
+      },
+    ],
+  }),
+  makeExpertTeamFixture({
+    id: "etl-delivery-engineering",
+    name: "ETL 开发测试部署专家团",
+    description: "面向 ETL/ELT 作业交付,完成源数据探查、转换逻辑设计、测试用例、调度部署、回滚与上线检查。",
+    icon: "workflow",
+    category: "数据工程",
+    tags: ["数据工程", "ETL", "ELT", "SQL开发", "测试", "部署", "调度"],
+    coordinator_prompt:
+      "你是 ETL 交付专家团协调者。把数据需求、源表探查、转换逻辑、测试计划、部署步骤和回滚方案整合为一份可执行交付方案。",
+    finalizationMember: "release_engineer",
+    finalizationTitle: "ETL 开发测试部署方案",
+    finalizationFilename: "etl-delivery-engineering.html",
+    finalizationSource: "final_delivery_plan",
+    inputs: [
+      { name: "pipeline_goal", description: "ETL/ELT 要建设或改造的目标。", required: true },
+      { name: "target_table", description: "目标表、数据集或输出位置。", required: false, default: "" },
+      { name: "schedule_requirement", description: "调度周期、依赖和 SLA。", required: false, default: "" },
+    ],
+    members: [
+      {
+        id: "source_profiler",
+        name: "源数据探查",
+        role: "SQL 与数据发现专家",
+        icon: "database",
+        goal: "确认源表、字段、数据范围、分区、主键、增量字段和数据风险。",
+      },
+      {
+        id: "transformation_engineer",
+        name: "转换开发",
+        role: "ETL 转换逻辑开发专家",
+        icon: "code-2",
+        goal: "设计转换 SQL、DAG 依赖、幂等策略、增量策略和性能优化点。",
+      },
+      {
+        id: "data_tester",
+        name: "数据测试",
+        role: "数据测试与校验专家",
+        icon: "flask-conical",
+        goal: "设计单元测试、对账测试、边界测试、回归测试和上线验收 SQL。",
+      },
+      {
+        id: "release_engineer",
+        name: "部署发布",
+        role: "数据作业部署与运维专家",
+        icon: "rocket",
+        goal: "设计发布步骤、调度配置、依赖检查、灰度/回滚、监控和交接文档。",
+      },
+    ],
+    tasks: [
+      {
+        id: "profile_sources",
+        name: "源表与目标约束确认",
+        description: "探查源表、目标约束和字段映射。",
+        expected_output: "源数据画像与目标约束。",
+        member: "source_profiler",
+        context: [],
+      },
+      {
+        id: "design_transform",
+        name: "转换逻辑与 DAG 设计",
+        description: "设计转换逻辑、增量策略和依赖关系。",
+        expected_output: "可执行的 ETL 设计。",
+        member: "transformation_engineer",
+        context: ["profile_sources"],
+      },
+      {
+        id: "test_and_release",
+        name: "测试与发布方案",
+        description: "补充测试矩阵、上线检查和回滚步骤。",
+        expected_output: "测试与发布方案。",
+        member: "release_engineer",
+        context: ["design_transform"],
+      },
+    ],
+  }),
+  makeExpertTeamFixture({
+    id: "data-governance-engineering",
+    name: "数据治理专家团",
+    description: "面向数据资产、指标、元数据、权限、分层、命名和生命周期治理,盘点问题并输出可执行治理路线图。",
+    icon: "shield-check",
+    category: "数据工程",
+    tags: ["数据工程", "数据治理", "元数据", "指标治理", "权限", "数据资产"],
+    coordinator_prompt:
+      "你是数据治理专家团协调者。把资产盘点、标准规范、权限合规、治理优先级和落地路线图整合为一份可执行治理方案。",
+    finalizationMember: "governance_lead",
+    finalizationTitle: "数据治理方案",
+    finalizationFilename: "data-governance-engineering.html",
+    finalizationSource: "final_governance_plan",
+    inputs: [
+      { name: "governance_scope", description: "治理范围,例如某主题域、某业务线或某数据资产。", required: true },
+      { name: "governance_goal", description: "治理目标,例如统一口径、补齐 owner 或收敛权限。", required: false, default: "" },
+      { name: "priority_constraint", description: "优先级或约束,例如只看生产表。", required: false, default: "" },
+    ],
+    members: [
+      {
+        id: "asset_auditor",
+        name: "资产盘点",
+        role: "数据资产盘点专家",
+        icon: "database",
+        goal: "发现范围内表、指标、字段、使用痕迹和重复资产,形成资产问题清单。",
+      },
+      {
+        id: "standards_architect",
+        name: "标准规范",
+        role: "数据标准与指标治理专家",
+        icon: "ruler",
+        goal: "设计命名、分层、字段、指标口径、元数据和生命周期治理标准。",
+      },
+      {
+        id: "compliance_reviewer",
+        name: "权限与合规",
+        role: "数据权限与合规评审专家",
+        icon: "lock-keyhole",
+        goal: "识别敏感字段、权限风险、跨域共享风险和审计缺口,给出控制建议。",
+      },
+      {
+        id: "governance_lead",
+        name: "治理路线图",
+        role: "数据治理负责人",
+        icon: "route",
+        goal: "汇总治理问题,按收益、风险和实施成本排序,输出路线图、RACI 和验收标准。",
+      },
+    ],
+    tasks: [
+      {
+        id: "audit_assets",
+        name: "数据资产盘点与问题识别",
+        description: "盘点治理范围内的数据资产和问题清单。",
+        expected_output: "数据资产盘点与问题清单。",
+        member: "asset_auditor",
+        context: [],
+      },
+      {
+        id: "define_standards",
+        name: "治理标准与指标规范",
+        description: "定义命名、指标、元数据和生命周期规范。",
+        expected_output: "治理标准清单。",
+        member: "standards_architect",
+        context: ["audit_assets"],
+      },
+      {
+        id: "plan_roadmap",
+        name: "治理路线图与落地计划",
+        description: "排序治理动作、owner 和验收方式。",
+        expected_output: "可执行的治理路线图。",
+        member: "governance_lead",
+        context: ["define_standards"],
+      },
+    ],
+  }),
+  makeExpertTeamFixture({
+    id: "data-quality-monitoring",
+    name: "数据质量监控专家团",
+    description: "为核心表、指标和链路设计数据质量规则、异常检测、告警分级、SLA 巡检和处置流程。",
+    icon: "gauge",
+    category: "数据工程",
+    tags: ["数据工程", "数据质量", "质量监控", "告警", "SLA", "对账"],
+    coordinator_prompt:
+      "你是数据质量监控专家团协调者。把质量画像、规则设计、告警策略和处置流程整合成一套可落地的数据质量监控方案。",
+    finalizationMember: "monitoring_reporter",
+    finalizationTitle: "数据质量监控方案",
+    finalizationFilename: "data-quality-monitoring.html",
+    finalizationSource: "final_monitoring_plan",
+    inputs: [
+      { name: "monitored_scope", description: "要监控的表、指标、数据链路或主题域。", required: true },
+      { name: "quality_focus", description: "重点质量问题,例如延迟、重复、空值、金额不对。", required: false, default: "" },
+      { name: "alert_requirement", description: "告警频率、接收人、SLA 或处置要求。", required: false, default: "" },
+    ],
+    members: [
+      {
+        id: "profiler",
+        name: "质量画像",
+        role: "SQL 与数据发现专家",
+        icon: "database",
+        goal: "探查监控对象的数据规模、刷新、空值、重复、枚举、波动和上下游依赖。",
+      },
+      {
+        id: "rule_designer",
+        name: "规则设计",
+        role: "数据质量规则设计专家",
+        icon: "list-checks",
+        goal: "设计完整性、唯一性、有效性、一致性、及时性、波动性和对账规则。",
+      },
+      {
+        id: "alert_engineer",
+        name: "告警与处置",
+        role: "数据质量告警与值班流程专家",
+        icon: "bell-ring",
+        goal: "设计告警分级、通知路由、SLA、自动恢复、人工排障和升级机制。",
+      },
+      {
+        id: "monitoring_reporter",
+        name: "监控方案交付",
+        role: "数据质量报告交付专家",
+        icon: "file-text",
+        goal: "汇总规则、告警和处置流程,形成可落地的数据质量监控方案。",
+      },
+    ],
+    tasks: [
+      {
+        id: "profile_quality",
+        name: "质量画像与风险识别",
+        description: "探查监控范围的数据质量现状与关键风险。",
+        expected_output: "数据质量画像与风险清单。",
+        member: "profiler",
+        context: [],
+      },
+      {
+        id: "design_rules",
+        name: "质量规则矩阵设计",
+        description: "设计可执行的质量规则和阈值。",
+        expected_output: "质量规则矩阵。",
+        member: "rule_designer",
+        context: ["profile_quality"],
+      },
+      {
+        id: "build_monitoring_plan",
+        name: "监控与处置方案",
+        description: "汇总告警路由、SLA 和复盘流程。",
+        expected_output: "数据质量监控方案。",
+        member: "monitoring_reporter",
+        context: ["design_rules"],
+      },
+    ],
+  }),
+];
+
+const expertTeamFixtures = expertTeamDetails.map((detail) => {
+  return {
+    detail,
+    summary: summarizeExpertTeam(detail),
+  };
+});
+
+const dataAnalysisFixture = makeExpertTeamFixture({
+  id: "data-analysis-report",
+  name: "数据分析专家团",
+  description: "完成数据发现、SQL 查询、指标口径核对、归因洞察与可视化,交付带图表的分析报告。",
+  icon: "bar-chart-2",
+  category: "综合分析",
+  tags: ["数据分析", "SQL", "指标", "归因", "可视化"],
+  coordinator_prompt: "你是数据分析专家团协调者。把数据发现、指标查询、归因洞察和可视化整合成一份可交付分析报告。",
+  finalizationMember: "reporter",
+  finalizationTitle: "数据分析报告",
+  finalizationFilename: "data-analysis-report.html",
+  finalizationSource: "final_report",
+  inputs: [
+    { name: "analysis_goal", description: "本次分析要回答的核心业务问题。", required: true },
+  ],
+  members: [
+    {
+      id: "analyst",
+      name: "数据分析",
+      role: "数据分析专家",
+      icon: "bar-chart-2",
+      goal: "完成数据发现、查询分析和指标口径核对。",
+    },
+    {
+      id: "reporter",
+      name: "报告交付",
+      role: "分析报告交付专家",
+      icon: "file-text",
+      goal: "汇总分析结论、图表和行动建议,交付最终报告。",
+    },
+  ],
+  tasks: [
+    {
+      id: "discover_and_analyze",
+      name: "数据发现与分析",
+      description: "发现相关数据并完成指标分析。",
+      expected_output: "数据分析结果。",
+      member: "analyst",
+      context: [],
+    },
+    {
+      id: "write_report",
+      name: "报告整理与交付",
+      description: "整理事实、洞察、图表和建议。",
+      expected_output: "数据分析报告。",
+      member: "reporter",
+      context: ["discover_and_analyze"],
+    },
+  ],
+});
+
+expertTeamFixtures.push({
+  detail: dataAnalysisFixture,
+  summary: summarizeExpertTeam(dataAnalysisFixture),
+});
+
 type NaturalOfficeKind = "memo" | "budget" | "deck" | "vendor" | "board" | "followup";
 
 const naturalOfficeResponses: Record<NaturalOfficeKind, string> = {
@@ -1651,6 +2156,31 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
     if (path === "/api/models") return fulfillJson(route, models);
     if (path === "/api/agents") return fulfillJson(route, [{ name: "build" }, { name: "plan" }]);
     if (path === "/api/tools") return fulfillJson(route, []);
+    if (path === "/api/expert-teams" && method === "GET") {
+      return fulfillJson(route, { teams: expertTeamFixtures.map(({ summary }) => cloneJson(summary)) });
+    }
+    const expertTeamDetailMatch = path.match(/^\/api\/expert-teams\/([^/]+)$/);
+    if (expertTeamDetailMatch && method === "GET") {
+      const id = decodeURIComponent(expertTeamDetailMatch[1]);
+      const match = expertTeamFixtures.find((item) => item.detail.id === id);
+      if (!match) {
+        return route.fulfill({
+          status: 404,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "Expert team not found" }),
+        });
+      }
+      return fulfillJson(route, {
+        team: cloneJson(match.detail),
+        is_preset: true,
+        editable: false,
+        origin: "preset",
+        source: match.summary.source,
+        remote_id: null,
+        remote_version: null,
+        remote_channel: null,
+      });
+    }
     if (path === "/api/chat/active") return fulfillJson(route, options.activeJobs ?? []);
     if (path === "/api/config/api-key") {
       return fulfillJson(route, { is_configured: true, masked_key: "sk-or-...mock", is_valid: true });
