@@ -67,7 +67,6 @@ test("defaults release asset URLs to GitHub Releases", () => {
       ...env,
       // Code repo is private; assets are published to the public release repo.
       GITHUB_REPOSITORY: "FlowGPT/Codata",
-      CODATA_RELEASE_REPOSITORY: "renyichao-cyber/Codata-releases",
       GITHUB_REF_NAME: "v9.9.9",
       RELEASE_SITE_DIR: releaseSite,
     },
@@ -87,10 +86,10 @@ test("defaults release asset URLs to GitHub Releases", () => {
 
   assert.deepEqual(githubUpdaterManifest, updateManifest);
   assert.deepEqual(githubDownloadManifest, downloadManifest);
-  assert.equal(downloadManifest.source, "https://github.com/renyichao-cyber/Codata-releases/releases/tag/v9.9.9");
+  assert.equal(downloadManifest.source, "https://github.com/Mlilion/Codata-releases/releases/tag/v9.9.9");
   assert(urls.length > 0);
   assert(
-    urls.every((url) => url.startsWith("https://github.com/renyichao-cyber/Codata-releases/releases/download/v9.9.9/")),
+    urls.every((url) => url.startsWith("https://github.com/Mlilion/Codata-releases/releases/download/v9.9.9/")),
   );
 });
 

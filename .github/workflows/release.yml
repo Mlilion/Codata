@@ -351,16 +351,16 @@ jobs:
         env:
           # Assets ship to the public release repo so the desktop updater can
           # download them anonymously (code repo is private).
-          CODATA_RELEASE_REPOSITORY: ${{ vars.RELEASE_REPOSITORY || 'renyichao-cyber/Codata-releases' }}
+          CODATA_RELEASE_REPOSITORY: ${{ vars.RELEASE_REPOSITORY || 'Mlilion/Codata-releases' }}
         run: node scripts/generate-release-manifests.mjs artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           # Publish to the public release repo, not this private code repo.
-          # RELEASE_TOKEN must have contents:write on renyichao-cyber/Codata-releases
+          # RELEASE_TOKEN must have contents:write on Mlilion/Codata-releases
           # (GITHUB_TOKEN only covers the current repo).
-          repository: ${{ vars.RELEASE_REPOSITORY || 'renyichao-cyber/Codata-releases' }}
+          repository: ${{ vars.RELEASE_REPOSITORY || 'Mlilion/Codata-releases' }}
           token: ${{ secrets.RELEASE_TOKEN }}
           tag_name: ${{ github.ref_name }}
           # The release repo has no source history, so target the release repo's

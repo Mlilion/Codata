@@ -7,9 +7,9 @@ const artifactRoot = path.resolve(rootDir, process.argv[2] || "artifacts");
 const outRoot = path.resolve(rootDir, process.env.RELEASE_SITE_DIR || "release-site");
 // Assets are published to a dedicated public release repo (code lives in a
 // private repo, so anonymous updater downloads must point elsewhere). Override
-// with CODATA_RELEASE_REPOSITORY; falls back to the current repo.
+// with CODATA_RELEASE_REPOSITORY.
 const repository =
-  process.env.CODATA_RELEASE_REPOSITORY || process.env.GITHUB_REPOSITORY || "renyichao-cyber/Codata-releases";
+  process.env.CODATA_RELEASE_REPOSITORY || "Mlilion/Codata-releases";
 const tag = process.env.GITHUB_REF_NAME || process.env.RELEASE_TAG;
 const releaseCacheKey = process.env.GITHUB_RUN_ID
   ? `${process.env.GITHUB_RUN_ID}.${process.env.GITHUB_RUN_ATTEMPT || "1"}`

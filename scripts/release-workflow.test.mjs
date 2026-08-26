@@ -124,6 +124,8 @@ test("macOS Node.js runtime signing keeps hardened runtime JIT entitlements", ()
 test("open-source release workflow publishes updater files only to GitHub Releases", () => {
   assert.match(workflow, /release-site\/latest\.json/);
   assert.match(workflow, /release-site\/downloads-latest\.json/);
+  assert.match(workflow, /Mlilion\/Codata-releases/);
+  assert.doesNotMatch(workflow, /renyichao-cyber\/Codata-releases/);
   assert.doesNotMatch(workflow, /draft:\s+true/);
   assert.doesNotMatch(workflow, /Require website deploy secrets/);
   assert.doesNotMatch(workflow, /easingthemes\/ssh-deploy/);
@@ -134,6 +136,6 @@ test("open-source release workflow publishes updater files only to GitHub Releas
 
 test("open-source desktop updater checks the GitHub latest.json release asset", () => {
   assert.deepEqual(tauriConfig.plugins.updater.endpoints, [
-    "https://github.com/renyichao-cyber/Codata-releases/releases/latest/download/latest.json",
+    "https://github.com/Mlilion/Codata-releases/releases/latest/download/latest.json",
   ]);
 });

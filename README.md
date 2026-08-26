@@ -140,8 +140,8 @@ User
 
 ## Download & Docs
 
-- Desktop download (Windows / macOS): https://github.com/renyichao-cyber/Codata-releases/releases/latest
-- Releases: https://github.com/renyichao-cyber/Codata-releases/releases
+- Desktop download (Windows / macOS): https://github.com/Mlilion/Codata-releases/releases/latest
+- Releases: https://github.com/Mlilion/Codata-releases/releases
 
 > The desktop app auto-updates: it checks GitHub Releases for new versions on launch and every 4 hours, and you can also check manually from Settings → About.
 
