@@ -1,6 +1,6 @@
 [package]
 name = "codata"
-version = "1.1.16"
+version = "1.1.17"
 description = "Codata — Your local AI assistant"
 license-file = "../../LICENSE"
 edition = "2021"
