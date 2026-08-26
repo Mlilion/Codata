@@ -134,6 +134,17 @@ test("open-source release workflow publishes updater files only to GitHub Releas
   assert.doesNotMatch(workflow, /Verify website download and updater endpoints/);
 });
 
+test("release workflow bypasses Actions artifact storage quota", () => {
+  assert.doesNotMatch(workflow, /actions\/upload-artifact@/);
+  assert.doesNotMatch(workflow, /actions\/download-artifact@/);
+  assert.match(workflow, /prepare-release:/);
+  assert.match(workflow, /gh release create "\$GITHUB_REF_NAME"/);
+  assert.match(workflow, /gh release upload "\$GITHUB_REF_NAME"/);
+  assert.match(workflow, /gh release download "\$GITHUB_REF_NAME"/);
+  assert.match(workflow, /gh release edit "\$GITHUB_REF_NAME"[\s\S]*--draft=false/);
+  assert.match(workflow, /GH_TOKEN: \$\{\{ secrets\.RELEASE_TOKEN \}\}/);
+});
+
 test("open-source desktop updater checks the GitHub latest.json release asset", () => {
   assert.deepEqual(tauriConfig.plugins.updater.endpoints, [
     "https://github.com/Mlilion/Codata-releases/releases/latest/download/latest.json",

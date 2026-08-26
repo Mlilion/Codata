@@ -5,11 +5,35 @@ on:
     tags: ["v*"]
 
 env:
+  RELEASE_REPOSITORY: ${{ vars.RELEASE_REPOSITORY || 'Mlilion/Codata-releases' }}
   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
 jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create draft release in public release repository
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::RELEASE_TOKEN is required to publish to $RELEASE_REPOSITORY."
+            exit 1
+          fi
+
+          if gh release view "$GITHUB_REF_NAME" --repo "$RELEASE_REPOSITORY" --json isDraft --jq .isDraft > /tmp/release-is-draft 2>/dev/null; then
+            if [ "$(cat /tmp/release-is-draft)" != "true" ]; then
+              echo "::error::Release $GITHUB_REF_NAME already exists in $RELEASE_REPOSITORY and is not a draft."
+              exit 1
+            fi
+            gh release edit "$GITHUB_REF_NAME" --repo "$RELEASE_REPOSITORY" --draft --title "Codata $GITHUB_REF_NAME" --notes "$GITHUB_REF_NAME"
+          else
+            gh release create "$GITHUB_REF_NAME" --repo "$RELEASE_REPOSITORY" --target main --title "Codata $GITHUB_REF_NAME" --notes "$GITHUB_REF_NAME" --draft
+          fi
+
   build-windows:
+    needs: prepare-release
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,15 +87,25 @@ jobs:
           cd desktop-tauri
           npx @tauri-apps/cli build --config '{"build":{"beforeBuildCommand":""},"bundle":{"createUpdaterArtifacts":true}}'
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-bundle
-          path: |
+      - name: Upload Windows release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          shopt -s nullglob
+          assets=(
             desktop-tauri/src-tauri/target/release/bundle/nsis/*.exe
             desktop-tauri/src-tauri/target/release/bundle/nsis/*.exe.sig
+          )
+          if [ "${#assets[@]}" -ne 2 ]; then
+            echo "::error::Expected Windows installer and signature, found ${#assets[@]} file(s)."
+            printf '%s\n' "${assets[@]}"
+            exit 1
+          fi
+          gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --repo "$RELEASE_REPOSITORY" --clobber
 
   build-macos:
+    needs: prepare-release
     runs-on: macos-latest
     env:
       APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE || vars.APPLE_CERTIFICATE }}
@@ -323,14 +357,22 @@ jobs:
           xcrun stapler validate "$ARCHIVE_CHECK/Codata.app"
           rm -rf "$ARCHIVE_CHECK"
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-${{ matrix.arch }}-bundle
-          path: |
+      - name: Upload macOS release assets
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          shopt -s nullglob
+          assets=(
             desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
             desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/Codata_*.app.tar.gz
             desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/macos/Codata_*.app.tar.gz.sig
+          )
+          if [ "${#assets[@]}" -ne 3 ]; then
+            echo "::error::Expected macOS DMG, updater archive, and signature, found ${#assets[@]} file(s)."
+            printf '%s\n' "${assets[@]}"
+            exit 1
+          fi
+          gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --repo "$RELEASE_REPOSITORY" --clobber
 
   publish:
     needs: [build-windows, build-macos]
@@ -340,38 +382,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: List artifacts
-        run: find artifacts -type f | sort
+      - name: Download release assets for manifest generation
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          rm -rf artifacts
+          mkdir -p artifacts/windows-bundle artifacts/macos-aarch64-bundle artifacts/macos-x64-bundle
+          gh release download "$GITHUB_REF_NAME" --repo "$RELEASE_REPOSITORY" --dir artifacts/windows-bundle --clobber \
+            --pattern "*.exe" \
+            --pattern "*.exe.sig"
+          gh release download "$GITHUB_REF_NAME" --repo "$RELEASE_REPOSITORY" --dir artifacts/macos-aarch64-bundle --clobber \
+            --pattern "*_aarch64.app.tar.gz" \
+            --pattern "*_aarch64.app.tar.gz.sig" \
+            --pattern "*_aarch64.dmg"
+          gh release download "$GITHUB_REF_NAME" --repo "$RELEASE_REPOSITORY" --dir artifacts/macos-x64-bundle --clobber \
+            --pattern "*_x64.app.tar.gz" \
+            --pattern "*_x64.app.tar.gz.sig" \
+            --pattern "*_x64.dmg"
+          find artifacts -type f | sort
 
       - name: Generate GitHub Release download and updater manifests
         env:
-          # Assets ship to the public release repo so the desktop updater can
-          # download them anonymously (code repo is private).
-          CODATA_RELEASE_REPOSITORY: ${{ vars.RELEASE_REPOSITORY || 'Mlilion/Codata-releases' }}
+          CODATA_RELEASE_REPOSITORY: ${{ env.RELEASE_REPOSITORY }}
         run: node scripts/generate-release-manifests.mjs artifacts
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          # Publish to the public release repo, not this private code repo.
-          # RELEASE_TOKEN must have contents:write on Mlilion/Codata-releases
-          # (GITHUB_TOKEN only covers the current repo).
-          repository: ${{ vars.RELEASE_REPOSITORY || 'Mlilion/Codata-releases' }}
-          token: ${{ secrets.RELEASE_TOKEN }}
-          tag_name: ${{ github.ref_name }}
-          # The release repo has no source history, so target the release repo's
-          # default branch and skip auto-generated notes (which diff commits and
-          # would 400 on Invalid target_commitish for a cross-repo publish).
-          target_commitish: main
-          name: Codata ${{ github.ref_name }}
-          body: ${{ github.ref_name }}
-          files: |
-            artifacts/windows-bundle/**/*
-            artifacts/macos-aarch64-bundle/**/*
-            artifacts/macos-x64-bundle/**/*
-            release-site/latest.json
-            release-site/downloads-latest.json
+      - name: Upload manifests and publish release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" release-site/latest.json release-site/downloads-latest.json --repo "$RELEASE_REPOSITORY" --clobber
+          gh release edit "$GITHUB_REF_NAME" --repo "$RELEASE_REPOSITORY" --draft=false --latest --title "Codata $GITHUB_REF_NAME" --notes "$GITHUB_REF_NAME"
