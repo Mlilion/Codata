@@ -31,6 +31,21 @@ const FALLBACK_BACKEND_URL = resolveBrowserBackendUrl();
 const WEB_DEV_BACKEND_TOKEN =
   process.env.NEXT_PUBLIC_CODATA_DEV_SESSION_TOKEN || "";
 
+function normalizeReadyBackendUrl(url: string): string {
+  const normalized = url.trim().replace(/\/+$/, "");
+
+  try {
+    const parsed = new URL(normalized);
+    if (parsed.port === "0") {
+      throw new Error("port 0");
+    }
+  } catch {
+    throw new Error(`Desktop backend URL is not ready: ${url}`);
+  }
+
+  return normalized;
+}
+
 /**
  * Get the backend URL. In desktop mode, this is resolved asynchronously
  * from the desktop shell on first call, then cached.
@@ -47,8 +62,9 @@ export function getBackendUrl(): Promise<string> {
     _backendUrlPromise = desktopAPI
       .getBackendUrl()
       .then((url) => {
-        _backendUrl = url;
-        return url;
+        const readyUrl = normalizeReadyBackendUrl(url);
+        _backendUrl = readyUrl;
+        return readyUrl;
       })
       .catch((err) => {
         _backendUrlPromise = null;
@@ -67,7 +83,7 @@ export function getBackendUrl(): Promise<string> {
  */
 export function resetBackendUrl(newUrl?: string): void {
   if (newUrl) {
-    _backendUrl = newUrl;
+    _backendUrl = normalizeReadyBackendUrl(newUrl);
   } else {
     _backendUrl = null;
   }

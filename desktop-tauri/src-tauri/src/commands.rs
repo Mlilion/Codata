@@ -8,7 +8,7 @@ use crate::{backend::BackendState, tray, PendingNavigationState};
 /// Get the backend URL (http://127.0.0.1:{port}).
 #[tauri::command]
 pub async fn get_backend_url(state: tauri::State<'_, BackendState>) -> Result<String, String> {
-    Ok(state.url().await)
+    state.url().await
 }
 
 /// Get the backend's per-run session bearer token. The token is read

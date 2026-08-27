@@ -28,6 +28,10 @@ const WATCHDOG_INTERVAL: Duration = Duration::from_secs(10);
 const TOKEN_MAX_WAIT: Duration = Duration::from_secs(5);
 /// Interval between retries while waiting for the token file to appear.
 const TOKEN_POLL_INTERVAL: Duration = Duration::from_millis(100);
+/// How long IPC callers wait for the backend port to be initialized.
+const URL_READY_MAX_WAIT: Duration = Duration::from_secs(30);
+/// Interval between retries while waiting for the backend port.
+const URL_READY_POLL_INTERVAL: Duration = Duration::from_millis(50);
 /// Consecutive health failures before watchdog triggers a restart.
 const WATCHDOG_MAX_FAILURES: u32 = 3;
 /// Maximum time to wait for health endpoint during startup.
@@ -94,9 +98,25 @@ impl BackendState {
     }
 
     /// Returns the backend URL (http://127.0.0.1:{port}).
-    pub async fn url(&self) -> String {
-        let inner = self.inner.lock().await;
-        format!("http://127.0.0.1:{}", inner.port)
+    pub async fn url(&self) -> Result<String, String> {
+        let deadline = std::time::Instant::now() + URL_READY_MAX_WAIT;
+
+        loop {
+            let port = {
+                let inner = self.inner.lock().await;
+                inner.port
+            };
+
+            if port > 0 {
+                return Ok(format!("http://127.0.0.1:{port}"));
+            }
+
+            if std::time::Instant::now() >= deadline {
+                return Err("Backend URL not yet available".to_string());
+            }
+
+            sleep(URL_READY_POLL_INTERVAL).await;
+        }
     }
 
     /// Set port for dev mode (backend already running externally).
@@ -842,6 +862,33 @@ fn read_recent_log_lines(path: &Path, max_lines: usize) -> String {
             }
         }
         Err(_) => "<backend log unavailable>".to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::BackendState;
+    use std::time::Duration;
+
+    #[tokio::test]
+    async fn url_waits_until_backend_port_is_set() {
+        let state = BackendState::new();
+        let inner = state.inner.clone();
+
+        let pending_url = tokio::spawn(async move { state.url().await });
+
+        tokio::time::sleep(Duration::from_millis(10)).await;
+        {
+            let mut guard = inner.lock().await;
+            guard.port = 24892;
+        }
+
+        let url = tokio::time::timeout(Duration::from_secs(1), pending_url)
+            .await
+            .expect("backend URL did not become available")
+            .expect("backend URL task panicked")
+            .expect("backend URL returned an error");
+        assert_eq!(url, "http://127.0.0.1:24892");
     }
 }
 
