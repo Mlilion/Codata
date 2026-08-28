@@ -88,6 +88,27 @@ class TestRunQuery:
         assert not r.success
         assert "Unknown column" in r.error
 
+    async def test_non_retryable_platform_error_is_terminal(self, monkeypatch):
+        """远端明确说 retryable=false 时，不要把 JSON 当普通输出喂回模型。
+
+        否则模型看不到这是平台配置问题，会用同一 SQL 反复调用 run_query，
+        最后只剩 loop detector 的 forced stop，真实错误被吞掉。
+        """
+        payload = {
+            "ok": False,
+            "error": "本部署未启用裸 SQL 执行（SEM_RAW_SQL_ENABLE）。改 SQL 重试无用。",
+            "error_type": "not_configured",
+            "retryable": False,
+        }
+        client = _FakeClient({"execute_sql": [_Res(json.dumps(payload, ensure_ascii=False))]})
+        _install(monkeypatch, client)
+
+        r = await RunQueryTool().execute({"sql": "SELECT 1 AS ping"}, _ctx())
+
+        assert not r.success
+        assert "not_configured" in (r.error or "")
+        assert "改 SQL 重试无用" in (r.error or "")
+
     async def test_async_job_polled_to_success(self, monkeypatch):
         # execute_sql returns a job; get_job_status runs once then succeeds.
         client = _FakeClient({

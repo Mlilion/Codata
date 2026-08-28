@@ -102,6 +102,10 @@ class RunQueryTool(ToolDefinition):
             # Not JSON we understand — hand the raw text back.
             return ToolResult(output=output or "查询无输出")
 
+        remote_error = _remote_error_from_payload(payload)
+        if remote_error:
+            return ToolResult(error=remote_error)
+
         parsed = _parse_execute_sql({"sql": sql}, payload)
 
         # 2) Sync result → done.
@@ -165,6 +169,23 @@ def _safe_json(text: str) -> Any | None:
         return json.loads(t)
     except (json.JSONDecodeError, ValueError):
         return None
+
+
+def _remote_error_from_payload(payload: dict[str, Any]) -> str | None:
+    """Surface structured MCP failures as tool errors, not successful text.
+
+    CodataAdmin returns ok=false for platform/config failures such as disabled
+    raw SQL. If we feed that JSON back as a successful tool output, the model
+    tends to retry the same query until loop detection masks the real cause.
+    """
+    if payload.get("ok") is not False:
+        return None
+
+    error_type = str(payload.get("error_type") or payload.get("rule") or "execution_failed")
+    message = str(payload.get("error") or payload.get("message") or "查询返回失败")
+    if payload.get("retryable") is False:
+        message += " 远端标记 retryable=false，改 SQL 或重复执行同一查询无用。"
+    return f"查询执行失败({error_type}): {message}"
 
 
 def _format_rows_preview(columns: list[str], rows: list[list], row_count: int) -> str:
