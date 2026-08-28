@@ -18,6 +18,16 @@ export interface IndicatorItem {
   unit?: string;
   sql?: string;
   description?: string;
+  indicatorType?: string;
+  primaryEntity?: string;
+  additivity?: string;
+  dataLayer?: string;
+  granularity?: string;
+  availableDimensions?: string[];
+  match?: string;
+  score?: number;
+  needsClarify?: boolean;
+  notBuildable?: boolean;
 }
 
 /**
@@ -121,12 +131,67 @@ export function codataIndicatorsFromMetadata(
   if (!Array.isArray(raw)) return null;
   const items = (raw as Record<string, unknown>[])
     .filter((it) => it && typeof it === "object")
-    .map((it) => ({
-      code: typeof it.code === "string" ? it.code : undefined,
-      name: typeof it.name === "string" ? it.name : undefined,
-      unit: typeof it.unit === "string" ? it.unit : undefined,
-      sql: typeof it.sql === "string" ? it.sql : undefined,
-      description: typeof it.description === "string" ? it.description : undefined,
-    }));
+    .map((it) => normalizeIndicatorItem(it));
   return items.length > 0 ? items : null;
+}
+
+function normalizeIndicatorItem(it: Record<string, unknown>): IndicatorItem {
+  const impl = primaryIndicatorImpl(it);
+  return {
+    code: stringValue(it.code),
+    name: stringValue(it.name),
+    unit: stringValue(it.unit),
+    sql: indicatorSql(it, impl),
+    description: stringValue(it.business_definition) ?? stringValue(it.description),
+    indicatorType: stringValue(it.indicator_type),
+    primaryEntity: stringValue(it.primary_entity),
+    additivity: stringValue(it.additivity),
+    dataLayer: stringValue(it.data_layer) ?? stringValue(impl?.data_layer),
+    granularity: stringValue(it.granularity) ?? stringValue(impl?.granularity),
+    availableDimensions: stringArray(it.available_dimensions),
+    match: stringValue(it.match),
+    score: numberValue(it.score),
+    needsClarify: booleanValue(it.needs_clarify),
+    notBuildable: booleanValue(it.not_buildable),
+  };
+}
+
+function primaryIndicatorImpl(it: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (!Array.isArray(it.impls)) return undefined;
+  const impls = it.impls.filter(
+    (impl): impl is Record<string, unknown> => !!impl && typeof impl === "object",
+  );
+  return impls.find((impl) => impl.role === "primary") ?? impls[0];
+}
+
+function indicatorSql(
+  it: Record<string, unknown>,
+  impl?: Record<string, unknown>,
+): string | undefined {
+  return (
+    stringValue(it.sql) ??
+    stringValue(it.calculation_rule) ??
+    stringValue(it.composite_formula) ??
+    stringValue(it.sql_text) ??
+    stringValue(impl?.sql_text) ??
+    stringValue(impl?.sql)
+  );
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function numberValue(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function booleanValue(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function stringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const items = value.filter((item): item is string => typeof item === "string" && !!item.trim());
+  return items.length > 0 ? items : undefined;
 }

@@ -127,13 +127,87 @@ def test_codataadmin_search_semantic_items_become_indicator_list():
     md = parse_datasage_result("codataadmin_search_semantic", {}, raw)
 
     assert md["codata_kind"] == "indicator"
+    assert md["indicators"][0]["code"] == "total_revenue"
+    assert md["indicators"][0]["name"] == "营业收入"
+    assert md["indicators"][0]["unit"] == "元"
+    assert md["indicators"][0]["sql"] is None
+    assert md["indicators"][0]["description"] == "match: exact; score: 0.97"
+    assert md["indicators"][0]["score"] == 0.97
+    assert md["indicators"][0]["match"] == "exact"
+    assert md["total"] == 1
+
+
+def test_codataadmin_search_semantic_preserves_match_metadata():
+    raw = json.dumps({
+        "ok": True,
+        "items": [
+            {
+                "type": "indicator",
+                "code": "total_revenue",
+                "name": "营业收入",
+                "score": 0.93,
+                "match": "exact",
+                "needs_clarify": False,
+                "not_buildable": False,
+            },
+        ],
+    }, ensure_ascii=False)
+
+    md = parse_datasage_result("codataadmin_search_semantic", {}, raw)
+
+    assert md["indicators"][0]["score"] == 0.93
+    assert md["indicators"][0]["match"] == "exact"
+    assert md["indicators"][0]["needs_clarify"] is False
+    assert md["indicators"][0]["not_buildable"] is False
+
+
+def test_codataadmin_get_model_context_indicators_become_rich_indicator_list():
+    raw = json.dumps({
+        "ok": True,
+        "model": {"code": "demo_finance_analysis", "version": 1},
+        "indicators": [
+            {
+                "code": "total_revenue",
+                "name": "营业收入",
+                "indicator_type": "atomic",
+                "primary_entity": "finance_pnl_monthly",
+                "unit": "元",
+                "additivity": "additive",
+                "description": "按财务月确认的实际营业收入。",
+                "business_definition": "按财务月确认的实际营业收入。口径版本: DEMO_FIN_V1; 单位: 元。",
+                "impls": [
+                    {
+                        "role": "primary",
+                        "sql_text": "SELECT SUM(revenue) AS total_revenue FROM finance_demo_pnl_monthly",
+                        "label": "DEMO_FIN 主口径",
+                        "data_layer": "DWS",
+                        "granularity": "month_bu_region",
+                    }
+                ],
+                "available_dimensions": ["fiscal_month", "business_unit"],
+            }
+        ],
+    }, ensure_ascii=False)
+
+    md = parse_datasage_result("codataadmin_get_model_context", {}, raw)
+
+    assert md["codata_kind"] == "indicator"
+    assert md["source"] == "model_context"
+    assert md["model"] == {"code": "demo_finance_analysis", "version": 1}
     assert md["indicators"] == [
         {
             "code": "total_revenue",
             "name": "营业收入",
             "unit": "元",
-            "sql": None,
-            "description": "match: exact; score: 0.97",
+            "sql": "SELECT SUM(revenue) AS total_revenue FROM finance_demo_pnl_monthly",
+            "description": "按财务月确认的实际营业收入。口径版本: DEMO_FIN_V1; 单位: 元。",
+            "indicator_type": "atomic",
+            "primary_entity": "finance_pnl_monthly",
+            "additivity": "additive",
+            "data_layer": "DWS",
+            "granularity": "month_bu_region",
+            "impl_label": "DEMO_FIN 主口径",
+            "available_dimensions": ["fiscal_month", "business_unit"],
         }
     ]
     assert md["total"] == 1

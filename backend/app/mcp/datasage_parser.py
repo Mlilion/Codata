@@ -44,6 +44,7 @@ COMPILE_METRIC_SQL = "compile_metric_sql"
 GET_JOB_STATUS = "get_job_status"
 QUERY_INDICATOR = "query_indicator"
 SEARCH_SEMANTIC = "search_semantic"
+GET_MODEL_CONTEXT = "get_model_context"
 
 KNOWN_TOOLS = frozenset(
     {
@@ -53,6 +54,7 @@ KNOWN_TOOLS = frozenset(
         GET_JOB_STATUS,
         QUERY_INDICATOR,
         SEARCH_SEMANTIC,
+        GET_MODEL_CONTEXT,
     }
 )
 
@@ -97,6 +99,8 @@ def parse_datasage_result(
             return _parse_query_indicator(args, payload)
         if tool == SEARCH_SEMANTIC:
             return _parse_search_semantic(payload)
+        if tool == GET_MODEL_CONTEXT:
+            return _parse_model_context(payload)
         if tool == GET_JOB_STATUS:
             return _parse_job_status(payload)
         if tool in (SEARCH_INDICATORS, COMPILE_METRIC_SQL):
@@ -261,15 +265,7 @@ def _parse_indicators(payload: Any) -> dict[str, Any] | None:
     for item in results:
         if not isinstance(item, dict):
             continue
-        indicators.append(
-            {
-                "code": item.get("code"),
-                "name": item.get("name"),
-                "unit": item.get("unit"),
-                "sql": item.get("calculation_rule") or item.get("composite_formula"),
-                "description": item.get("description"),
-            }
-        )
+        indicators.append(_indicator_metadata(item))
 
     return {
         "codata_kind": "indicator",
@@ -290,19 +286,7 @@ def _parse_search_semantic(payload: Any) -> dict[str, Any] | None:
     for item in items:
         if not isinstance(item, dict) or item.get("type") != "indicator":
             continue
-        indicators.append(
-            {
-                "code": item.get("code"),
-                "name": item.get("name"),
-                "unit": item.get("unit"),
-                "sql": (
-                    item.get("calculation_rule")
-                    or item.get("composite_formula")
-                    or item.get("sql")
-                ),
-                "description": item.get("description") or _semantic_match_description(item),
-            }
-        )
+        indicators.append(_indicator_metadata(item, fallback_description=_semantic_match_description(item)))
 
     if not indicators:
         return None
@@ -312,6 +296,112 @@ def _parse_search_semantic(payload: Any) -> dict[str, Any] | None:
         "indicators": indicators,
         "total": len(indicators),
     }
+
+
+def _parse_model_context(payload: Any) -> dict[str, Any] | None:
+    if not isinstance(payload, dict):
+        return None
+
+    raw_indicators = payload.get("indicators")
+    if not isinstance(raw_indicators, list) or not raw_indicators:
+        return None
+
+    indicators = [
+        _indicator_metadata(item)
+        for item in raw_indicators
+        if isinstance(item, dict)
+    ]
+    if not indicators:
+        return None
+
+    result: dict[str, Any] = {
+        "codata_kind": "indicator",
+        "source": "model_context",
+        "indicators": indicators,
+        "total": len(indicators),
+    }
+    if isinstance(payload.get("model"), dict):
+        result["model"] = payload["model"]
+    return result
+
+
+def _indicator_metadata(
+    item: dict[str, Any],
+    *,
+    fallback_description: str | None = None,
+) -> dict[str, Any]:
+    impl = _primary_indicator_impl(item)
+    meta = {
+        "code": item.get("code"),
+        "name": item.get("name"),
+        "unit": item.get("unit"),
+        "sql": _indicator_sql(item, impl),
+        "description": (
+            item.get("business_definition")
+            or item.get("description")
+            or fallback_description
+        ),
+    }
+    _copy_known_fields(
+        meta,
+        item,
+        (
+            "score",
+            "match",
+            "needs_clarify",
+            "not_buildable",
+            "indicator_type",
+            "primary_entity",
+            "additivity",
+            "available_dimensions",
+        ),
+    )
+    if impl:
+        for source_key, target_key in (
+            ("data_layer", "data_layer"),
+            ("granularity", "granularity"),
+            ("label", "impl_label"),
+        ):
+            value = impl.get(source_key)
+            if value is not None:
+                meta[target_key] = value
+    return meta
+
+
+def _indicator_sql(item: dict[str, Any], impl: dict[str, Any] | None) -> Any:
+    for key in ("calculation_rule", "composite_formula", "sql", "sql_text"):
+        value = item.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    if impl:
+        value = impl.get("sql_text") or impl.get("sql")
+        if isinstance(value, str) and value.strip():
+            return value
+    return None
+
+
+def _primary_indicator_impl(item: dict[str, Any]) -> dict[str, Any] | None:
+    impls = item.get("impls")
+    if not isinstance(impls, list):
+        return None
+    dict_impls = [impl for impl in impls if isinstance(impl, dict)]
+    if not dict_impls:
+        return None
+    for impl in dict_impls:
+        if impl.get("role") == "primary":
+            return impl
+    return dict_impls[0]
+
+
+def _copy_known_fields(
+    target: dict[str, Any],
+    source: dict[str, Any],
+    keys: tuple[str, ...],
+) -> None:
+    for key in keys:
+        value = source.get(key)
+        if value is not None:
+            target[key] = value
 
 
 def _sql_from_args_or_payload(

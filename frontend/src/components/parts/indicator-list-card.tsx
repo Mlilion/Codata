@@ -24,6 +24,8 @@ function indicatorIcon(item: IndicatorItem) {
 function SqlDrawer({ item }: { item: IndicatorItem }) {
   const [copied, setCopied] = useState(false);
   const hasSql = !!item.sql?.trim();
+  const dimensionPreview = item.availableDimensions?.slice(0, 8).join("、");
+  const hiddenDimensionCount = Math.max((item.availableDimensions?.length ?? 0) - 8, 0);
 
   const copySql = () => {
     if (!item.sql) return;
@@ -33,7 +35,27 @@ function SqlDrawer({ item }: { item: IndicatorItem }) {
   };
 
   return (
-    <div className="border-t border-[rgba(11,118,246,0.14)] bg-[rgba(11,118,246,0.035)] px-4 pb-4 pt-0">
+    <div className="space-y-3 border-t border-[rgba(11,118,246,0.14)] bg-[rgba(11,118,246,0.035)] px-4 pb-4 pt-3">
+      {(item.description || item.primaryEntity || item.additivity || dimensionPreview) && (
+        <div className="grid gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-secondary)] md:grid-cols-2">
+          {item.description && (
+            <div className="md:col-span-2">
+              <span className="text-[var(--text-tertiary)]">口径</span>
+              <p className="mt-1 leading-5 text-[var(--text-secondary)]">{item.description}</p>
+            </div>
+          )}
+          {item.primaryEntity && <MetaLine label="主实体" value={item.primaryEntity} />}
+          {item.additivity && <MetaLine label="可加性" value={item.additivity} />}
+          {dimensionPreview && (
+            <div className="md:col-span-2">
+              <span className="text-[var(--text-tertiary)]">可用维度</span>
+              <p className="mt-1 leading-5 text-[var(--text-secondary)]">
+                {dimensionPreview}{hiddenDimensionCount > 0 ? ` 等 ${item.availableDimensions?.length} 个` : ""}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
       <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)]">
         <div className="flex h-9 items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--surface-secondary)]/70 px-3">
           <span className={cn("h-2 w-2 rounded-full", hasSql ? "bg-[var(--color-success)]" : "bg-[var(--border-heavy)]")} />
@@ -61,6 +83,40 @@ function SqlDrawer({ item }: { item: IndicatorItem }) {
         )}
       </div>
     </div>
+  );
+}
+
+function MetaLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <span className="text-[var(--text-tertiary)]">{label}</span>
+      <span className="ml-2 font-mono text-[var(--text-secondary)]">{value}</span>
+    </div>
+  );
+}
+
+function DetailSummary({ item }: { item: IndicatorItem }) {
+  const tags = [item.dataLayer, item.granularity, item.indicatorType]
+    .filter((value): value is string => Boolean(value));
+
+  return (
+    <span className="flex min-w-0 flex-col gap-1">
+      <span className="truncate text-sm text-[var(--text-secondary)]">
+        {item.description || "暂无指标说明"}
+      </span>
+      {tags.length > 0 && (
+        <span className="flex min-w-0 flex-wrap gap-1.5">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="max-w-[180px] truncate rounded-md bg-[var(--surface-secondary)] px-1.5 py-0.5 font-mono text-[11px] text-[var(--text-tertiary)]"
+            >
+              {tag}
+            </span>
+          ))}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -124,9 +180,7 @@ function IndicatorRow({
             <span className="text-xs text-[var(--text-tertiary)]">-</span>
           )}
         </span>
-        <span className="min-w-0 truncate text-sm text-[var(--text-secondary)]">
-          {item.description || "暂无指标说明"}
-        </span>
+        <DetailSummary item={item} />
         <span className="flex justify-end">
           {hasSql ? (
             <ChevronDown
