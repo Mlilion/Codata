@@ -8,6 +8,34 @@ const tauriConfig = JSON.parse(fs.readFileSync("desktop-tauri/src-tauri/tauri.co
 const pyinstallerSpec = fs.readFileSync("backend/codata.spec", "utf8");
 const verifyBundleScript = fs.readFileSync("scripts/verify-bundle.mjs", "utf8");
 
+function jobBlock(name) {
+  const header = `  ${name}:\n`;
+  const start = workflow.indexOf(header);
+  assert.notEqual(start, -1, `${name} job should exist`);
+
+  const afterHeader = workflow.slice(start + header.length);
+  const nextJob = afterHeader.search(/\n  [A-Za-z0-9_-]+:\n/);
+  return nextJob === -1 ? workflow.slice(start) : workflow.slice(start, start + header.length + nextJob);
+}
+
+test("release workflow temporarily skips macOS packaging", () => {
+  const macosJob = jobBlock("build-macos");
+  const publishJob = jobBlock("publish");
+
+  assert.match(macosJob, /if:\s+\$\{\{\s*false\s*\}\}/);
+  assert.match(publishJob, /needs:\s+\[build-windows\]/);
+  assert.doesNotMatch(publishJob, /build-macos/);
+});
+
+test("release workflow publishes Windows-only manifests while macOS packaging is disabled", () => {
+  const publishJob = jobBlock("publish");
+
+  assert.match(publishJob, /CODATA_RELEASE_PLATFORMS:\s+windows/);
+  assert.match(publishJob, /artifacts\/windows-bundle/);
+  assert.doesNotMatch(publishJob, /macos-aarch64-bundle/);
+  assert.doesNotMatch(publishJob, /macos-x64-bundle/);
+});
+
 test("macOS release workflow requires Apple signing and notarization credentials", () => {
   for (const name of ["APPLE_CERTIFICATE", "APPLE_CERTIFICATE_PASSWORD", "APPLE_SIGNING_IDENTITY"]) {
     assert.match(workflow, new RegExp(name));

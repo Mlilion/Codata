@@ -99,48 +99,101 @@ function requireFile(label, filePath) {
   return filePath;
 }
 
-const windowsInstaller = requireFile(
-  "Windows NSIS installer",
-  inArtifact("windows-bundle", (name) => name.endsWith(".exe")),
-);
-const macAppleSiliconUpdate = requireFile(
-  "macOS Apple Silicon updater archive",
-  inArtifact("macos-aarch64-bundle", (name) => name.endsWith(".app.tar.gz")),
-);
-const macIntelUpdate = requireFile(
-  "macOS Intel updater archive",
-  inArtifact("macos-x64-bundle", (name) => name.endsWith(".app.tar.gz")),
-);
-const macAppleSiliconDmg = requireFile(
-  "macOS Apple Silicon DMG",
-  inArtifact("macos-aarch64-bundle", (name) => name.endsWith(".dmg")),
-);
-const macIntelDmg = requireFile(
-  "macOS Intel DMG",
-  inArtifact("macos-x64-bundle", (name) => name.endsWith(".dmg")),
-);
+function parseReleasePlatforms(value) {
+  const requested = (value || "windows,macos-aarch64,macos-x86_64")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const platforms = new Set();
+
+  for (const item of requested) {
+    if (item === "all") {
+      platforms.add("windows-x86_64");
+      platforms.add("macos-aarch64");
+      platforms.add("macos-x86_64");
+    } else if (item === "windows" || item === "windows-x86_64") {
+      platforms.add("windows-x86_64");
+    } else if (item === "macos") {
+      platforms.add("macos-aarch64");
+      platforms.add("macos-x86_64");
+    } else if (item === "macos-aarch64" || item === "macos-x86_64") {
+      platforms.add(item);
+    } else {
+      throw new Error(`Unknown release platform: ${item}`);
+    }
+  }
+
+  if (platforms.size === 0) {
+    throw new Error("At least one release platform must be enabled");
+  }
+
+  return platforms;
+}
+
+const enabledPlatforms = parseReleasePlatforms(process.env.CODATA_RELEASE_PLATFORMS);
+const includeWindows = enabledPlatforms.has("windows-x86_64");
+const includeMacAppleSilicon = enabledPlatforms.has("macos-aarch64");
+const includeMacIntel = enabledPlatforms.has("macos-x86_64");
+
+const windowsInstaller = includeWindows
+  ? requireFile(
+      "Windows NSIS installer",
+      inArtifact("windows-bundle", (name) => name.endsWith(".exe")),
+    )
+  : null;
+const macAppleSiliconUpdate = includeMacAppleSilicon
+  ? requireFile(
+      "macOS Apple Silicon updater archive",
+      inArtifact("macos-aarch64-bundle", (name) => name.endsWith(".app.tar.gz")),
+    )
+  : null;
+const macIntelUpdate = includeMacIntel
+  ? requireFile(
+      "macOS Intel updater archive",
+      inArtifact("macos-x64-bundle", (name) => name.endsWith(".app.tar.gz")),
+    )
+  : null;
+const macAppleSiliconDmg = includeMacAppleSilicon
+  ? requireFile(
+      "macOS Apple Silicon DMG",
+      inArtifact("macos-aarch64-bundle", (name) => name.endsWith(".dmg")),
+    )
+  : null;
+const macIntelDmg = includeMacIntel
+  ? requireFile(
+      "macOS Intel DMG",
+      inArtifact("macos-x64-bundle", (name) => name.endsWith(".dmg")),
+    )
+  : null;
 
 const notes = process.env.RELEASE_NOTES || `Codata ${version}`;
 const pubDate = new Date().toISOString();
+
+const updatePlatforms = {};
+if (windowsInstaller) {
+  updatePlatforms["windows-x86_64"] = {
+    signature: readSignature(windowsInstaller),
+    url: publicUrl(windowsInstaller),
+  };
+}
+if (macAppleSiliconUpdate) {
+  updatePlatforms["darwin-aarch64"] = {
+    signature: readSignature(macAppleSiliconUpdate),
+    url: publicUrl(macAppleSiliconUpdate),
+  };
+}
+if (macIntelUpdate) {
+  updatePlatforms["darwin-x86_64"] = {
+    signature: readSignature(macIntelUpdate),
+    url: publicUrl(macIntelUpdate),
+  };
+}
 
 const updateManifest = {
   version,
   notes,
   pub_date: pubDate,
-  platforms: {
-    "windows-x86_64": {
-      signature: readSignature(windowsInstaller),
-      url: publicUrl(windowsInstaller),
-    },
-    "darwin-aarch64": {
-      signature: readSignature(macAppleSiliconUpdate),
-      url: publicUrl(macAppleSiliconUpdate),
-    },
-    "darwin-x86_64": {
-      signature: readSignature(macIntelUpdate),
-      url: publicUrl(macIntelUpdate),
-    },
-  },
+  platforms: updatePlatforms,
 };
 
 function downloadEntry(filePath, label, platform, arch, kind) {
@@ -156,16 +209,23 @@ function downloadEntry(filePath, label, platform, arch, kind) {
   };
 }
 
+const downloads = {};
+if (macAppleSiliconDmg) {
+  downloads["macos-aarch64"] = downloadEntry(macAppleSiliconDmg, "macOS Apple Silicon", "macos", "aarch64", "dmg");
+}
+if (macIntelDmg) {
+  downloads["macos-x86_64"] = downloadEntry(macIntelDmg, "macOS Intel", "macos", "x86_64", "dmg");
+}
+if (windowsInstaller) {
+  downloads["windows-x86_64"] = downloadEntry(windowsInstaller, "Windows", "windows", "x86_64", "nsis");
+}
+
 const downloadManifest = {
   version,
   notes,
   pub_date: pubDate,
   source: `https://github.com/${repository}/releases/tag/${tag}`,
-  downloads: {
-    "macos-aarch64": downloadEntry(macAppleSiliconDmg, "macOS Apple Silicon", "macos", "aarch64", "dmg"),
-    "macos-x86_64": downloadEntry(macIntelDmg, "macOS Intel", "macos", "x86_64", "dmg"),
-    "windows-x86_64": downloadEntry(windowsInstaller, "Windows", "windows", "x86_64", "nsis"),
-  },
+  downloads,
 };
 
 fs.writeFileSync(path.join(updateOutDir, "latest.json"), `${JSON.stringify(updateManifest, null, 2)}\n`);

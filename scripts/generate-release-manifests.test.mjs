@@ -23,6 +23,37 @@ function createArtifacts(root) {
   writeFile(path.join(root, "macos-x64-bundle/Codata_9.9.9_x64.dmg"), "x64dmg");
 }
 
+function createWindowsArtifacts(root) {
+  writeFile(path.join(root, "windows-bundle/Codata_9.9.9_x64-setup.exe"), "win");
+  writeFile(path.join(root, "windows-bundle/Codata_9.9.9_x64-setup.exe.sig"), "winsig");
+}
+
+test("generates Windows-only manifests when only Windows releases are enabled", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codata-release-manifest-"));
+  const artifacts = path.join(tmp, "artifacts");
+  const releaseSite = path.join(tmp, "release-site");
+  createWindowsArtifacts(artifacts);
+
+  const result = spawnSync(process.execPath, [scriptPath, artifacts], {
+    env: {
+      ...process.env,
+      GITHUB_REF_NAME: "v9.9.9",
+      RELEASE_SITE_DIR: releaseSite,
+      CODATA_RELEASE_PLATFORMS: "windows",
+    },
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+
+  const downloadManifest = JSON.parse(fs.readFileSync(path.join(releaseSite, "downloads/latest.json"), "utf8"));
+  const updateManifest = JSON.parse(fs.readFileSync(path.join(releaseSite, "update/latest.json"), "utf8"));
+
+  assert.deepEqual(Object.keys(updateManifest.platforms), ["windows-x86_64"]);
+  assert.deepEqual(Object.keys(downloadManifest.downloads), ["windows-x86_64"]);
+  assert.equal(downloadManifest.downloads["windows-x86_64"].kind, "nsis");
+});
+
 test("adds a run-specific query string to public release asset URLs", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "codata-release-manifest-"));
   const artifacts = path.join(tmp, "artifacts");

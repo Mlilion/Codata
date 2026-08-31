@@ -104,7 +104,10 @@ jobs:
           fi
           gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --repo "$RELEASE_REPOSITORY" --clobber
 
+  # Temporarily disabled while Codata releases focus on Windows users.
+  # Keep the job definition here so macOS packaging can be restored quickly.
   build-macos:
+    if: ${{ false }}
     needs: prepare-release
     runs-on: macos-latest
     env:
@@ -375,7 +378,7 @@ jobs:
           gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --repo "$RELEASE_REPOSITORY" --clobber
 
   publish:
-    needs: [build-windows, build-macos]
+    needs: [build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -387,23 +390,16 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           rm -rf artifacts
-          mkdir -p artifacts/windows-bundle artifacts/macos-aarch64-bundle artifacts/macos-x64-bundle
+          mkdir -p artifacts/windows-bundle
           gh release download "$GITHUB_REF_NAME" --repo "$RELEASE_REPOSITORY" --dir artifacts/windows-bundle --clobber \
             --pattern "*.exe" \
             --pattern "*.exe.sig"
-          gh release download "$GITHUB_REF_NAME" --repo "$RELEASE_REPOSITORY" --dir artifacts/macos-aarch64-bundle --clobber \
-            --pattern "*_aarch64.app.tar.gz" \
-            --pattern "*_aarch64.app.tar.gz.sig" \
-            --pattern "*_aarch64.dmg"
-          gh release download "$GITHUB_REF_NAME" --repo "$RELEASE_REPOSITORY" --dir artifacts/macos-x64-bundle --clobber \
-            --pattern "*_x64.app.tar.gz" \
-            --pattern "*_x64.app.tar.gz.sig" \
-            --pattern "*_x64.dmg"
           find artifacts -type f | sort
 
       - name: Generate GitHub Release download and updater manifests
         env:
           CODATA_RELEASE_REPOSITORY: ${{ env.RELEASE_REPOSITORY }}
+          CODATA_RELEASE_PLATFORMS: windows
         run: node scripts/generate-release-manifests.mjs artifacts
 
       - name: Upload manifests and publish release
