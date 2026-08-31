@@ -105,7 +105,7 @@ def _normalize_step_finish_reason(reason: str | None) -> StepFinishReason:
     """Normalize provider/internal finish reasons to the frontend contract."""
     if reason == "tool_calls":
         return "tool_use"
-    if reason in {"stop", "tool_use", "length", "error"}:
+    if reason in {"stop", "tool_use", "length", "error", "aborted"}:
         return cast(StepFinishReason, reason)
     logger.warning("Unexpected step finish reason %r; normalizing to 'error'", reason)
     return "error"
@@ -143,6 +143,47 @@ class SearchQuotaTracker:
 
 
 _search_quota = SearchQuotaTracker()
+
+
+async def _persist_interrupted_step(
+    session_factory: async_sessionmaker[AsyncSession],
+    *,
+    assistant_msg_id: str,
+    session_id: str,
+    text: str,
+    reasoning: str,
+    reason: StepFinishReason = "aborted",
+    tokens: dict[str, Any] | None = None,
+    cost: float = 0.0,
+) -> None:
+    """Persist visible partial output and a terminal marker for interrupted steps."""
+    async with session_factory() as db:
+        async with db.begin():
+            if text.strip():
+                await create_part(
+                    db,
+                    message_id=assistant_msg_id,
+                    session_id=session_id,
+                    data={"type": "text", "text": text},
+                )
+            if reasoning:
+                await create_part(
+                    db,
+                    message_id=assistant_msg_id,
+                    session_id=session_id,
+                    data={"type": "reasoning", "text": reasoning},
+                )
+            await create_part(
+                db,
+                message_id=assistant_msg_id,
+                session_id=session_id,
+                data={
+                    "type": "step-finish",
+                    "reason": reason,
+                    "tokens": tokens or {},
+                    "cost": cost,
+                },
+            )
 
 
 async def _track_session_file(
@@ -575,7 +616,11 @@ class SessionProcessor:
                                     if _tool:
                                         _ta = {"name": _tn}
                                 if _tool is None:
-                                    job.publish(SSEEvent(TOOL_ERROR, {"call_id": _ci, "error": f"Tool not found: {_tn}"}))
+                                    job.publish(SSEEvent(TOOL_ERROR, {
+                                        "call_id": _ci,
+                                        "error": f"Tool not found: {_tn}",
+                                        "message_id": self._assistant_msg_id,
+                                    }))
                                     continue
 
                                 # Permission check
@@ -585,7 +630,11 @@ class SessionProcessor:
                                 _action = evaluate(_tool.id, _rp, sp.merged_permissions)
 
                                 if _action == "deny":
-                                    job.publish(SSEEvent(TOOL_ERROR, {"call_id": _ci, "error": f"Permission denied for tool: {_tool.id}"}))
+                                    job.publish(SSEEvent(TOOL_ERROR, {
+                                        "call_id": _ci,
+                                        "error": f"Permission denied for tool: {_tool.id}",
+                                        "message_id": self._assistant_msg_id,
+                                    }))
                                     await _persist_tool_error(
                                         session_factory, self._assistant_msg_id,
                                         job.session_id, _tool.id, _ci, _ta, "Permission denied",
@@ -611,7 +660,11 @@ class SessionProcessor:
                                                 allow=bool(_decision.get("allowed")),
                                             )
                                         if not _decision.get("allowed"):
-                                            job.publish(SSEEvent(TOOL_ERROR, {"call_id": _ci, "error": f"User denied permission for: {_tool.id}"}))
+                                            job.publish(SSEEvent(TOOL_ERROR, {
+                                                "call_id": _ci,
+                                                "error": f"User denied permission for: {_tool.id}",
+                                                "message_id": self._assistant_msg_id,
+                                            }))
                                             await _persist_tool_error(
                                                 session_factory, self._assistant_msg_id,
                                                 job.session_id, _tool.id, _ci, _ta, "Permission denied by user",
@@ -631,6 +684,7 @@ class SessionProcessor:
                                 job.publish(SSEEvent(TOOL_START, {
                                     "tool": _tool.id, "call_id": _ci,
                                     "arguments": _ta, "session_id": job.session_id,
+                                    "message_id": self._assistant_msg_id,
                                 }))
 
                                 # Build context
@@ -735,6 +789,30 @@ class SessionProcessor:
 
                 break
 
+            except asyncio.CancelledError:
+                streaming_executor.cancel_all()
+                self.has_text = bool(accumulated_text.strip())
+                self.finish_reason = "aborted"
+                await _persist_interrupted_step(
+                    session_factory,
+                    assistant_msg_id=self._assistant_msg_id,
+                    session_id=job.session_id,
+                    text=accumulated_text,
+                    reasoning=accumulated_reasoning,
+                    reason="aborted",
+                    tokens=self.usage_data,
+                    cost=self.step_cost,
+                )
+                job.publish(SSEEvent(STEP_FINISH, {
+                    "message_id": self._assistant_msg_id,
+                    "session_id": job.session_id,
+                    "tokens": self.usage_data,
+                    "cost": self.step_cost,
+                    "total_cost": sp.total_cost + self.step_cost,
+                    "reason": self.finish_reason,
+                }))
+                raise
+
             except Exception as e:
                 stream_error = e
                 retry_reason = is_retryable(e)
@@ -772,6 +850,30 @@ class SessionProcessor:
                     continue
                 else:
                     break
+
+        if job.abort_event.is_set():
+            streaming_executor.cancel_all()
+            self.has_text = bool(accumulated_text.strip())
+            self.finish_reason = "aborted"
+            await _persist_interrupted_step(
+                session_factory,
+                assistant_msg_id=self._assistant_msg_id,
+                session_id=job.session_id,
+                text=accumulated_text,
+                reasoning=accumulated_reasoning,
+                reason="aborted",
+                tokens=self.usage_data,
+                cost=self.step_cost,
+            )
+            job.publish(SSEEvent(STEP_FINISH, {
+                "message_id": self._assistant_msg_id,
+                "session_id": job.session_id,
+                "tokens": self.usage_data,
+                "cost": self.step_cost,
+                "total_cost": sp.total_cost + self.step_cost,
+                "reason": self.finish_reason,
+            }))
+            return "stop"
 
         if stream_error:
             # --- Reactive compact: recover from context overflow via compaction ---
@@ -821,6 +923,8 @@ class SessionProcessor:
                     SSEEvent(
                         STEP_FINISH,
                         {
+                            "message_id": self._assistant_msg_id,
+                            "session_id": job.session_id,
                             "tokens": self.usage_data,
                             "cost": self.step_cost,
                             "total_cost": sp.total_cost + self.step_cost,
@@ -854,6 +958,8 @@ class SessionProcessor:
                 SSEEvent(
                     STEP_FINISH,
                     {
+                        "message_id": self._assistant_msg_id,
+                        "session_id": job.session_id,
                         "tokens": None,
                         "cost": 0.0,
                         "total_cost": sp.total_cost,
@@ -908,7 +1014,11 @@ class SessionProcessor:
                     if exec_result.timed_out:
                         timeout_msg = f"Tool timed out after {_cfg().tool_timeout}s: {tool.id}"
                         logger.warning(timeout_msg)
-                        job.publish(SSEEvent(TOOL_ERROR, {"call_id": call_id, "error": timeout_msg}))
+                        job.publish(SSEEvent(TOOL_ERROR, {
+                            "call_id": call_id,
+                            "error": timeout_msg,
+                            "message_id": self._assistant_msg_id,
+                        }))
                         await _update_tool_part_error(
                             session_factory, tool_part_id, tool.id, call_id, tool_args, timeout_msg,
                         )
@@ -921,7 +1031,11 @@ class SessionProcessor:
                         else:
                             err_msg = str(exec_result.error)
                             logger.exception("Tool execution error: %s", tool.id)
-                        job.publish(SSEEvent(TOOL_ERROR, {"call_id": call_id, "error": err_msg}))
+                        job.publish(SSEEvent(TOOL_ERROR, {
+                            "call_id": call_id,
+                            "error": err_msg,
+                            "message_id": self._assistant_msg_id,
+                        }))
                         await _update_tool_part_error(
                             session_factory, tool_part_id, tool.id, call_id, tool_args, err_msg,
                         )
@@ -934,13 +1048,19 @@ class SessionProcessor:
                     # Emit SSE result
                     if result.error:
                         job.publish(
-                            SSEEvent(TOOL_ERROR, {"call_id": call_id, "error": result.error, "tool": tool.id})
+                            SSEEvent(TOOL_ERROR, {
+                                "message_id": self._assistant_msg_id,
+                                "call_id": call_id,
+                                "error": result.error,
+                                "tool": tool.id,
+                            })
                         )
                     else:
                         job.publish(
                             SSEEvent(
                                 TOOL_RESULT,
                                 {
+                                    "message_id": self._assistant_msg_id,
                                     "call_id": call_id,
                                     "tool": tool.id,
                                     "output": result.output[:500] if result.output else "",
@@ -1129,6 +1249,8 @@ class SessionProcessor:
             SSEEvent(
                 STEP_FINISH,
                 {
+                    "message_id": self._assistant_msg_id,
+                    "session_id": job.session_id,
                     "tokens": self.usage_data,
                     "cost": self.step_cost,
                     "total_cost": sp.total_cost + self.step_cost,

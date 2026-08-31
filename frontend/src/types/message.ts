@@ -44,7 +44,7 @@ export interface StepStartPart {
 
 export interface StepFinishPart {
   type: "step-finish";
-  reason: "stop" | "tool_use" | "length" | "error";
+  reason: "stop" | "tool_use" | "length" | "error" | "aborted";
   tokens: Record<string, number>;
   cost: number;
   snapshot?: Record<string, unknown> | null;
@@ -138,7 +138,7 @@ export interface AssistantMessageInfo {
   cost?: number;
   tokens?: TokenUsage;
   error?: string | null;
-  finish?: "stop" | "tool_use" | "length" | "error" | null;
+  finish?: "stop" | "tool_use" | "length" | "error" | "aborted" | null;
   summary?: boolean;
   system?: boolean | string | null;
   hidden?: boolean;

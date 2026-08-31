@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 # --- Part types (discriminated union via 'type' field) ---
 
-StepFinishReason: TypeAlias = Literal["stop", "tool_use", "length", "error"]
+StepFinishReason: TypeAlias = Literal["stop", "tool_use", "length", "error", "aborted"]
 
 
 class TextPart(BaseModel):

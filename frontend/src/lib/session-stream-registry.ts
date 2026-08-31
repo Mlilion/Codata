@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { SSE_EVENTS } from "@/types/streaming";
 import { notifyBackgroundFinish } from "@/lib/background-notify";
 import { artifactTypeFromExtension, languageFromExtension } from "@/lib/artifacts";
+import { canFinalizeMessagesHandoff } from "@/lib/message-handoff";
 import { useChatStore } from "@/stores/chat-store";
 import { useConnectionStore } from "@/stores/connection-store";
 import { useArtifactStore } from "@/stores/artifact-store";
@@ -17,7 +18,7 @@ import { useWorkspaceStore, type WorkspaceTodo, type WorkspaceFile } from "@/sto
 import { useSettingsStore } from "@/stores/settings-store";
 import type { SessionResponse } from "@/types/session";
 import type { ArtifactType } from "@/types/artifact";
-import type { FilePart, MessageResponse, PaginatedMessages } from "@/types/message";
+import type { FilePart, PaginatedMessages } from "@/types/message";
 
 const PROGRESSIVE_BUFFER_INTERVAL_MS = 60;
 const FILE_RESULT_TOOLS = new Set([
@@ -262,11 +263,17 @@ export async function startStream(sessionId: string, streamId: string): Promise<
   const reasoningBuffer = new ProgressiveBuffer((text) => {
     store.getState().appendReasoningDelta(sessionId, text);
   });
+  const assistantMessageIds = new Set<string>();
+
+  const noteAssistantMessageId = (messageId: string | null | undefined) => {
+    if (messageId) assistantMessageIds.add(messageId);
+  };
 
   const waitForNextPaint = () =>
     new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
     );
+  const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
   const currentStreamCallIds = () => {
     const bucket = store.getState().sessions[sessionId];
@@ -285,58 +292,34 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     });
   };
 
-  const canFinalizeFromStreamingParts = (): boolean => {
-    const bucket = store.getState().sessions[sessionId];
-    const parts = bucket?.streamingParts ?? [];
-    if (hasRunningStreamingTool()) return false;
-
-    return parts.some((part) => {
-      if (part.type !== "step-finish") return false;
-      return part.reason !== "tool_use";
-    });
-  };
-
-  const canFinalizeFromMessage = (message: MessageResponse | undefined, callIds: Set<string>): boolean => {
-    if (!message || message.data.role !== "assistant") return false;
-    const hasCurrentTool = message.parts.some((part) => {
-      if (part.data.type !== "tool") return false;
-      return callIds.has(part.data.call_id);
-    });
-    if (callIds.size > 0 && !hasCurrentTool) return false;
-
-    const hasRunningTool = message.parts.some((part) => {
-      if (part.data.type !== "tool") return false;
-      if (callIds.size > 0 && !callIds.has(part.data.call_id)) return false;
-      return part.data.state.status === "running" || part.data.state.status === "pending";
-    });
-    if (hasRunningTool) return false;
-
-    return message.parts.some((part) => {
-      if (part.data.type !== "step-finish") return false;
-      if (callIds.size > 0 && !hasCurrentTool) return false;
-      return part.data.reason !== "tool_use";
-    });
-  };
-
   const canFinalizeFromCache = (sid: string) => {
     if (hasRunningStreamingTool()) return false;
-    if (canFinalizeFromStreamingParts()) return true;
     const qc = queryClientRef;
     if (!qc) return false;
     const callIds = currentStreamCallIds();
+    if (assistantMessageIds.size === 0 && callIds.size === 0) return false;
     const data = qc.getQueryData<InfiniteData<PaginatedMessages>>(
       queryKeys.messages.list(sid),
     );
     return data?.pages.some((page) =>
-      page.messages.some((message) => canFinalizeFromMessage(message, callIds)),
+      canFinalizeMessagesHandoff(page.messages, {
+        currentAssistantMessageIds: assistantMessageIds,
+        currentToolCallIds: callIds,
+      }),
     ) ?? false;
   };
 
   const canFinalizeFromPayload = (messages: PaginatedMessages | null | undefined) => {
     if (hasRunningStreamingTool()) return false;
-    if (canFinalizeFromStreamingParts()) return true;
     const callIds = currentStreamCallIds();
-    return messages?.messages.some((message) => canFinalizeFromMessage(message, callIds)) ?? false;
+    if (assistantMessageIds.size === 0 && callIds.size === 0) return false;
+    return canFinalizeMessagesHandoff(
+      messages?.messages,
+      {
+        currentAssistantMessageIds: assistantMessageIds,
+        currentToolCallIds: callIds,
+      },
+    );
   };
 
   const finishFromDatabase = async (sid: string) => {
@@ -392,6 +375,15 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     }
     if (qc) qc.invalidateQueries({ queryKey: queryKeys.sessions.all });
     return true;
+  };
+
+  const finishFromDatabaseWithRetry = async (sid: string) => {
+    for (const delay of [0, 250, 750, 1_500, 3_000]) {
+      if (delay > 0) await wait(delay);
+      const finished = await finishFromDatabase(sid);
+      if (finished) return true;
+    }
+    return false;
   };
 
   const client = new SSEClient({
@@ -459,6 +451,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
 
   client.on(SSE_EVENTS.TEXT_DELTA, (data) => {
     cancelPendingStepFinish();
+    noteAssistantMessageId(data.message_id);
     const bucket = store.getState().sessions[sessionId];
     if (bucket?.isModelLoading) store.getState().setModelLoading(sessionId, false);
     if (data.text) textBuffer.push(data.text);
@@ -471,6 +464,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
 
   client.on(SSE_EVENTS.TOOL_START, (data) => {
     cancelPendingStepFinish();
+    noteAssistantMessageId(data.message_id);
     if (data.tool && data.call_id) {
       store.getState().addToolStart(
         sessionId,
@@ -499,6 +493,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
 
   client.on(SSE_EVENTS.TOOL_RESULT, (data) => {
     cancelPendingStepFinish();
+    noteAssistantMessageId(data.message_id);
     if (!data.call_id) return;
     store.getState().setToolResult(
       sessionId,
@@ -586,6 +581,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
 
   client.on(SSE_EVENTS.TOOL_ERROR, (data) => {
     cancelPendingStepFinish();
+    noteAssistantMessageId(data.message_id);
     if (data.call_id) {
       store.getState().setToolError(
         sessionId,
@@ -607,10 +603,12 @@ export async function startStream(sessionId: string, streamId: string): Promise<
 
   client.on(SSE_EVENTS.STEP_START, (data) => {
     cancelPendingStepFinish();
+    noteAssistantMessageId(data.message_id);
     store.getState().addStepStart(sessionId, data.step ?? 0, data.snapshot ?? null);
   });
 
   client.on(SSE_EVENTS.STEP_FINISH, (data, id) => {
+    noteAssistantMessageId(data.message_id);
     store.getState().addStepFinish(
       sessionId,
       data.reason ?? "stop",
@@ -776,10 +774,11 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     cancelPendingStepFinish();
     textBuffer.flush();
     reasoningBuffer.flush();
+    let finished = false;
     try {
-      await finishFromDatabase(sessionId);
+      finished = await finishFromDatabaseWithRetry(sessionId);
     } finally {
-      store.getState().finishGeneration(sessionId);
+      if (!finished) store.getState().finishGeneration(sessionId);
     }
     const qc = queryClientRef;
     if (qc) {

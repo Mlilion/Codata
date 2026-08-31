@@ -1829,16 +1829,18 @@ function sseStreamBody(streamId: string) {
     const kind = streamId.slice("stream-natural-".length) as NaturalOfficeKind;
     const text = naturalOfficeResponses[kind] ?? naturalOfficeResponses.memo;
     return [
-      sseEvent(1, "text-delta", { text }),
+      sseEvent(1, "text-delta", { message_id: "session-new-assistant-1", text }),
       ...(kind === "board"
         ? [
             sseEvent(2, "tool-call", {
+              message_id: "session-new-assistant-1",
               call_id: "artifact-natural-board-md",
               tool: "artifact",
               status: "completed",
               title: "Board-ready Launch Brief",
             }),
             sseEvent(3, "tool-call", {
+              message_id: "session-new-assistant-1",
               call_id: "artifact-natural-board-mermaid",
               tool: "artifact",
               status: "completed",
@@ -1847,6 +1849,7 @@ function sseStreamBody(streamId: string) {
           ]
         : []),
       sseEvent(kind === "board" ? 4 : 2, "step-finish", {
+        message_id: "session-new-assistant-1",
         reason: "stop",
         tokens: { input: 4200, output: 620, reasoning: 80 },
         cost: 0,
@@ -1872,7 +1875,10 @@ function sseStreamBody(streamId: string) {
 
   if (streamId === "stream-auto-compact") {
     return [
-      sseEvent(1, "text-delta", { text: "I am checking the long context before answering." }),
+      sseEvent(1, "text-delta", {
+        message_id: "session-new-assistant-1",
+        text: "I am checking the long context before answering.",
+      }),
       sseEvent(2, "compaction-start", { phases: ["prune", "summarize"] }),
       sseEvent(3, "compaction-phase", { phase: "prune", status: "started" }),
       sseEvent(4, "compaction-phase", { phase: "prune", status: "completed" }),
@@ -1880,8 +1886,12 @@ function sseStreamBody(streamId: string) {
       sseEvent(6, "compaction-progress", { phase: "summarize", chars: 2200 }),
       sseEvent(7, "compaction-phase", { phase: "summarize", status: "completed" }),
       sseEvent(8, "compacted", { summary_created: true }),
-      sseEvent(9, "text-delta", { text: " Auto compacted answer persisted after compression." }),
+      sseEvent(9, "text-delta", {
+        message_id: "session-new-assistant-1",
+        text: " Auto compacted answer persisted after compression.",
+      }),
       sseEvent(10, "step-finish", {
+        message_id: "session-new-assistant-1",
         reason: "stop",
         tokens: { input: 24000, output: 220, reasoning: 20 },
         cost: 0,
@@ -1893,7 +1903,10 @@ function sseStreamBody(streamId: string) {
 
   if (streamId === "stream-permission") {
     return [
-      sseEvent(1, "text-delta", { text: "I need approval before running the verification command." }),
+      sseEvent(1, "text-delta", {
+        message_id: "session-new-assistant-1",
+        text: "I need approval before running the verification command.",
+      }),
       sseEvent(2, "permission-request", {
         call_id: "perm-run-tests",
         tool_call_id: "tool-run-tests",
@@ -1913,7 +1926,10 @@ function sseStreamBody(streamId: string) {
 
   if (streamId === "stream-question") {
     return [
-      sseEvent(1, "text-delta", { text: "I need one choice before continuing." }),
+      sseEvent(1, "text-delta", {
+        message_id: "session-new-assistant-1",
+        text: "I need one choice before continuing.",
+      }),
       sseEvent(2, "question", {
         call_id: "question-release-channel",
         tool: "question",
@@ -1931,7 +1947,10 @@ function sseStreamBody(streamId: string) {
 
   if (streamId === "stream-plan") {
     return [
-      sseEvent(1, "text-delta", { text: "I drafted a plan for review." }),
+      sseEvent(1, "text-delta", {
+        message_id: "session-new-assistant-1",
+        text: "I drafted a plan for review.",
+      }),
       sseEvent(2, "plan-review", {
         call_id: "plan-review-gui",
         title: "Preflight implementation plan",
@@ -1944,7 +1963,10 @@ function sseStreamBody(streamId: string) {
 
   if (streamId === "stream-slow") {
     return [
-      sseEvent(1, "text-delta", { text: "Starting a deliberately slow GUI stream." }),
+      sseEvent(1, "text-delta", {
+        message_id: "session-new-assistant-1",
+        text: "Starting a deliberately slow GUI stream.",
+      }),
       sseEvent(2, "reasoning-delta", { text: "Waiting for the user to test stop generation." }),
       "",
     ].join("\n");
@@ -1953,8 +1975,12 @@ function sseStreamBody(streamId: string) {
   if (streamId.startsWith("stream-edit-")) {
     const sessionId = streamId.slice("stream-edit-".length);
     return [
-      sseEvent(1, "text-delta", { text: "Edited response streamed from the mock backend." }),
+      sseEvent(1, "text-delta", {
+        message_id: `${sessionId}-assistant-1`,
+        text: "Edited response streamed from the mock backend.",
+      }),
       sseEvent(2, "step-finish", {
+        message_id: `${sessionId}-assistant-1`,
         reason: "stop",
         tokens: { input: 20, output: 9, reasoning: 0 },
         cost: 0,
@@ -1965,8 +1991,12 @@ function sseStreamBody(streamId: string) {
   }
 
   return [
-    sseEvent(1, "text-delta", { text: "Preflight answer streamed from the mock backend." }),
+    sseEvent(1, "text-delta", {
+      message_id: "session-new-assistant-1",
+      text: "Preflight answer streamed from the mock backend.",
+    }),
     sseEvent(2, "step-finish", {
+      message_id: "session-new-assistant-1",
       reason: "stop",
       tokens: { input: 10, output: 8, reasoning: 0 },
       cost: 0,
