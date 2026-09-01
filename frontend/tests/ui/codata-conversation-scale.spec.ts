@@ -99,4 +99,23 @@ test.describe("Codata conversation scale and compaction GUI workflows", () => {
     await expect(page.getByText("Long assistant turn 060")).toHaveCount(0);
     await expectNoAppCrash(page);
   });
+
+  test("hidden-tail workflow: the latest visible turn survives session switches", async ({ page }) => {
+    await setupMockedApp(page);
+
+    await page.goto("/c/session-hidden-long");
+    await expect(page.getByText("Hidden tail regression").first()).toBeVisible();
+    await expect(page.getByText("Final version: launch is approved with conditions.")).toBeVisible();
+
+    await page.getByRole("option", { name: /Invoice cleanup/i }).click();
+    await expect(page).toHaveURL(/\/c\/session-beta$/);
+
+    await page.getByRole("option", { name: /Hidden tail regression/i }).click();
+    await expect(page).toHaveURL(/\/c\/session-hidden-long$/);
+
+    await page.waitForTimeout(1500);
+
+    await expect(page.getByText("Final version: launch is approved with conditions.")).toBeVisible({ timeout: 20_000 });
+    await expectNoAppCrash(page);
+  });
 });

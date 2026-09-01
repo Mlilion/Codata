@@ -11,6 +11,7 @@ import { SSE_EVENTS } from "@/types/streaming";
 import { notifyBackgroundFinish } from "@/lib/background-notify";
 import { artifactTypeFromExtension, languageFromExtension } from "@/lib/artifacts";
 import { canFinalizeMessagesHandoff } from "@/lib/message-handoff";
+import { MESSAGE_PAGE_SIZE } from "@/lib/message-pagination";
 import { useChatStore } from "@/stores/chat-store";
 import { useConnectionStore } from "@/stores/connection-store";
 import { useArtifactStore } from "@/stores/artifact-store";
@@ -348,7 +349,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
 
     if (!canFinalizeFromCache(sid)) {
       try {
-        const latestPage = await api.get<PaginatedMessages>(API.MESSAGES.LIST(sid, 50, -1));
+        const latestPage = await api.get<PaginatedMessages>(API.MESSAGES.LIST(sid, MESSAGE_PAGE_SIZE, -1));
         if (qc) {
           qc.setQueryData<InfiniteData<PaginatedMessages>>(
             queryKeys.messages.list(sid),

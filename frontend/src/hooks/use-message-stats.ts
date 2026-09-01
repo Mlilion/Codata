@@ -4,9 +4,8 @@ import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { API, queryKeys } from "@/lib/constants";
+import { MESSAGE_PAGE_SIZE } from "@/lib/message-pagination";
 import type { PaginatedMessages, MessageResponse, AssistantMessageInfo } from "@/types/message";
-
-const PAGE_SIZE = 50;
 
 function extractStepSnapshot(msg: MessageResponse): Record<string, number> | null {
   let latest: Record<string, number> | null = null;
@@ -97,11 +96,11 @@ export function useMessageStats(sessionId: string | undefined, maxContext?: numb
   const query = useInfiniteQuery({
     queryKey: queryKeys.messages.list(sessionId!),
     queryFn: ({ pageParam }: { pageParam: number }) =>
-      api.get<PaginatedMessages>(API.MESSAGES.LIST(sessionId!, PAGE_SIZE, pageParam)),
+      api.get<PaginatedMessages>(API.MESSAGES.LIST(sessionId!, MESSAGE_PAGE_SIZE, pageParam)),
     initialPageParam: -1 as number,
     getPreviousPageParam: (firstPage: PaginatedMessages) => {
       if (firstPage.offset <= 0) return undefined;
-      return Math.max(0, firstPage.offset - PAGE_SIZE);
+      return Math.max(0, firstPage.offset - MESSAGE_PAGE_SIZE);
     },
     getNextPageParam: (): undefined => undefined,
     enabled: !!sessionId,

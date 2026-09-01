@@ -186,6 +186,19 @@ const sessionLong = {
   time_updated: "2026-04-22T13:30:00.000Z",
 };
 
+const sessionHiddenLong = {
+  ...sessionAlpha,
+  id: "session-hidden-long",
+  directory: "/Users/alex/codata-demo",
+  title: "Hidden tail regression",
+  is_pinned: false,
+  summary_additions: 18,
+  summary_deletions: 5,
+  summary_files: 4,
+  time_created: "2026-04-20T10:00:00.000Z",
+  time_updated: "2026-04-20T13:30:00.000Z",
+};
+
 const sessionCompact = {
   ...sessionAlpha,
   id: "session-compact",
@@ -1206,7 +1219,50 @@ const longConversationMessages = Array.from({ length: 60 }, (_, index) => {
   ];
 }).flat();
 
-function paginatedMessages(messages: ReturnType<typeof textMessage>[], limit: number, rawOffset: number) {
+function remapConversationSession(messages: MockMessage[], fromSessionId: string, toSessionId: string): MockMessage[] {
+  return messages.map((message) => ({
+    ...message,
+    id: message.id.split(fromSessionId).join(toSessionId),
+    session_id: toSessionId,
+    parts: message.parts.map((part) => ({
+      ...part,
+      id: part.id.split(fromSessionId).join(toSessionId),
+      message_id: part.message_id.split(fromSessionId).join(toSessionId),
+      session_id: toSessionId,
+    })),
+  }));
+}
+
+function hiddenTailMessage(sessionId: string, index: number): MockMessage {
+  const turn = String(index + 1).padStart(3, "0");
+  const minute = String(index).padStart(2, "0");
+  const messageId = `${sessionId}-hidden-${turn}`;
+  return {
+    id: messageId,
+    session_id: sessionId,
+    time_created: `2026-04-26T13:${minute}:00.000Z`,
+    data: { role: "user", agent: "build", system: true, hidden: true },
+    parts: [
+      {
+        id: `${messageId}-text`,
+        message_id: messageId,
+        session_id: sessionId,
+        time_created: `2026-04-26T13:${minute}:00.000Z`,
+        data: {
+          type: "text",
+          text: `[System note ${turn}] keep this hidden tail out of the visible thread.`,
+        },
+      },
+    ],
+  };
+}
+
+const hiddenTailConversationMessages = [
+  ...remapConversationSession(longConversationMessages, "session-long", "session-hidden-long"),
+  ...Array.from({ length: 60 }, (_, index) => hiddenTailMessage("session-hidden-long", index)),
+];
+
+function paginatedMessages(messages: MockMessage[], limit: number, rawOffset: number) {
   const total = messages.length;
   const offset = rawOffset < 0 ? Math.max(0, total - limit) : Math.max(0, rawOffset);
   return {
@@ -2039,6 +2095,7 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
     [sessionBeta.id, cloneJson(sessionBeta)],
     [sessionArtifacts.id, cloneJson(sessionArtifacts)],
     [sessionData.id, cloneJson(sessionData)],
+    [sessionHiddenLong.id, cloneJson(sessionHiddenLong)],
     [sessionLong.id, cloneJson(sessionLong)],
     [sessionCompact.id, cloneJson(sessionCompact)],
   ]);
@@ -2062,7 +2119,7 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
       : cloneJson(sessionRecords.get(id) ?? sessionAlpha);
   const allSessions = () => [
     ...(state.promptBodies.length || state.editBodies.length ? [createdSession] : []),
-    ...[sessionAlpha.id, sessionBeta.id, sessionArtifacts.id, sessionData.id, sessionLong.id, sessionCompact.id]
+    ...[sessionAlpha.id, sessionBeta.id, sessionArtifacts.id, sessionData.id, sessionHiddenLong.id, sessionLong.id, sessionCompact.id]
       .filter((id) => !state.sessionDeletes.includes(id))
       .map((id) => cloneJson(sessionRecords.get(id)!)),
   ];
@@ -2401,6 +2458,7 @@ export async function mockCodataApi(page: Page, options: CodataMockOptions = {})
       if (sessionId === "session-new") return fulfillJson(route, createdMessagePageForState(state));
       if (sessionId === "session-artifacts") return fulfillJson(route, artifactMessagePage);
       if (sessionId === "session-data") return fulfillJson(route, dataMessagePage);
+      if (sessionId === "session-hidden-long") return fulfillJson(route, paginatedMessages(hiddenTailConversationMessages, limit, offset));
       if (sessionId === "session-long") return fulfillJson(route, paginatedMessages(longConversationMessages, limit, offset));
       if (sessionId === "session-compact") return fulfillJson(route, compactMessagePage(state.compactRequests.length > 0));
       return fulfillJson(route, sessionMessagePageForState(sessionId, state));

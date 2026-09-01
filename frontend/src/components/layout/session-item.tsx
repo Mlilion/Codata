@@ -9,6 +9,7 @@ import { Archive, Loader2, MessageCircle, Pin, PinOff, Users, type LucideIcon } 
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { API, queryKeys } from "@/lib/constants";
+import { MESSAGE_PAGE_SIZE } from "@/lib/message-pagination";
 import { getChatRoute } from "@/lib/routes";
 import { useDebouncedPrefetch } from "@/hooks/use-debounced-prefetch";
 import { useChatSession } from "@/stores/chat-store";
@@ -250,7 +251,7 @@ export const SessionItem = memo(function SessionItem({
               if (!isCached) {
                 queryClient.prefetchInfiniteQuery({
                   queryKey: queryKeys.messages.list(session.id),
-                  queryFn: () => api.get<PaginatedMessages>(API.MESSAGES.LIST(session.id, 50, -1)),
+                  queryFn: () => api.get<PaginatedMessages>(API.MESSAGES.LIST(session.id, MESSAGE_PAGE_SIZE, -1)),
                   initialPageParam: -1,
                   staleTime: 60_000,
                 });
