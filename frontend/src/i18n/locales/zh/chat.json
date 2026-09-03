@@ -129,6 +129,8 @@
   "tasksCompleted_other": "{{count}} 个任务已完成",
   "activeTaskCount_one": "{{count}} 个进行中的任务",
   "activeTaskCount_other": "{{count}} 个进行中的任务",
+  "unfinishedTaskCount_one": "{{count}} 个未完成任务",
+  "unfinishedTaskCount_other": "{{count}} 个未完成任务",
   "showLess": "收起",
   "showMore": "展开其余 {{count}} 条...",
   "done": "完成",

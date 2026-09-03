@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useSessions, useSearchSessions } from "@/hooks/use-sessions";
 import { useActiveSessionId } from "@/hooks/use-active-session-id";
+import { useActiveChatSessionIds } from "@/hooks/use-active-chat-sessions";
 import { useSessionActions } from "@/hooks/use-session-actions";
 import { SessionItem } from "./session-item";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
@@ -28,6 +29,7 @@ type FlatItem =
 export function SessionList() {
   const { t } = useTranslation('common');
   const activeSessionId = useActiveSessionId();
+  const activeChatSessionIds = useActiveChatSessionIds();
   const {
     data: sessionPages,
     isLoading,
@@ -425,6 +427,7 @@ export function SessionList() {
                   <SessionItem
                     session={item.session}
                     isActive={activeSessionId === item.session.id}
+                    isRunning={activeChatSessionIds.has(item.session.id)}
                     onDelete={handleDeleteRequest}
                     onRename={handleRename}
                     onExportPdf={exportPdf}

@@ -506,6 +506,7 @@ def _register_builtin_tools(
     from app.tool.builtin.invalid import InvalidTool
     from app.tool.builtin.plan import PlanTool
     from app.tool.builtin.present_file import PresentFileTool
+    from app.tool.builtin.publish_knowledge import PublishKnowledgeTool
     from app.tool.builtin.read_knowledge import ReadKnowledgeTool
     from app.tool.builtin.question import QuestionTool
     from app.tool.builtin.submit_plan import SubmitPlanTool
@@ -523,6 +524,7 @@ def _register_builtin_tools(
         GlobTool, GrepTool, QuestionTool, TodoTool,
         TaskTool, WebFetchTool, WebSearchTool, InvalidTool,
         PlanTool, SubmitPlanTool, ArtifactTool, PresentFileTool,
+        PublishKnowledgeTool,
         CreateExpertTeamsTool, ChartSpecTool,
         RunQueryTool, BuildReportTool,
         ReadKnowledgeTool,

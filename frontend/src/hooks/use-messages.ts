@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useInfiniteQuery, keepPreviousData } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { API, queryKeys } from "@/lib/constants";
 import { MESSAGE_PAGE_SIZE } from "@/lib/message-pagination";
@@ -30,7 +30,6 @@ export function useMessages(sessionId: string | undefined) {
     staleTime: 5_000, // Refetch if data is older than 5s (catches remote-generated sessions)
     // Poll every 10s to catch channel messages.
     refetchInterval: 10_000,
-    placeholderData: keepPreviousData,
   });
 
   // Flatten pages into a single chronological array. Reverse infinite scroll

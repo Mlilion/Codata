@@ -3,8 +3,9 @@
  * then passes it to both Next.js (--port) and Tauri (TAURI_CONFIG override).
  */
 import { createServer } from "node:net";
-import { spawn } from "node:child_process";
-import { resolve } from "node:path";
+import { execFileSync, spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import { delimiter, join, resolve } from "node:path";
 
 async function findFreePort(preferred = 3000) {
   return new Promise((resolve) => {
@@ -28,19 +29,86 @@ const backendPort = await findFreePort(8000);
 console.log(`\x1b[33m[dev-desktop] Using frontend port: ${port}\x1b[0m`);
 console.log(`\x1b[33m[dev-desktop] Using backend port: ${backendPort}\x1b[0m`);
 
+function findVsDevCmd() {
+  if (process.platform !== "win32") {
+    return null;
+  }
+
+  const programFilesX86 = process.env["ProgramFiles(x86)"];
+  const vswhere = programFilesX86
+    ? join(programFilesX86, "Microsoft Visual Studio", "Installer", "vswhere.exe")
+    : null;
+  if (vswhere && existsSync(vswhere)) {
+    try {
+      const installationPath = execFileSync(
+        vswhere,
+        [
+          "-latest",
+          "-products",
+          "*",
+          "-requires",
+          "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+          "-property",
+          "installationPath",
+        ],
+        { encoding: "utf8" },
+      ).trim();
+      const candidate = join(installationPath, "Common7", "Tools", "VsDevCmd.bat");
+      if (existsSync(candidate)) {
+        return candidate;
+      }
+    } catch {
+      // Fall back to common install locations below.
+    }
+  }
+
+  const roots = [
+    programFilesX86,
+    process.env.ProgramFiles,
+  ].filter(Boolean);
+  const editions = ["BuildTools", "Community", "Professional", "Enterprise"];
+
+  for (const root of roots) {
+    for (const edition of editions) {
+      const candidate = join(
+        root,
+        "Microsoft Visual Studio",
+        "2022",
+        edition,
+        "Common7",
+        "Tools",
+        "VsDevCmd.bat",
+      );
+      if (existsSync(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  return null;
+}
+
+const pathKey = Object.keys(process.env).find((key) => key.toLowerCase() === "path") || "PATH";
+const rustPathEntries = [];
+if (process.platform === "win32") {
+  const home = process.env.USERPROFILE || process.env.HOME;
+  if (home) {
+    rustPathEntries.push(
+      join(home, ".cargo", "bin"),
+      join(home, ".rustup", "toolchains", "stable-x86_64-pc-windows-msvc", "bin"),
+    );
+  }
+}
+
+const backendDataDir = process.env.CODATA_DEV_DATA_DIR
+  ? resolve(process.env.CODATA_DEV_DATA_DIR)
+  : resolve(process.cwd(), "backend", "data");
+
 const env = {
   ...process.env,
+  [pathKey]: [...rustPathEntries, process.env[pathKey] || ""].filter(Boolean).join(delimiter),
   DEV_BACKEND_PORT: String(backendPort),
-  // Dev backend writes session_token.json under backend/data/ (cwd=backend).
-  // Pin the absolute path so the Tauri dev binary reads the same token
-  // regardless of where `cargo tauri dev` is invoked from.
-  DEV_BACKEND_DATA_DIR: resolve(process.cwd(), "backend", "data"),
-  // The backend default (``session_token.json``) assumes the prod
-  // ``run.py`` has chdired into ``--data-dir``. Dev runs uvicorn from
-  // ``backend/`` directly (no chdir), so override the path to keep the
-  // file under ``backend/data/`` where ``DEV_BACKEND_DATA_DIR`` says
-  // Tauri will poll for it.
-  CODATA_SESSION_TOKEN_PATH: "data/session_token.json",
+  DEV_BACKEND_DATA_DIR: backendDataDir,
   NEXT_PUBLIC_API_URL: `http://localhost:${backendPort}`,
   // Tauri merges TAURI_CONFIG JSON into tauri.conf.json at runtime
   TAURI_CONFIG: JSON.stringify({
@@ -52,11 +120,20 @@ const cmd = [
   "npx concurrently -k",
   "-n backend,frontend,tauri",
   "-c blue,green,yellow",
-  `"cd backend && venv/bin/python -m uvicorn app.main:create_app --factory --reload --reload-dir app --host 0.0.0.0 --port ${backendPort}"`,
+  `"node scripts/dev-backend.mjs"`,
   `"cd frontend && npx next dev --turbopack --port ${port}"`,
-  `"cd desktop-tauri && cargo tauri dev"`,
+  `"cd desktop-tauri && npx tauri dev"`,
 ].join(" ");
 
-const proc = spawn(cmd, [], { stdio: "inherit", shell: true, env });
+const vsDevCmd = findVsDevCmd();
+if (vsDevCmd) {
+  console.log(`\x1b[33m[dev-desktop] Using MSVC environment: ${vsDevCmd}\x1b[0m`);
+}
+
+const shellCmd = vsDevCmd
+  ? `call "${vsDevCmd}" -arch=x64 -host_arch=x64 >nul && ${cmd}`
+  : cmd;
+
+const proc = spawn(shellCmd, [], { stdio: "inherit", shell: true, env });
 
 proc.on("exit", (code) => process.exit(code ?? 1));

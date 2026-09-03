@@ -37,6 +37,9 @@ class TestKnowledgeCRUD:
         from app.api import knowledge as knowledge_api
 
         monkeypatch.setattr(
+            knowledge_api, "_schedule_ingest", lambda request, entry_id: None
+        )
+        monkeypatch.setattr(
             knowledge_api, "_schedule_cleanup", lambda request, entry_id: None
         )
         r = await app_client.post(

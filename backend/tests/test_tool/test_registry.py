@@ -20,7 +20,7 @@ class TestToolRegistry:
         expected = {"read", "write", "edit", "apply_patch", "bash", "code_execute",
                     "glob", "grep", "question", "todo", "task",
                     "web_fetch", "web_search", "invalid",
-                    "plan", "submit_plan", "artifact", "present_file", "skill",
+                    "plan", "submit_plan", "artifact", "present_file", "publish_knowledge", "skill",
                     "create_expert_teams", "run_query", "chart_spec"}
         assert expected <= tool_ids
 
@@ -36,6 +36,21 @@ class TestToolRegistry:
         # Build agent has allow *, ask bash/write/edit — none denied
         assert "read" in tool_ids
         assert "bash" in tool_ids  # ask != deny
+        assert "publish_knowledge" in tool_ids
+
+    def test_resolve_for_plan_agent(self, registry: ToolRegistry):
+        ar = AgentRegistry()
+        plan = ar.get("plan")
+        tools = registry.resolve_for_agent(plan)
+        tool_ids = {t.id for t in tools}
+        assert "publish_knowledge" not in tool_ids
+
+    def test_resolve_for_data_agent(self, registry: ToolRegistry):
+        ar = AgentRegistry()
+        data = ar.get("data")
+        tools = registry.resolve_for_agent(data)
+        tool_ids = {t.id for t in tools}
+        assert "publish_knowledge" not in tool_ids
 
     def test_resolve_for_explore_agent(self, registry: ToolRegistry):
         ar = AgentRegistry()

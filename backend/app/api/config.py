@@ -211,9 +211,9 @@ async def update_api_key(registry: ProviderRegistryDep, body: ApiKeyUpdate) -> A
     if not api_key:
         raise HTTPException(status_code=400, detail="API key cannot be empty")
 
-    # Validate by attempting to fetch models with the new key
-    test_provider = OpenRouterProvider(api_key)
     try:
+        # Validate by attempting to fetch models with the new key
+        test_provider = OpenRouterProvider(api_key)
         models = await test_provider.list_models()
         if not models:
             raise HTTPException(

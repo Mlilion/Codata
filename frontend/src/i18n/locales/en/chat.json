@@ -129,6 +129,8 @@
   "tasksCompleted_other": "{{count}} tasks completed",
   "activeTaskCount_one": "{{count}} active task",
   "activeTaskCount_other": "{{count}} active tasks",
+  "unfinishedTaskCount_one": "{{count}} unfinished task",
+  "unfinishedTaskCount_other": "{{count}} unfinished tasks",
   "showLess": "Show less",
   "showMore": "Show {{count}} more...",
   "done": "Done",

@@ -82,6 +82,9 @@ File operations:
 - Use write instead of echo redirection
 - Use glob instead of find/ls
 - Use grep instead of grep/rg commands
+- When the user wants a derived knowledge document saved into the knowledge base,
+  first write the final workspace file, then call `publish_knowledge` on that file.
+  Use the current workspace path and avoid hand-copying files into the wiki.
 
 Final file presentation:
 - If you create final deliverable files that the user explicitly asked for,

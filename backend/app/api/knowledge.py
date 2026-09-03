@@ -22,20 +22,17 @@ from app.api.files import UPLOAD_DIR
 from app.dependencies import get_db
 from app.knowledge import wiki_store
 from app.knowledge.feishu_url import parse_feishu_url
+from app.knowledge.source_import import (
+    import_local_file,
+    is_supported_knowledge_source,
+    register_file_entry,
+)
 from app.knowledge.ingest import cleanup_entry, ingest_entry, reingest_entry
 from app.knowledge.injection import MAX_INDEX_CHARS
 from app.models.knowledge_entry import KnowledgeEntry
-from app.tool.extractors import is_supported_binary
 from app.utils.id import generate_ulid
 
 router = APIRouter(prefix="/knowledge")
-
-_TEXT_EXTS = {".md", ".markdown", ".txt"}
-
-
-def _is_supported_upload(name: str) -> bool:
-    ext = _Path(name).suffix.lower()
-    return ext in _TEXT_EXTS or is_supported_binary(name)
 
 
 def _parse_wiki_pages(raw: str) -> list[str]:
@@ -122,6 +119,13 @@ class PatchBody(BaseModel):
     title: str | None = None
 
 
+class ImportBody(BaseModel):
+    file_path: str
+    workspace: str | None = None
+    note: str | None = None
+    title: str | None = None
+
+
 @router.get("")
 async def list_knowledge(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     rows = (
@@ -164,24 +168,39 @@ async def upload_knowledge(
     request: Request,
 ) -> dict[str, Any]:
     name = file.filename or "untitled"
-    if not _is_supported_upload(name):
+    if not is_supported_knowledge_source(name):
         raise HTTPException(status_code=400, detail=f"不支持的文件类型: {name}")
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     safe = _Path(name).name
     dest = UPLOAD_DIR / f"{generate_ulid()}_{safe}"
     dest.write_bytes(await file.read())
-    factory = request.app.state.session_factory
-    async with factory() as s:
-        entry = KnowledgeEntry(
-            source_type="file",
-            file_path=str(dest.resolve()),
-            source_name=safe,
-            title=safe,
+    entry = await register_file_entry(
+        request.app.state.session_factory,
+        stored_path=dest,
+        source_name=safe,
+        title=safe,
+    )
+    result = _entry_to_dict(entry)
+    _schedule_ingest(request, entry_id=result["id"])
+    return result
+
+
+@router.post("/import")
+async def import_knowledge(
+    body: ImportBody,
+    request: Request,
+) -> dict[str, Any]:
+    try:
+        entry = await import_local_file(
+            request.app.state.session_factory,
+            file_path=body.file_path,
+            workspace=body.workspace,
+            title=body.title,
+            note=body.note,
         )
-        s.add(entry)
-        await s.commit()
-        await s.refresh(entry)
-        result = _entry_to_dict(entry)
+    except (FileNotFoundError, IsADirectoryError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    result = _entry_to_dict(entry)
     _schedule_ingest(request, entry_id=result["id"])
     return result
 

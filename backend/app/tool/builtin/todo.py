@@ -19,6 +19,36 @@ from app.utils.id import generate_ulid
 logger = logging.getLogger(__name__)
 
 
+def mark_in_progress_todos_inactive(todos: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return todos suitable for display when no generation is active."""
+    return [
+        {
+            **todo,
+            "status": "pending",
+            "activeForm": "",
+        }
+        if todo.get("status") == "in_progress"
+        else todo
+        for todo in todos
+    ]
+
+
+async def clear_in_progress_todos(session_id: str, session_factory: Any) -> int:
+    """Persistently downgrade in-progress todos after a generation stops."""
+    async with session_factory() as db:
+        async with db.begin():
+            stmt = select(Todo).where(
+                Todo.session_id == session_id,
+                Todo.status == "in_progress",
+            )
+            result = await db.execute(stmt)
+            rows = list(result.scalars().all())
+            for row in rows:
+                row.status = "pending"
+                row.active_form = ""
+            return len(rows)
+
+
 class TodoTool(ToolDefinition):
 
     @property

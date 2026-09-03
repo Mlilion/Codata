@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   CheckCircle2,
   ChevronDown,
+  BookPlus,
   FileDiff,
   FileText,
   FolderSearch,
@@ -30,6 +31,7 @@ const TOOL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   edit: Pencil,
   multiedit: Pencil,
   apply_patch: FileDiff,
+  publish_knowledge: BookPlus,
   bash: Play,
   glob: FolderSearch,
   grep: Search,
@@ -48,6 +50,7 @@ function getToolTitle(data: ToolPart): string {
     case "write":
     case "edit":
     case "multiedit":
+    case "publish_knowledge":
       return getFileName(input.file_path) ?? "file";
     case "apply_patch":
       return "Apply patch";

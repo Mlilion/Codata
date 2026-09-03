@@ -1045,8 +1045,17 @@ class SessionPrompt:
     async def _post_loop(self) -> None:
         """Cleanup, persist accumulated cost/tokens, publish DONE, auto-title."""
         from app.session.processor import _delete_empty_assistant_messages
+        from app.tool.builtin.todo import clear_in_progress_todos
 
         await _delete_empty_assistant_messages(self.session_factory, self.job.session_id)
+        try:
+            await clear_in_progress_todos(self.job.session_id, self.session_factory)
+        except Exception:
+            logger.warning(
+                "Failed to clear in-progress todos for session %s",
+                self.job.session_id,
+                exc_info=True,
+            )
 
         # Persist accumulated cost and tokens on the last assistant message
         if self.assistant_msg_id and (

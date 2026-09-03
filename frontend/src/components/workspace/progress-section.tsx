@@ -46,7 +46,8 @@ export function ProgressCard() {
   const todos = useWorkspaceStore((s) => s.todos);
   const collapsed = useWorkspaceStore((s) => s.collapsedSections["progress"]);
   const toggleSection = useWorkspaceStore((s) => s.toggleSection);
-  const activeCount = todos.filter((todo) => todo.status !== "completed").length;
+  const inProgressCount = todos.filter((todo) => todo.status === "in_progress").length;
+  const unfinishedCount = todos.filter((todo) => todo.status !== "completed").length;
   const previewTodos = todos.slice(0, 3);
 
   if (todos.length === 0) return null;
@@ -62,9 +63,11 @@ export function ProgressCard() {
             {t("workspaceProgress")}
           </span>
           <span className="mt-1 block text-[12px] text-[var(--text-tertiary)]">
-            {activeCount === 0
+            {unfinishedCount === 0
               ? t("tasksCompleted", { count: todos.length })
-              : t("activeTaskCount", { count: activeCount })}
+              : inProgressCount > 0
+                ? t("activeTaskCount", { count: inProgressCount })
+                : t("unfinishedTaskCount", { count: unfinishedCount })}
           </span>
           <div className="mt-3 flex items-center gap-1.5">
             {previewTodos.map((todo, i) => (

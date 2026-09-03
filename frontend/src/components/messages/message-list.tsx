@@ -11,67 +11,9 @@ import { FileChip } from "@/components/chat/file-chip";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { FileAttachment } from "@/types/chat";
 import { extractTextFromPartResponses, visibleMessageParts } from "@/lib/utils";
+import { groupMessages } from "@/lib/message-groups";
 import { computeDuration, useActivityStore, type ActivityData, type ChainItem } from "@/stores/activity-store";
 import type { MessageResponse, PartData, StepFinishPart, StepStartPart, ToolPart } from "@/types/message";
-
-/** A user message or a group of consecutive assistant messages. */
-type MessageGroup =
-  | { kind: "user"; message: MessageResponse }
-  | { kind: "assistant"; messages: MessageResponse[] };
-
-/**
- * Group consecutive assistant messages into a single visual block.
- *
- * The backend creates a separate assistant message for each agent step,
- * but the user expects to see a single response per prompt.
- */
-function groupMessages(messages: MessageResponse[]): MessageGroup[] {
-  const groups: MessageGroup[] = [];
-  let assistantBatch: MessageResponse[] = [];
-
-  const isStandaloneAssistantMessage = (msg: MessageResponse) => {
-    const data = msg.data;
-    return data.role === "assistant" && !data.hidden && (
-      data.summary === true ||
-      data.system === true ||
-      msg.parts.some((part) => part.data.type === "compaction")
-    );
-  };
-
-  const flushBatch = () => {
-    if (assistantBatch.length > 0) {
-      groups.push({ kind: "assistant", messages: assistantBatch });
-      assistantBatch = [];
-    }
-  };
-
-  for (const msg of messages) {
-    if (msg.data.role === "assistant") {
-      if (msg.data.hidden) {
-        continue;
-      }
-      if (isStandaloneAssistantMessage(msg)) {
-        flushBatch();
-        groups.push({ kind: "assistant", messages: [msg] });
-        continue;
-      }
-      assistantBatch.push(msg);
-    } else if (
-      msg.data.role === "user" &&
-      msg.data.system
-    ) {
-      // System-injected user messages (continuations, nudges) are invisible
-      // and must NOT break the assistant message grouping.
-      continue;
-    } else {
-      flushBatch();
-      groups.push({ kind: "user", message: msg });
-    }
-  }
-  flushBatch();
-
-  return groups;
-}
 
 interface MessageListProps {
   messages: MessageResponse[];
@@ -301,9 +243,8 @@ export function MessageList({
     }
   }
 
-  // Only show the loading state on the very first load (no cached/placeholder data).
-  // When switching sessions with keepPreviousData, messages.length > 0 so we
-  // skip the skeleton and render the (placeholder) messages for a seamless transition.
+  // Only show the loading state on the very first load. Session changes should
+  // not render the previous session's messages while the new history is loading.
   const isFirstLoad = isLoading && messages.length === 0;
 
   if (isFirstLoad) {
@@ -403,7 +344,7 @@ export function MessageList({
           </div>
         ) : (
           <>
-            {groups.map((group) => {
+            {groups.map((group, groupIndex) => {
               if (group.kind === "user") {
                 return (
                   <MessageItem
@@ -431,9 +372,7 @@ export function MessageList({
               // assistant group visible. Once the new user turn is persisted,
               // the active stream's last assistant group can be replaced by
               // StreamingMessage without hiding the previous response.
-              const lastMsg = group.messages[group.messages.length - 1];
-              const isLastOverall =
-                messages.length > 0 && lastMsg.id === messages[messages.length - 1].id;
+              const isLastOverall = groupIndex === groups.length - 1;
 
               // The last assistant group is either the live response or known
               // history. In both cases it should not re-run an entry animation.

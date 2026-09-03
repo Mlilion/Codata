@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from pathlib import Path
 
 from app.knowledge.cleanup_prompt import build_cleanup_prompt
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 # Single-user local-first: concurrent agents editing the same index.md would
 # overwrite each other (later write wins), so only one may hold the wiki at a time.
 _WIKI_AGENT_LOCK = asyncio.Lock()
+_INDEX_ROW_RE = re.compile(r"^\|\s*\[(?P<title>[^\]]+)\]\((?P<link>[^)]+)\)\s*\|\s*(?P<summary>.*?)\s*\|\s*$")
 
 
 def _snapshot_wiki_files() -> set[tuple[str, int]]:
@@ -69,6 +71,67 @@ def _extract_file(file_path: str) -> str:
     if is_supported_binary(str(p)):
         return extract_document(str(p))
     return p.read_text(encoding="utf-8", errors="replace")
+
+
+def _normalize_index_link_target(link: str) -> str | None:
+    link = link.strip()
+    if not link or link.startswith(("http://", "https://", "mailto:", "#")):
+        return None
+    link = link.split("#", 1)[0].split("?", 1)[0]
+    if link.startswith("./"):
+        link = link[2:]
+    name = Path(link).name
+    return name or None
+
+
+def _scrub_index_after_delete(source_page: str | None) -> None:
+    """Remove stale rows from index.md after a delete, and drop it if empty."""
+    idx = wiki_store.index_path()
+    if not idx.exists():
+        return
+
+    try:
+        lines = idx.read_text(encoding="utf-8").splitlines()
+    except Exception:
+        logger.debug("cleanup: failed to read index.md for scrub", exc_info=True)
+        return
+
+    existing_pages = {
+        p.name
+        for p in wiki_store.wiki_dir().glob("*.md")
+        if p.name not in {"index.md", "log.md"}
+    }
+
+    kept: list[str] = []
+    data_rows = 0
+    changed = False
+    for line in lines:
+        match = _INDEX_ROW_RE.match(line)
+        if match is None:
+            kept.append(line)
+            continue
+        target = _normalize_index_link_target(match.group("link"))
+        if target is None:
+            kept.append(line)
+            continue
+        if source_page is not None and target == source_page:
+            changed = True
+            continue
+        if target not in existing_pages:
+            changed = True
+            continue
+        data_rows += 1
+        kept.append(line)
+
+    if not changed:
+        return
+    if data_rows == 0:
+        try:
+            idx.unlink()
+        except FileNotFoundError:
+            pass
+        return
+    idx.write_text("\n".join(kept).rstrip() + "\n", encoding="utf-8")
 
 
 async def ingest_entry(
@@ -273,6 +336,7 @@ async def cleanup_entry(
                     model_id=model_id,
                     provider_id=provider_id,
                 )
+            _scrub_index_after_delete(source_page)
 
             # Delete raw snapshot (best-effort) then the DB row.
             if raw_path:

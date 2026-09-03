@@ -509,8 +509,10 @@ export async function startStream(sessionId: string, streamId: string): Promise<
       if (meta.todos) {
         useWorkspaceStore.getState().setTodos(meta.todos as WorkspaceTodo[]);
         const ws = useWorkspaceStore.getState();
-        if (!ws.isOpen) ws.open();
-        ws.expandSection("progress");
+        if (meta.todos.some((todo) => todo.status === "in_progress")) {
+          if (!ws.isOpen) ws.open();
+          ws.expandSection("progress");
+        }
       }
     }
 

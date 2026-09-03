@@ -11,9 +11,8 @@ import time
 from typing import Any, AsyncIterator
 
 import httpx
-from openai import AsyncOpenAI
 
-from app.provider.openai_compat import OpenAICompatProvider
+from app.provider.openai_compat import OpenAICompatProvider, create_async_openai_client
 from app.schemas.provider import (
     ModelCapabilities,
     ModelInfo,
@@ -178,7 +177,7 @@ class OpenRouterProvider(OpenAICompatProvider):
         AsyncOpenAI client used by stream_chat.
         """
         self._api_key = new_key
-        self._client = AsyncOpenAI(
+        self._client = create_async_openai_client(
             api_key=new_key,
             base_url=self._base_url,
             default_headers={},

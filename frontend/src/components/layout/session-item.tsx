@@ -37,6 +37,7 @@ interface SessionItemProps {
   onEditEnd?: () => void;
   snippet?: string;
   isFocused?: boolean;
+  isRunning?: boolean;
 }
 
 export const SessionItem = memo(function SessionItem({
@@ -53,6 +54,7 @@ export const SessionItem = memo(function SessionItem({
   onEditEnd,
   snippet,
   isFocused = false,
+  isRunning = false,
 }: SessionItemProps) {
   const { t } = useTranslation('common');
   const router = useRouter();
@@ -77,7 +79,7 @@ export const SessionItem = memo(function SessionItem({
   const LeadingIcon = sessionBadge?.Icon ?? MessageCircle;
   const isExpertTeam = session.slug?.startsWith("expert-team") ?? false;
   const liveBucket = useChatSession(session.id);
-  const isLive = liveBucket.isGenerating || liveBucket.isCompacting;
+  const isLive = isRunning || liveBucket.isGenerating || liveBucket.isCompacting;
   const hasDirectory = !!session.directory && session.directory !== ".";
   const deeplink = `codata-oss://chat?sessionId=${encodeURIComponent(session.id)}`;
   const pinLabel = session.is_pinned

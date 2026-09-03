@@ -127,6 +127,21 @@ export function useUploadKnowledge() {
   });
 }
 
+export function useImportKnowledge() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      file_path: string;
+      workspace?: string | null;
+      note?: string;
+      title?: string;
+    }) => api.post<KnowledgeEntry>("/api/knowledge/import", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KNOWLEDGE_KEY });
+    },
+  });
+}
+
 export function usePatchKnowledge() {
   const queryClient = useQueryClient();
   return useMutation({

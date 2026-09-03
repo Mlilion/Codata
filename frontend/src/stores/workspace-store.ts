@@ -109,8 +109,9 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     })),
 
   setTodos: (todos) => {
-    if (todos.length > 0) openWorkspaceTab({ preserveActive: true });
-    set({ todos, ...(todos.length > 0 ? { isOpen: true } : {}) });
+    const hasRunningTodo = todos.some((todo) => todo.status === "in_progress");
+    if (hasRunningTodo) openWorkspaceTab({ preserveActive: true });
+    set({ todos, ...(hasRunningTodo ? { isOpen: true } : {}) });
   },
 
   addWorkspaceFile: (file) => {

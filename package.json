@@ -10,7 +10,7 @@
     "dev:all": "node scripts/dev-all.mjs",
     "dev:desktop": "node scripts/dev-desktop.mjs",
     "build:frontend": "cd frontend && cross-env DESKTOP_BUILD=true NEXT_PUBLIC_DESKTOP_BUILD=true npm run build",
-    "build:backend": "cd backend && node -e \"const p=process.platform==='win32'?'venv/Scripts/pyinstaller':'venv/bin/pyinstaller';require('child_process').execSync(p+' codata.spec --noconfirm',{stdio:'inherit'})\"",
+    "build:backend": "cd backend && node -e \"const {execFileSync}=require('child_process');const {join}=require('path');const p=process.platform==='win32'?join('venv','Scripts','pyinstaller.exe'):join('venv','bin','pyinstaller');execFileSync(p,['codata.spec','--noconfirm'],{stdio:'inherit'})\"",
     "sync:desktop-meta": "node scripts/sync-desktop-meta.mjs",
     "build:desktop": "npm run sync:desktop-meta && cd desktop-tauri && cargo tauri build",
     "verify:frontend-assets": "node --test scripts/verify-frontend-assets.test.mjs",

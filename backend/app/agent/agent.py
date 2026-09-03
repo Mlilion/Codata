@@ -38,6 +38,7 @@ BUILTIN_AGENTS: dict[str, AgentInfo] = {
             PermissionRule(action="allow", permission="code_execute"),
             PermissionRule(action="ask", permission="write"),
             PermissionRule(action="ask", permission="edit"),
+            PermissionRule(action="ask", permission="publish_knowledge"),
             PermissionRule(action="allow", permission="plan"),  # Can switch modes
         ]),
         system_prompt=_load_prompt("build"),
@@ -53,6 +54,7 @@ BUILTIN_AGENTS: dict[str, AgentInfo] = {
             PermissionRule(action="deny", permission="edit"),
             PermissionRule(action="deny", permission="bash"),
             PermissionRule(action="deny", permission="code_execute"),
+            PermissionRule(action="deny", permission="publish_knowledge"),
             PermissionRule(action="allow", permission="read"),
             PermissionRule(action="allow", permission="glob"),
             PermissionRule(action="allow", permission="grep"),
@@ -75,6 +77,7 @@ BUILTIN_AGENTS: dict[str, AgentInfo] = {
             PermissionRule(action="deny", permission="edit"),
             PermissionRule(action="deny", permission="bash"),
             PermissionRule(action="deny", permission="code_execute"),
+            PermissionRule(action="deny", permission="publish_knowledge"),
             PermissionRule(action="allow", permission="read"),
             PermissionRule(action="allow", permission="glob"),
             PermissionRule(action="allow", permission="grep"),
@@ -116,6 +119,7 @@ BUILTIN_AGENTS: dict[str, AgentInfo] = {
             PermissionRule(action="allow", permission="code_execute"),
             PermissionRule(action="ask", permission="write"),
             PermissionRule(action="ask", permission="edit"),
+            PermissionRule(action="ask", permission="publish_knowledge"),
         ]),
         system_prompt=_load_prompt("build"),  # Reuses build prompt
     ),

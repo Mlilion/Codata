@@ -382,14 +382,18 @@ async def update_session_endpoint(
 async def get_session_todos(
     session_id: str,
     request: Request,
+    sm: StreamManagerDep,
 ) -> dict:
     """Get current todo list for a session."""
-    from app.tool.builtin.todo import get_todos
+    from app.tool.builtin.todo import get_todos, mark_in_progress_todos_inactive
 
     session_factory = getattr(request.app.state, "session_factory", None)
     if session_factory is None:
         return {"todos": []}
     todos = await get_todos(session_id, session_factory)
+    has_active_job = any(job["session_id"] == session_id for job in sm.active_jobs())
+    if not has_active_job:
+        todos = mark_in_progress_todos_inactive(todos)
     return {"todos": todos}
 
 

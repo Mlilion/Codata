@@ -11,12 +11,35 @@ import logging
 from typing import Any, AsyncIterator
 
 import httpx
-from openai import AsyncOpenAI
 
 from app.provider.base import BaseProvider
 from app.schemas.provider import ModelInfo, ProviderStatus, StreamChunk
 
 logger = logging.getLogger(__name__)
+
+
+def create_async_openai_client(
+    *,
+    api_key: str,
+    base_url: str,
+    default_headers: dict[str, str] | None = None,
+    timeout: httpx.Timeout | None = None,
+):
+    try:
+        from openai import AsyncOpenAI
+    except ImportError as exc:
+        raise ImportError(
+            "Install the 'openai' Python package to use OpenAI-compatible providers."
+        ) from exc
+
+    kwargs: dict[str, Any] = {
+        "api_key": api_key,
+        "base_url": base_url,
+        "default_headers": default_headers,
+    }
+    if timeout is not None:
+        kwargs["timeout"] = timeout
+    return AsyncOpenAI(**kwargs)
 
 
 def _field(obj: Any, name: str, default: Any = 0) -> Any:
@@ -107,7 +130,7 @@ class OpenAICompatProvider(BaseProvider):
 
         effective_key = api_key if api_key else ("sk-no-key" if is_custom else api_key)
 
-        self._client = AsyncOpenAI(
+        self._client = create_async_openai_client(
             api_key=effective_key,
             base_url=base_url,
             default_headers=headers,

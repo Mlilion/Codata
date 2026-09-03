@@ -429,6 +429,16 @@ async def run_generation(
         logger.exception("Generation error for stream %s", job.stream_id)
         job.publish(SSEEvent(AGENT_ERROR, {"error_message": "An internal error occurred. Please try again."}))
     finally:
+        try:
+            from app.tool.builtin.todo import clear_in_progress_todos
+
+            await clear_in_progress_todos(job.session_id, session_factory)
+        except Exception:
+            logger.warning(
+                "Failed to clear in-progress todos for session %s",
+                job.session_id,
+                exc_info=True,
+            )
         job.complete()
 
 
@@ -1437,14 +1447,17 @@ async def _delete_empty_assistant_messages(
     *,
     _retried: bool = False,
 ) -> None:
-    """Remove assistant message shells that ended with zero persisted parts."""
+    """Remove assistant message shells that have no meaningful persisted parts."""
     try:
         async with session_factory() as db:
             async with db.begin():
                 messages = await get_messages(db, session_id)
                 for msg in messages:
                     payload = dict(msg.data) if msg.data else {}
-                    if payload.get("role") == "assistant" and not msg.parts:
+                    if (
+                        payload.get("role") == "assistant"
+                        and not _has_meaningful_assistant_parts(msg.parts)
+                    ):
                         await db.delete(msg)
     except Exception:
         if not _retried:
@@ -1457,6 +1470,24 @@ async def _delete_empty_assistant_messages(
                 "Failed to clean empty assistant messages for session %s after retry",
                 session_id,
             )
+
+
+def _has_meaningful_assistant_parts(parts: list[Any]) -> bool:
+    """Return whether an assistant message has content worth keeping."""
+    for part in parts:
+        data = getattr(part, "data", None) or {}
+        part_type = data.get("type")
+        if part_type in {"text", "reasoning"}:
+            if str(data.get("text") or "").strip():
+                return True
+            continue
+        if part_type in {"tool", "file", "subtask", "compaction", "expert-raw-output"}:
+            return True
+        if part_type in {"step-start", "step-finish"}:
+            snapshot = data.get("snapshot")
+            if isinstance(snapshot, dict) and snapshot.get("mode") == "expert-team":
+                return True
+    return False
 
 
 async def _persist_tool_error(

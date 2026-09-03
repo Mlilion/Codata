@@ -20,6 +20,7 @@ import { useSidebarStore } from "@/stores/sidebar-store";
 import { useDashboards } from "@/hooks/use-dashboard";
 import { useSessions } from "@/hooks/use-sessions";
 import { useActiveSessionId } from "@/hooks/use-active-session-id";
+import { useActiveChatSessionIds } from "@/hooks/use-active-chat-sessions";
 import { useSessionActions } from "@/hooks/use-session-actions";
 import { useIsMacOS } from "@/hooks/use-platform";
 import { useEffectiveSidebarWidth } from "@/hooks/use-effective-sidebar-width";
@@ -150,6 +151,7 @@ export function CodataSidebar() {
 export function CodataSidebarContent({ railChrome = false }: { railChrome?: boolean } = {}) {
   const pathname = usePathname();
   const activeSessionId = useActiveSessionId();
+  const activeChatSessionIds = useActiveChatSessionIds();
   const { data: dashboards } = useDashboards();
   const dashboardCount = dashboards?.length ?? 0;
   const { data: sessionPages } = useSessions("codata");
@@ -231,6 +233,7 @@ export function CodataSidebarContent({ railChrome = false }: { railChrome?: bool
                 key={s.id}
                 session={s}
                 isActive={activeSessionId === s.id}
+                isRunning={activeChatSessionIds.has(s.id)}
                 onDelete={handleDeleteRequest}
                 onRename={handleRename}
                 onExportPdf={exportPdf}

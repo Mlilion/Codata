@@ -129,3 +129,97 @@ async def test_cleanup_entry_no_source_page_skips_agent(
     async with session_factory() as s:
         assert await s.get(KnowledgeEntry, "c3") is None
     assert not raw.exists()
+
+
+@pytest.mark.asyncio
+async def test_cleanup_entry_prunes_deleted_source_from_index(
+    tmp_path, monkeypatch, session_factory
+):
+    monkeypatch.setattr(wiki_store, "_resolve_data_dir", lambda: tmp_path)
+    shared = wiki_store.wiki_dir() / "shared-topic.md"
+    shared.write_text("# Shared\n", encoding="utf-8")
+    index = wiki_store.index_path()
+    index.write_text(
+        "# 知识库索引\n\n"
+        "## 实体\n"
+        "| 页面 | 摘要 |\n"
+        "| --- | --- |\n"
+        "| [source-c4.md](source-c4.md) | deleted |\n"
+        "| [shared-topic.md](shared-topic.md) | keep |\n",
+        encoding="utf-8",
+    )
+    raw = wiki_store.raw_dir() / "c4.md"
+    raw.write_text("body", encoding="utf-8")
+    async with session_factory() as s:
+        s.add(KnowledgeEntry(
+            id="c4", feishu_url="u", feishu_token="t", doc_type="docx",
+            ingest_status="deleting", raw_path="raw/c4.md",
+            wiki_pages=json.dumps(["source-c4.md"]),
+        ))
+        await s.commit()
+
+    async def fake_run_generation(job, req, *a, **k):
+        return None
+
+    async def fake_delete_by_id(db, model, id):
+        return True
+
+    monkeypatch.setattr(ingest, "run_generation", fake_run_generation)
+    monkeypatch.setattr(ingest, "delete_by_id", fake_delete_by_id)
+
+    await ingest.cleanup_entry(
+        "c4",
+        session_factory=session_factory,
+        provider_registry=object(),
+        agent_registry=object(),
+        tool_registry=object(),
+    )
+
+    assert index.exists()
+    text = index.read_text(encoding="utf-8")
+    assert "source-c4.md" not in text
+    assert "shared-topic.md" in text
+
+
+@pytest.mark.asyncio
+async def test_cleanup_entry_deletes_empty_index_file(
+    tmp_path, monkeypatch, session_factory
+):
+    monkeypatch.setattr(wiki_store, "_resolve_data_dir", lambda: tmp_path)
+    index = wiki_store.index_path()
+    index.write_text(
+        "# 知识库索引\n\n"
+        "## 实体\n"
+        "| 页面 | 摘要 |\n"
+        "| --- | --- |\n"
+        "| [source-c5.md](source-c5.md) | deleted |\n",
+        encoding="utf-8",
+    )
+    raw = wiki_store.raw_dir() / "c5.md"
+    raw.write_text("body", encoding="utf-8")
+    async with session_factory() as s:
+        s.add(KnowledgeEntry(
+            id="c5", feishu_url="u", feishu_token="t", doc_type="docx",
+            ingest_status="deleting", raw_path="raw/c5.md",
+            wiki_pages=json.dumps(["source-c5.md"]),
+        ))
+        await s.commit()
+
+    async def fake_run_generation(job, req, *a, **k):
+        return None
+
+    async def fake_delete_by_id(db, model, id):
+        return True
+
+    monkeypatch.setattr(ingest, "run_generation", fake_run_generation)
+    monkeypatch.setattr(ingest, "delete_by_id", fake_delete_by_id)
+
+    await ingest.cleanup_entry(
+        "c5",
+        session_factory=session_factory,
+        provider_registry=object(),
+        agent_registry=object(),
+        tool_registry=object(),
+    )
+
+    assert not index.exists()

@@ -529,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "codata"
-version = "1.1.19"
+version = "1.1.23"
 dependencies = [
  "env_logger",
  "log",

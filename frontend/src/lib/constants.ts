@@ -431,6 +431,9 @@ export const queryKeys = {
   messages: {
     list: (sessionId: string) => ["messages", sessionId] as const,
   },
+  chat: {
+    active: ["chat", "active"] as const,
+  },
   models: ["models"] as const,
   agents: ["agents"] as const,
   tools: ["tools"] as const,

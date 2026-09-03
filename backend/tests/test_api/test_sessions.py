@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import pytest
 
+from app.models.todo import Todo
+from app.session.manager import create_session
+
 pytestmark = pytest.mark.asyncio
 
 
@@ -106,6 +109,44 @@ class TestDeleteSession:
     async def test_not_found(self, app_client):
         resp = await app_client.delete("/api/sessions/nonexistent")
         assert resp.status_code == 404
+
+
+class TestSessionTodos:
+    async def test_in_progress_todos_are_inactive_when_no_generation_is_running(
+        self,
+        app_client,
+        session_factory,
+    ):
+        async with session_factory() as db:
+            async with db.begin():
+                session = await create_session(db, title="Todos")
+                sid = session.id
+                db.add_all(
+                    [
+                        Todo(
+                            session_id=sid,
+                            content="Generate pages",
+                            status="in_progress",
+                            active_form="Generating pages",
+                            position=0,
+                        ),
+                        Todo(
+                            session_id=sid,
+                            content="Update index",
+                            status="pending",
+                            active_form="Updating index",
+                            position=1,
+                        ),
+                    ]
+                )
+
+        resp = await app_client.get(f"/api/sessions/{sid}/todos")
+
+        assert resp.status_code == 200
+        todos = resp.json()["todos"]
+        assert todos[0]["status"] == "pending"
+        assert todos[0]["activeForm"] == ""
+        assert todos[1]["status"] == "pending"
 
 
 class TestSearchSessions:
