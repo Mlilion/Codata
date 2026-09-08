@@ -227,7 +227,6 @@ export function Landing({ directoryParam = null, skillParam = null }: LandingPro
                         <Link href="/mcp" className="underline">
                           连接数据源
                         </Link>
-                        （datasage 数据平台）
                       </li>
                       <li>
                         ②{" "}

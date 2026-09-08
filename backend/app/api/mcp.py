@@ -21,7 +21,7 @@ data_source_router = APIRouter()
 
 @data_source_router.get("/data-source/status")
 async def data_source_status() -> dict[str, bool]:
-    """Whether an execute_sql-capable data source (datasage) is connected.
+    """Whether any execute_sql-capable data source is connected.
 
     Drives the Codata empty-state onboarding — the frontend can tell whether an
     execute_sql-capable data source is connected without running a query.

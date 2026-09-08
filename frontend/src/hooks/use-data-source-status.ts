@@ -8,7 +8,7 @@ interface DataSourceStatus {
   connected: boolean;
 }
 
-/** Whether a datasage data source is connected — gates the Codata onboarding guide. */
+/** Whether an execute_sql-capable data source is connected — gates the Codata onboarding guide. */
 export function useDataSourceStatus(enabled = true) {
   return useQuery({
     queryKey: ["data-source-status"],

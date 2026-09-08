@@ -56,7 +56,7 @@
   "connectBridge": "连接",
   "disconnectBridge": "断开",
   "tokenPatPlaceholder": "令牌 / PAT",
-  "tokenHint": "到 https://datasage.flow.chat/mcp-access 获取 MCP Key,粘贴到此处完成连接。",
+  "tokenHint": "将该连接器的 MCP 令牌 / PAT 粘贴到此处完成连接。",
   "authMethod": "鉴权方式",
   "auth_token": "令牌",
   "auth_oauth": "OAuth",

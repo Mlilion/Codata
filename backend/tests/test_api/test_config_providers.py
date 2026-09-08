@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-pytestmark = pytest.mark.asyncio
 
-
+@pytest.mark.asyncio
 class TestToggleProvider:
     async def test_explicit_disable_is_idempotent(self, app_client):
         settings = app_client.app.state.settings
@@ -53,4 +52,92 @@ class TestToggleProvider:
         assert registry.register.call_count == 1
         assert registry.refresh_models.await_count == 1
 
+
+class TestOpenAIFreeConfiguration:
+    """The OpenAI provider endpoint is freely configurable — no company-
+    specific default may be hardcoded anywhere."""
+
+    def test_openai_base_url_has_no_default(self):
+        from app.config import Settings
+
+        # Static check on the model field: the shipped default must be empty
+        # (catalog's api.openai.com applies), never a pre-wired gateway.
+        assert Settings.model_fields["openai_base_url"].default == ""
+
+    @pytest.mark.asyncio
+    async def test_key_saved_with_configured_base_url(self, app_client):
+        settings = app_client.app.state.settings
+        registry = app_client.app.state.provider_registry
+        settings.openai_api_key = ""
+        settings.openai_base_url = "https://my-gateway.example/v1"
+
+        with (
+            patch(
+                "app.api.config._validate_provider_connection",
+                new=AsyncMock(return_value=(2, [])),
+            ) as validate,
+            patch("app.api.config._update_env_file") as update_env,
+        ):
+            resp = await app_client.post(
+                "/api/config/providers/openai/key",
+                json={"api_key": "sk-test-openai"},
+            )
+
+        assert resp.status_code == 200
+        # The user-configured endpoint must be used for validation ...
+        validate.assert_awaited_once()
+        assert validate.await_args.kwargs.get("base_url") == "https://my-gateway.example/v1"
+        # ... and for the registered provider.
+        registry.register.assert_called_once()
+        assert resp.json()["base_url"] == "https://my-gateway.example/v1"
+        # Persisted so headless restarts keep the free configuration.
+        update_env.assert_any_call("CODATA_OPENAI_BASE_URL", "https://my-gateway.example/v1")
+
+    @pytest.mark.asyncio
+    async def test_key_saved_without_base_url_keeps_catalog_default(self, app_client):
+        settings = app_client.app.state.settings
+        registry = app_client.app.state.provider_registry
+        settings.openai_api_key = ""
+        settings.openai_base_url = ""
+
+        with (
+            patch(
+                "app.api.config._validate_provider_connection",
+                new=AsyncMock(return_value=(2, [])),
+            ) as validate,
+            patch("app.api.config._update_env_file"),
+        ):
+            resp = await app_client.post(
+                "/api/config/providers/openai/key",
+                json={"api_key": "sk-test-openai"},
+            )
+
+        assert resp.status_code == 200
+        # No override → catalog default (api.openai.com), no base_url kwarg.
+        validate.assert_awaited_once()
+        assert "base_url" not in validate.await_args.kwargs
+        assert resp.json()["base_url"] is None
+
+    @pytest.mark.asyncio
+    async def test_explicit_body_base_url_wins_and_persists(self, app_client):
+        settings = app_client.app.state.settings
+        settings.openai_api_key = ""
+        settings.openai_base_url = ""
+
+        with (
+            patch(
+                "app.api.config._validate_provider_connection",
+                new=AsyncMock(return_value=(2, [])),
+            ) as validate,
+            patch("app.api.config._update_env_file") as update_env,
+        ):
+            resp = await app_client.post(
+                "/api/config/providers/openai/key",
+                json={"api_key": "sk-test-openai", "base_url": "https://other.example/v1"},
+            )
+
+        assert resp.status_code == 200
+        assert validate.await_args.kwargs.get("base_url") == "https://other.example/v1"
+        assert settings.openai_base_url == "https://other.example/v1"
+        update_env.assert_any_call("CODATA_OPENAI_BASE_URL", "https://other.example/v1")
 

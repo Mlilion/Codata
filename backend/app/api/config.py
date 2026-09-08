@@ -361,6 +361,8 @@ async def list_providers(settings: SettingsDep, registry: ProviderRegistryDep) -
         base_url = None
         if pdef.kind == "openai_compat_azure":
             base_url = getattr(settings, "azure_openai_base_url", "")
+        elif pid == "openai":
+            base_url = getattr(settings, "openai_base_url", "") or None
 
         if api_key and is_disabled:
             result.append(ProviderInfo(
@@ -450,6 +452,15 @@ async def set_provider_key(
         # Persist base_url
         setattr(settings, url_setting, base_url)
         _update_env_file(f"CODATA_{url_setting.upper()}", base_url)
+    elif provider_id == "openai":
+        # Free configuration: optionally point the OpenAI provider at any
+        # OpenAI-compatible endpoint. Empty keeps the catalog default
+        # (api.openai.com) — nothing company-specific is hardcoded.
+        base_url = (getattr(body, "base_url", None) or "").strip() or getattr(settings, "openai_base_url", "")
+        if base_url:
+            extra_kwargs["base_url"] = base_url
+            setattr(settings, "openai_base_url", base_url)
+            _update_env_file("CODATA_OPENAI_BASE_URL", base_url)
 
     model_count, _ = await _validate_provider_connection(provider_id, api_key, **extra_kwargs)
 
@@ -511,6 +522,10 @@ async def test_provider_key(provider_id: str, body: ProviderKeyUpdate, settings:
         if not base_url:
             raise HTTPException(400, f"{pdef.name} requires a base_url to be set")
         extra_kwargs["base_url"] = base_url
+    elif provider_id == "openai":
+        base_url = (body.base_url or "").strip() or getattr(settings, "openai_base_url", "")
+        if base_url:
+            extra_kwargs["base_url"] = base_url
 
     model_count, models = await _validate_provider_connection(provider_id, api_key, **extra_kwargs)
     return ProviderTestResult(model_count=model_count, models=models)

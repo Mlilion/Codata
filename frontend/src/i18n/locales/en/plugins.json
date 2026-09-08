@@ -56,7 +56,7 @@
   "connectBridge": "Connect",
   "disconnectBridge": "Disconnect",
   "tokenPatPlaceholder": "Token / PAT",
-  "tokenHint": "Get your MCP Key at https://datasage.flow.chat/mcp-access and paste it here to connect.",
+  "tokenHint": "Paste this connector's MCP token / PAT here to connect.",
   "authMethod": "Auth method",
   "auth_token": "Token",
   "auth_oauth": "OAuth",

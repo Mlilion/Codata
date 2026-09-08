@@ -213,6 +213,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                     logger.warning("Azure API key set but CODATA_AZURE_OPENAI_BASE_URL is missing — skipping")
                     continue
                 extra_kwargs["base_url"] = azure_url
+            elif pid == "openai":
+                # Free configuration: CODATA_OPENAI_BASE_URL optionally points
+                # the OpenAI provider at any OpenAI-compatible endpoint.
+                # Empty keeps the catalog default (api.openai.com).
+                openai_url = getattr(settings, "openai_base_url", "")
+                if openai_url:
+                    extra_kwargs["base_url"] = openai_url
 
             provider = create_desktop_provider(pid, api_key, **extra_kwargs)
             registry.register(provider)

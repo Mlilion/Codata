@@ -19,17 +19,27 @@ def _fresh_registry() -> ConnectorRegistry:
     return ConnectorRegistry(project_dir=tmp)
 
 
-# A synthetic empty-url remote seed used to exercise the "claim placeholder"
-# mechanism without depending on any real catalog entry (the shipped catalog
-# has no empty-url seed right now — datasage carries a preset URL and the
-# feishu knowledge-base seed is currently hidden). Injecting it into the
-# registry's catalog keeps these mechanism tests independent of product data.
+# Synthetic remote seeds used to exercise the seeding mechanism without
+# depending on any real catalog entry (the shipped catalog currently contains
+# no seed entries at all — the company-specific datasage seed was removed).
+# Injecting them into the registry's catalog keeps these mechanism tests
+# independent of product data.
 _TEST_SEED_ID = "test-empty-seed"
 _TEST_SEED_CATALOG = {
     "name": "Test Empty Seed",
     "url": "",
     "description": "empty-url remote seed for tests",
     "category": "custom",
+    "seed": True,
+}
+
+_TEST_PRESET_SEED_ID = "test-preset-seed"
+_TEST_PRESET_SEED_CATALOG = {
+    "name": "Test Preset Seed",
+    "url": "https://preset.example/mcp",
+    "description": "preset-url remote seed for tests",
+    "category": "data",
+    "auth": "token",
     "seed": True,
 }
 
@@ -40,30 +50,37 @@ def _registry_with_test_seed() -> ConnectorRegistry:
     return reg
 
 
-def test_seed_registers_datasage():
+def _registry_with_preset_seed() -> ConnectorRegistry:
     reg = _fresh_registry()
-    assert reg.get("datasage") is None  # not present before seeding
+    reg._catalog[_TEST_PRESET_SEED_ID] = dict(_TEST_PRESET_SEED_CATALOG)
+    return reg
+
+
+def test_seed_registers_preset_url_seed():
+    reg = _registry_with_preset_seed()
+    assert reg.get(_TEST_PRESET_SEED_ID) is None  # not present before seeding
 
     reg._register_seed_connectors()
 
-    conn = reg.get("datasage")
+    conn = reg.get(_TEST_PRESET_SEED_ID)
     assert conn is not None
     assert conn.category == "data"
     assert conn.source == "builtin"
-    assert conn.url == "https://datasage.flow.chat/mcp"
+    assert conn.url == "https://preset.example/mcp"
+    assert conn.auth == "token"
     assert conn.type == "remote"
 
 
 def test_seed_appears_in_status():
-    reg = _fresh_registry()
+    reg = _registry_with_preset_seed()
     reg._register_seed_connectors()
 
     status = reg.status()
-    assert "datasage" in status
-    entry = status["datasage"]
+    assert _TEST_PRESET_SEED_ID in status
+    entry = status[_TEST_PRESET_SEED_ID]
     assert entry["category"] == "data"
     assert entry["source"] == "builtin"
-    assert entry["url"] == "https://datasage.flow.chat/mcp"
+    assert entry["url"] == "https://preset.example/mcp"
 
 
 def test_seed_does_not_overwrite_existing_connector():
@@ -184,10 +201,18 @@ def test_local_builtin_cannot_be_claimed():
 
 
 def test_seed_is_idempotent():
-    reg = _fresh_registry()
+    reg = _registry_with_preset_seed()
     reg._register_seed_connectors()
     reg._register_seed_connectors()
 
-    conn = reg.get("datasage")
+    conn = reg.get(_TEST_PRESET_SEED_ID)
     assert conn is not None
     assert conn.source == "builtin"
+
+
+def test_shipped_catalog_has_no_seeds():
+    """The product must not pre-wire any company-specific connector card."""
+    reg = _fresh_registry()
+    reg._register_seed_connectors()
+
+    assert all(not entry.get("seed") for entry in reg._catalog.values())

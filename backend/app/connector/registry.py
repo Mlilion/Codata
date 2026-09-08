@@ -172,8 +172,8 @@ class ConnectorRegistry:
             enabled=False,
             source="builtin" if is_seed else "custom",
             # Claiming a seed placeholder inherits the seed's auth mode (e.g.
-            # datasage stays "token"); a genuinely new custom connector uses
-            # the auth mode the user picked in the add form.
+            # a token-auth seed stays "token"); a genuinely new custom connector
+            # uses the auth mode the user picked in the add form.
             auth=catalog_entry.get("auth", auth) if is_seed else auth,
         )
         self._connectors[id] = connector

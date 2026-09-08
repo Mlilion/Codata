@@ -23,7 +23,9 @@ class Settings(BaseSettings):
 
     # --- Direct Provider API Keys (BYOK) ---
     openai_api_key: str = ""        # CODATA_OPENAI_API_KEY
-    openai_base_url: str = "https://aihub2.top/v1"  # CODATA_OPENAI_BASE_URL
+    # Optional override of the OpenAI-compatible endpoint (free configuration).
+    # Empty = use the official https://api.openai.com/v1 from the catalog.
+    openai_base_url: str = ""       # CODATA_OPENAI_BASE_URL
     anthropic_api_key: str = ""     # CODATA_ANTHROPIC_API_KEY
     google_api_key: str = ""        # CODATA_GOOGLE_API_KEY
     groq_api_key: str = ""          # CODATA_GROQ_API_KEY
