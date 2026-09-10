@@ -552,6 +552,7 @@ class SessionProcessor:
                 if sp.model_info and not sp.model_info.capabilities.vision:
                     _llm_msgs = _strip_image_content(_llm_msgs)
 
+                saw_finish = False
                 async for chunk in stream_llm(
                     sp.provider,
                     sp.model_id,
@@ -745,28 +746,25 @@ class SessionProcessor:
                             self.usage_data = chunk.data
 
                         case "finish":
+                            saw_finish = True
                             self.finish_reason = _normalize_step_finish_reason(
                                 chunk.data.get("reason", "stop")
                             )
 
                         case "error":
-                            if accumulated_text:
-                                async with session_factory() as db:
-                                    async with db.begin():
-                                        await create_part(
-                                            db,
-                                            message_id=self._assistant_msg_id,
-                                            session_id=job.session_id,
-                                            data={"type": "text", "text": accumulated_text},
-                                        )
-                            job.publish(
-                                SSEEvent(
-                                    AGENT_ERROR,
-                                    {"error_message": chunk.data.get("message", "LLM error")},
-                                )
-                            )
-                            await _delete_empty_assistant_messages(session_factory, job.session_id)
-                            return "stop"
+                            message = chunk.data.get("message", "LLM error")
+                            # Route provider stream failures through the normal
+                            # retry path. Persisting accumulated_text here
+                            # turns a broken stream into a false final answer.
+                            raise RuntimeError(f"Provider stream error: {message}")
+
+                if not saw_finish and not job.abort_event.is_set():
+                    # Some compatible endpoints close the stream without an
+                    # exception or finish_reason. Do not silently persist the
+                    # partial answer as a successful stop.
+                    raise RuntimeError(
+                        "Incomplete provider stream: missing finish reason"
+                    )
 
                 stream_error = None
                 logger.info(

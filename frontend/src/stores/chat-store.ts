@@ -134,6 +134,7 @@ interface ChatStore {
   clearPlanReview: (sessionId: string | null) => void;
   setModelLoading: (sessionId: string | null, loading: boolean) => void;
   setCompacting: (sessionId: string | null, compacting: boolean) => void;
+  clearStreamingOutput: (sessionId: string | null) => void;
   clearStreamingContent: (sessionId: string | null) => void;
   finishGeneration: (sessionId: string | null) => void;
 }
@@ -622,6 +623,15 @@ export const useChatStore = create<ChatStore>((set) => ({
 
   setCompacting: (sessionId, compacting) =>
     set((s) => mutateBucket(s, sessionId, (prev) => ({ ...prev, isCompacting: compacting }))),
+
+  clearStreamingOutput: (sessionId) =>
+    set((s) =>
+      mutateBucket(s, sessionId, (prev) => ({
+        ...prev,
+        streamingText: "",
+        streamingReasoning: "",
+      })),
+    ),
 
   clearStreamingContent: (sessionId) =>
     set((s) =>

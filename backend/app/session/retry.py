@@ -95,6 +95,12 @@ def is_retryable(error: Exception) -> str | None:
         if str(code) in error_str:
             return f"Server error ({code})"
 
+    # A provider can close an otherwise valid-looking stream before sending
+    # its finish marker. This must be retried instead of being accepted as a
+    # complete answer.
+    if "incomplete provider stream" in error_str:
+        return "Incomplete provider stream"
+
     # Network errors
     for term in ("timeout", "connection", "network", "econnreset", "econnrefused"):
         if term in error_str:

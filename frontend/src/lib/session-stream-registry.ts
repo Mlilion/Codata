@@ -159,12 +159,16 @@ class ProgressiveBuffer {
     }
   }
 
-  dispose() {
+  reset() {
     if (this.timerId) {
       clearTimeout(this.timerId);
       this.timerId = null;
     }
     this.pending = "";
+  }
+
+  dispose() {
+    this.reset();
   }
 
   private flushPending = () => {
@@ -402,18 +406,9 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     onStatusChange: (status) => {
       connectionStore.getState().setStatus(status);
       if (status === "disconnected") {
-        toast.error("Connection lost. Response may be incomplete.");
         (async () => {
-          try {
-            const finished = await finishFromDatabaseOnce(sessionId);
-            if (finished) {
-              stopStream(sessionId);
-              return;
-            }
-          } finally {
-            store.getState().finishGeneration(sessionId);
-            stopStream(sessionId);
-          }
+          const finished = await finishFromDatabaseOnce(sessionId);
+          if (finished) stopStream(sessionId);
         })();
       }
     },
@@ -465,6 +460,15 @@ export async function startStream(sessionId: string, streamId: string): Promise<
   client.on(SSE_EVENTS.REASONING_DELTA, (data) => {
     cancelPendingStepFinish();
     if (data.text) reasoningBuffer.push(data.text);
+  });
+
+  client.on(SSE_EVENTS.RETRY, () => {
+    cancelPendingStepFinish();
+    // The backend discards the interrupted attempt before retrying. Remove
+    // its buffered output so the retry cannot duplicate or corrupt the answer.
+    textBuffer.reset();
+    reasoningBuffer.reset();
+    store.getState().clearStreamingOutput(sessionId);
   });
 
   client.on(SSE_EVENTS.TOOL_START, (data) => {
@@ -647,16 +651,10 @@ export async function startStream(sessionId: string, streamId: string): Promise<
         instance.stepFinishTimer = null;
         if (!store.getState().sessions[sessionId]?.isGenerating) return;
         console.warn("SSE safety net: forcing finishGeneration after step_finish timeout");
-        try {
-          const finishedAfterWait = await finishFromDatabaseOnce(sessionId);
-          if (finishedAfterWait) {
-            stopStream(sessionId);
-            return;
-          }
-        } finally {
-          store.getState().finishGeneration(sessionId);
+        const finishedAfterWait = await finishFromDatabaseOnce(sessionId);
+        if (finishedAfterWait) {
+          stopStream(sessionId);
         }
-        stopStream(sessionId);
       }, 8_000);
     }, 1_200);
   });
@@ -784,8 +782,16 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     let finished = false;
     try {
       finished = await finishFromDatabaseOnce(sessionId);
+      if (!finished) {
+        // Keep the live text mounted while the authoritative DB handoff is
+        // retried by the idle recovery loop. Clearing it here used to make a
+        // complete streamed answer appear truncated after DONE.
+        return;
+      }
     } finally {
-      if (!finished) store.getState().finishGeneration(sessionId);
+      if (finished) {
+        store.getState().finishGeneration(sessionId);
+      }
     }
     const qc = queryClientRef;
     if (qc) {
@@ -808,11 +814,13 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     console.warn("SSE agent error:", message);
     textBuffer.flush();
     reasoningBuffer.flush();
-    try {
-      await finishFromDatabaseOnce(sessionId);
-    } finally {
-      store.getState().finishGeneration(sessionId);
+    const finished = await finishFromDatabaseOnce(sessionId);
+    if (!finished) {
+      // Keep the streamed partial visible until the persisted error state can
+      // be fetched; do not replace it with an older cached page.
+      return;
     }
+    store.getState().finishGeneration(sessionId);
     const qc = queryClientRef;
     if (qc) {
       qc.invalidateQueries({ queryKey: queryKeys.messages.list(sessionId) });
