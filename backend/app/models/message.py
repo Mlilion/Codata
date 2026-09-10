@@ -33,7 +33,9 @@ class Message(Base, TimestampMixin):
     # Relationships
     session: Mapped[Session] = relationship(back_populates="messages")
     parts: Mapped[list[Part]] = relationship(
-        back_populates="message", cascade="all, delete-orphan", order_by="Part.time_created"
+        back_populates="message",
+        cascade="all, delete-orphan",
+        order_by=lambda: (Part.time_created.asc(), Part.id.asc()),
     )
 
 

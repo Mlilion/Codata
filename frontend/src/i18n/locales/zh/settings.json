@@ -162,7 +162,7 @@
   "tabPluginsKeywords": "插件 技能 扩展 MCP",
   "tabRemote": "渠道",
   "tabRemoteDesc": "消息渠道和扫码配置",
-  "tabRemoteKeywords": "渠道 飞书 微信 钉钉 企业微信 Telegram QQ 扫码",
+  "tabRemoteKeywords": "渠道 飞书 微信 企业微信 扫码",
   "tabUsage": "用量",
   "tabUsageDesc": "用量、成本和调用统计",
   "tabUsageKeywords": "使用统计 成本 tokens",

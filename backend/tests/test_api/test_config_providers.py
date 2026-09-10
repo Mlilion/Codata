@@ -141,3 +141,15 @@ class TestOpenAIFreeConfiguration:
         assert settings.openai_base_url == "https://other.example/v1"
         update_env.assert_any_call("CODATA_OPENAI_BASE_URL", "https://other.example/v1")
 
+
+class TestDoubaoProviderConfiguration:
+    def test_doubao_provider_is_openai_compatible(self):
+        from app.config import Settings
+        from app.provider.catalog import PROVIDER_CATALOG
+
+        provider = PROVIDER_CATALOG["doubao"]
+
+        assert provider.settings_key == "doubao_api_key"
+        assert provider.base_url == "https://ark.cn-beijing.volces.com/api/v3"
+        assert Settings.model_fields["doubao_api_key"].default == ""
+

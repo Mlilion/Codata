@@ -5,6 +5,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { API, queryKeys } from "@/lib/constants";
 import { MESSAGE_PAGE_SIZE } from "@/lib/message-pagination";
+import { compareMessagesChronologically } from "@/lib/message-cache";
 import type { PaginatedMessages } from "@/types/message";
 
 /**
@@ -36,18 +37,14 @@ export function useMessages(sessionId: string | undefined) {
   // can briefly overlap the latest page with older pages after refetches.
   const messages = useMemo(() => {
     const byId = new Map<string, PaginatedMessages["messages"][number]>();
-    const order: string[] = [];
     for (const message of query.data?.pages.flatMap((p) => p.messages) ?? []) {
-      if (!byId.has(message.id)) {
-        order.push(message.id);
-      }
       // Keep the freshest copy if an overlapped page contains the same id.
       byId.set(message.id, message);
     }
-    return order.map((id) => byId.get(id)!);
+    return [...byId.values()].sort(compareMessagesChronologically);
   }, [query.data]);
 
-  const total = query.data?.pages[0]?.total ?? 0;
+  const total = query.data?.pages.at(-1)?.total ?? 0;
 
   return {
     ...query,

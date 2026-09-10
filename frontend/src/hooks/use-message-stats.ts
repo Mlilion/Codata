@@ -5,6 +5,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { API, queryKeys } from "@/lib/constants";
 import { MESSAGE_PAGE_SIZE } from "@/lib/message-pagination";
+import { compareMessagesChronologically } from "@/lib/message-cache";
 import type { PaginatedMessages, MessageResponse, AssistantMessageInfo } from "@/types/message";
 
 function extractStepSnapshot(msg: MessageResponse): Record<string, number> | null {
@@ -109,7 +110,10 @@ export function useMessageStats(sessionId: string | undefined, maxContext?: numb
 
   const stats = useMemo(() => {
     if (!query.data) return undefined;
-    return computeStats(query.data.pages.flatMap((p) => p.messages), maxContext);
+    const messages = query.data.pages
+      .flatMap((p) => p.messages)
+      .sort(compareMessagesChronologically);
+    return computeStats(messages, maxContext);
   }, [query.data, maxContext]);
 
   return { ...query, data: stats };

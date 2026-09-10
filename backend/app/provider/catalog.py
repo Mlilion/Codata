@@ -170,4 +170,11 @@ PROVIDER_CATALOG: dict[str, ProviderDef] = {
         kind="openai_compat",
         base_url="https://api.xiaomimimo.com/v1",
     ),
+    "doubao": ProviderDef(
+        id="doubao",
+        name="Doubao (豆包)",
+        settings_key="doubao_api_key",
+        kind="openai_compat",
+        base_url="https://ark.cn-beijing.volces.com/api/v3",
+    ),
 }

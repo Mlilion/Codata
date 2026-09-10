@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import func, select, text
+from sqlalchemy import and_, exists, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -374,13 +374,64 @@ async def get_messages(
         select(Message)
         .where(Message.session_id == session_id)
         .options(selectinload(Message.parts))
-        .order_by(Message.time_created.asc())
+        .order_by(Message.time_created.asc(), Message.id.asc())
     )
     if limit is not None:
         if offset < 0:
             total = await count_messages(db, session_id)
             offset = max(0, total - limit)
         stmt = stmt.offset(offset).limit(limit)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+def _display_message_filter() -> Any:
+    """Build the database predicate for messages shown in the thread.
+
+    Conversation history and usage accounting intentionally keep synthetic
+    records. The UI endpoint must paginate only records that can contribute to
+    the rendered thread, otherwise a trailing memory/compaction usage record or
+    hidden prompt can push the actual assistant reply out of the latest page.
+    """
+    role = Message.data["role"].as_string()
+    hidden = Message.data["hidden"].as_boolean()
+    system = Message.data["system"].as_boolean()
+    has_parts = exists(select(Part.id).where(Part.message_id == Message.id))
+
+    return and_(
+        or_(hidden.is_(None), hidden.is_(False)),
+        or_(role != "user", system.is_(None), system.is_(False)),
+        or_(role != "assistant", has_parts),
+    )
+
+
+async def count_display_messages(db: AsyncSession, session_id: str) -> int:
+    """Count messages that belong in the user-facing thread."""
+    stmt = (
+        select(func.count())
+        .select_from(Message)
+        .where(Message.session_id == session_id, _display_message_filter())
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one()
+
+
+async def get_display_messages(
+    db: AsyncSession,
+    session_id: str,
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+) -> list[Message]:
+    """Get only renderable conversation messages with their parts."""
+    stmt = (
+        select(Message)
+        .where(Message.session_id == session_id, _display_message_filter())
+        .options(selectinload(Message.parts))
+        .order_by(Message.time_created.asc(), Message.id.asc())
+    )
+    if limit is not None:
+        stmt = stmt.offset(max(0, offset)).limit(limit)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 

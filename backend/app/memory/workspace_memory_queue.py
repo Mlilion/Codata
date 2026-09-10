@@ -286,6 +286,7 @@ class WorkspaceMemoryUpdateQueue:
                             "role": "assistant",
                             "agent": "memory",
                             "system": True,
+                            "hidden": True,
                             "cost": cost,
                             "tokens": usage_data,
                             "model_id": model_id,

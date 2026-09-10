@@ -32,10 +32,7 @@ import {
   useWeixinQrStatus,
 } from "@/hooks/use-channels";
 import {
-  DingTalkIcon,
   FeishuIcon,
-  QQIcon,
-  TelegramIcon,
   WeChatIcon,
   WeComIcon,
 } from "@/components/icons/platform-icons";
@@ -74,7 +71,7 @@ const FEISHU_SCOPES_JSON = JSON.stringify(
   2,
 );
 
-const PLATFORM_ORDER = ["feishu", "weixin", "wecom", "dingtalk", "telegram", "qq"];
+const PLATFORM_ORDER = ["feishu", "wecom", "weixin"];
 
 const PLATFORMS = ([
   {
@@ -130,54 +127,6 @@ const PLATFORMS = ([
     guide: [
       { titleKey: "platformGuide_wecom_1_title", bodyKey: "platformGuide_wecom_1_body" },
       { titleKey: "platformGuide_wecom_2_title", bodyKey: "platformGuide_wecom_2_body" },
-    ],
-  },
-  {
-    id: "dingtalk",
-    name: "DingTalk",
-    icon: <DingTalkIcon size={28} />,
-    color: "text-[#0089FF]",
-    auth: "token",
-    help: "Create a bot at DingTalk Open Platform",
-    helpUrl: "https://open-dev.dingtalk.com",
-    fields: [
-      { key: "client_id", label: "Client ID / App Key", placeholder: "Enter DingTalk Client ID" },
-      { key: "client_secret", label: "Client Secret / App Secret", placeholder: "Enter DingTalk Client Secret", secret: true },
-    ],
-    guide: [
-      { titleKey: "platformGuide_dingtalk_1_title", bodyKey: "platformGuide_dingtalk_1_body", href: "https://open-dev.dingtalk.com" },
-      { titleKey: "platformGuide_dingtalk_2_title", bodyKey: "platformGuide_dingtalk_2_body" },
-      { titleKey: "platformGuide_dingtalk_3_title", bodyKey: "platformGuide_dingtalk_3_body" },
-    ],
-  },
-  {
-    id: "telegram",
-    name: "Telegram",
-    icon: <TelegramIcon size={28} />,
-    color: "text-[#26A5E4]",
-    auth: "token",
-    help: "Get a token from @BotFather on Telegram",
-    helpUrl: "https://t.me/BotFather",
-    fields: [{ key: "token", label: "Bot Token", placeholder: "123456:ABC-DEF...", secret: true }],
-    guide: [
-      { titleKey: "platformGuide_telegram_1_title", bodyKey: "platformGuide_telegram_1_body", href: "https://t.me/BotFather" },
-      { titleKey: "platformGuide_telegram_2_title", bodyKey: "platformGuide_telegram_2_body" },
-    ],
-  },
-  {
-    id: "qq",
-    name: "QQ",
-    icon: <QQIcon size={28} />,
-    color: "text-[var(--text-primary)]",
-    auth: "token",
-    help: "Create a bot at QQ Open Platform",
-    helpUrl: "https://q.qq.com",
-    fields: [
-      { key: "app_id", label: "App ID", placeholder: "Enter QQ App ID" },
-      { key: "secret", label: "Secret", placeholder: "Enter QQ secret", secret: true },
-    ],
-    guide: [
-      { titleKey: "platformGuide_qq_1_title", bodyKey: "platformGuide_qq_1_body", href: "https://q.qq.com" },
     ],
   },
 ] satisfies PlatformDef[]).sort((a, b) => PLATFORM_ORDER.indexOf(a.id) - PLATFORM_ORDER.indexOf(b.id));

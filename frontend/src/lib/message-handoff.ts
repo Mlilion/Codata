@@ -164,15 +164,18 @@ export function canFinalizeMessagesHandoff(
   );
   if (hasRunningTool) return false;
 
-  const hasTerminalFinish = currentMessages.some((message) =>
+  const terminalMessages = currentMessages.filter((message) =>
     message.parts.some((part) => {
       if (part.data.type !== "step-finish") return false;
       return part.data.reason !== "tool_use";
     }),
   );
-  if (!hasTerminalFinish) return false;
+  if (terminalMessages.length === 0) return false;
 
-  return currentMessages.some((message) =>
+  // The terminal marker and the visible output must belong to the same
+  // assistant message. Otherwise an earlier step can make the frontend
+  // discard the live final step while it is still an empty shell.
+  return terminalMessages.some((message) =>
     message.parts.some((part) => partHasVisibleOutput(part.data)),
   );
 }

@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.dependencies import get_db
 from app.models.message import Message
 from app.schemas.message import MessageResponse, PaginatedMessages, PartResponse
-from app.session.manager import count_messages, get_messages
+from app.session.manager import count_display_messages, get_display_messages
 
 router = APIRouter()
 
@@ -45,9 +45,14 @@ async def list_messages(
 
     offset=-1 (default) returns the latest page.
     """
-    total = await count_messages(db, session_id)
+    total = await count_display_messages(db, session_id)
     actual_offset = max(0, total - limit) if offset < 0 else offset
-    messages = await get_messages(db, session_id, limit=limit, offset=actual_offset)
+    messages = await get_display_messages(
+        db,
+        session_id,
+        limit=limit,
+        offset=actual_offset,
+    )
     return PaginatedMessages(
         total=total,
         offset=actual_offset,

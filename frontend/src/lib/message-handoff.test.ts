@@ -79,13 +79,31 @@ describe("canFinalizeMessageHandoff", () => {
     ).toBe(false);
   });
 
-  it("finalizes a multi-step assistant group when one current message has output and another has terminal finish", () => {
+  it("does not finalize when output and terminal finish belong to different messages", () => {
     const progress = assistant("assistant-progress", [
       { type: "text", text: "I found the data source." },
       { type: "step-finish", reason: "tool_use", tokens: {}, cost: 0 },
     ]);
     const final = assistant("assistant-final", [
       { type: "step-start", snapshot: null },
+      { type: "step-finish", reason: "stop", tokens: {}, cost: 0 },
+    ]);
+
+    expect(
+      canFinalizeMessagesHandoff([progress, final], {
+        currentAssistantMessageIds: new Set(["assistant-progress", "assistant-final"]),
+        currentToolCallIds: new Set(),
+      }),
+    ).toBe(false);
+  });
+
+  it("finalizes a multi-step assistant group when the terminal message has output", () => {
+    const progress = assistant("assistant-progress", [
+      { type: "text", text: "I found the data source." },
+      { type: "step-finish", reason: "tool_use", tokens: {}, cost: 0 },
+    ]);
+    const final = assistant("assistant-final", [
+      { type: "text", text: "Here is the final answer." },
       { type: "step-finish", reason: "stop", tokens: {}, cost: 0 },
     ]);
 

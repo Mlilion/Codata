@@ -11,11 +11,9 @@ import {
   Eye,
   EyeOff,
   KeyRound,
-  LockKeyhole,
   Loader2,
   Plus,
   RefreshCw,
-  ShieldCheck,
   Trash2,
   Zap,
 } from "lucide-react";
@@ -72,8 +70,9 @@ interface ProviderPreset {
 }
 
 const UNAVAILABLE_DEFAULT_MODEL_VALUE = "__unavailable_default__";
-const COMPANY_DEFAULT_ENDPOINT = "https://kaon-router.kaonai.com/v1";
-const COMPANY_DEFAULT_PROVIDER_NAME = "KaonRouter";
+const DOUBAO_PROVIDER_ID = "doubao";
+const DOUBAO_PROVIDER_NAME = "Doubao (豆包)";
+const LEGACY_COMPANY_DEFAULT_ENDPOINT = "https://kaon-router.kaonai.com/v1";
 
 const PROVIDER_LABELS: Record<string, string> = {
   openai: "OpenAI",
@@ -97,11 +96,19 @@ const PROVIDER_LABELS: Record<string, string> = {
   zhipu: "ZhipuAI",
   siliconflow: "SiliconFlow",
   xiaomi: "MiMo",
+  doubao: "Doubao",
   ollama: "Ollama",
   local: "Local",
 };
 
 const PROVIDER_PRESETS: ProviderPreset[] = [
+  {
+    id: DOUBAO_PROVIDER_ID,
+    name: DOUBAO_PROVIDER_NAME,
+    baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
+    previewPath: "/chat/completions",
+    keyPlaceholder: "Volcengine Ark API Key",
+  },
   {
     id: "anthropic",
     name: "Anthropic",
@@ -229,33 +236,47 @@ function ProviderListView({
     queryFn: () => api.get<ProviderInfo[]>(API.CONFIG.PROVIDERS),
   });
 
-  const configuredProviders = useMemo(
-    () => (providers ?? []).filter((p) => p.is_configured),
+  const legacyCompanyProviderId = useMemo(
+    () => (providers ?? []).find(isLegacyCompanyDefaultProvider)?.id ?? null,
     [providers],
+  );
+  const visibleProviders = useMemo(
+    () => (providers ?? []).filter((p) => !isLegacyCompanyDefaultProvider(p)),
+    [providers],
+  );
+  const doubaoProvider = useMemo(
+    () => visibleProviders.find((p) => p.id === DOUBAO_PROVIDER_ID) ?? null,
+    [visibleProviders],
+  );
+  const configuredProviders = useMemo(
+    () => visibleProviders.filter((p) => p.is_configured),
+    [visibleProviders],
   );
   const builtInProviders = useMemo(
     () => configuredProviders.filter((p) => !p.id.startsWith("custom_")),
     [configuredProviders],
   );
+  const visibleBuiltInProviders = useMemo(
+    () => builtInProviders.filter((p) => p.id !== DOUBAO_PROVIDER_ID),
+    [builtInProviders],
+  );
   const customProviders = useMemo(
     () => configuredProviders.filter((p) => p.id.startsWith("custom_")),
     [configuredProviders],
   );
-  const companyProvider = useMemo(
-    () => customProviders.find(isCompanyDefaultProvider) ?? null,
-    [customProviders],
-  );
-  const userCustomProviders = useMemo(
-    () => customProviders.filter((p) => !isCompanyDefaultProvider(p)),
-    [customProviders],
-  );
+  const userCustomProviders = customProviders;
   const enabledConfiguredProviders = useMemo(
     () => configuredProviders.filter(isProviderEnabled),
     [configuredProviders],
   );
   const selectableModels = useMemo(
-    () => (models ?? []).filter((model) => !isLegacyFreeRouterModel(model)),
-    [models],
+    () =>
+      (models ?? []).filter(
+        (model) =>
+          !isLegacyFreeRouterModel(model) &&
+          model.provider_id !== legacyCompanyProviderId,
+      ),
+    [models, legacyCompanyProviderId],
   );
   const selectedDefaultModel = useMemo(
     () => selectableModels.find((model) => modelMatches(model, defaultModel, defaultProviderId)) ?? null,
@@ -445,11 +466,11 @@ function ProviderListView({
         </Button>
       </div>
 
-      <CompanyPresetProviderCard
-        provider={companyProvider}
-        active={companyProvider ? displayedConfiguredProviderId === companyProvider.id : false}
+      <DoubaoPresetProviderCard
+        provider={doubaoProvider}
+        active={displayedConfiguredProviderId === DOUBAO_PROVIDER_ID}
         onSaved={(provider) => {
-          setActiveProvider("custom");
+          setActiveProvider("byok");
           qc.invalidateQueries({ queryKey: queryKeys.providers });
           qc.invalidateQueries({ queryKey: queryKeys.models });
           if (provider.enabled) {
@@ -484,11 +505,11 @@ function ProviderListView({
             {t("customModelConfigs")}
           </h3>
           <span className="text-ui-caption text-[var(--text-tertiary)]">
-            {builtInProviders.length + userCustomProviders.length} {t("configuredCount")}
+            {visibleBuiltInProviders.length + userCustomProviders.length} {t("configuredCount")}
           </span>
         </div>
 
-        {builtInProviders.length === 0 && userCustomProviders.length === 0 ? (
+        {visibleBuiltInProviders.length === 0 && userCustomProviders.length === 0 ? (
           <div className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-8 text-center">
             <p className="text-ui-body font-medium text-[var(--text-primary)]">
               {t("noCustomModelConfigs")}
@@ -499,7 +520,7 @@ function ProviderListView({
           </div>
         ) : (
           <div className="space-y-3">
-            {builtInProviders.map((provider) => (
+            {visibleBuiltInProviders.map((provider) => (
               <ConfiguredProviderCard
                 key={provider.id}
                 provider={provider}
@@ -528,7 +549,7 @@ function ProviderListView({
   );
 }
 
-function CompanyPresetProviderCard({
+function DoubaoPresetProviderCard({
   provider,
   active,
   onSaved,
@@ -542,16 +563,13 @@ function CompanyPresetProviderCard({
   const [showKey, setShowKey] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<ProviderTestResult | null>(null);
-  const endpointPreview = `${COMPANY_DEFAULT_ENDPOINT}/models`;
   const configured = Boolean(provider?.is_configured);
   const statusText = active ? "已启用" : configured ? "已保存" : "未配置";
   const modelText = provider?.model_count ? `${provider.model_count} 个模型` : testResult ? `${testResult.model_count} 个模型` : "保存后同步";
 
   const testConnection = useMutation({
     mutationFn: () =>
-      api.post<ProviderTestResult>(API.CONFIG.CUSTOM_ENDPOINT_TEST, {
-        name: COMPANY_DEFAULT_PROVIDER_NAME,
-        base_url: COMPANY_DEFAULT_ENDPOINT,
+      api.post<ProviderTestResult>(API.CONFIG.PROVIDER_TEST(DOUBAO_PROVIDER_ID), {
         api_key: apiKey.trim(),
         enabled: true,
       }),
@@ -566,18 +584,11 @@ function CompanyPresetProviderCard({
   });
 
   const saveProvider = useMutation({
-    mutationFn: () => {
-      const body = {
-        name: COMPANY_DEFAULT_PROVIDER_NAME,
-        base_url: COMPANY_DEFAULT_ENDPOINT,
+    mutationFn: () =>
+      api.post<ProviderInfo>(API.CONFIG.PROVIDER_KEY(DOUBAO_PROVIDER_ID), {
         api_key: apiKey.trim(),
         enabled: true,
-      };
-      if (provider?.id) {
-        return api.patch<ProviderInfo>(API.CONFIG.CUSTOM_ENDPOINT_ITEM(provider.id), body);
-      }
-      return api.post<ProviderInfo>(API.CONFIG.CUSTOM_ENDPOINT, body);
-    },
+      }),
     onSuccess: (result) => {
       setError(null);
       setTestResult(null);
@@ -597,25 +608,23 @@ function CompanyPresetProviderCard({
       <div className="grid gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <div className="min-w-0">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--text-accent)] ring-1 ring-[var(--brand-border)]">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
+            <ProviderIcon providerId={DOUBAO_PROVIDER_ID} name={DOUBAO_PROVIDER_NAME} />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-ui-title-sm font-semibold text-[var(--text-primary)]">{COMPANY_DEFAULT_PROVIDER_NAME}</h3>
+                <h3 className="text-ui-title-sm font-semibold text-[var(--text-primary)]">{provider?.name ?? DOUBAO_PROVIDER_NAME}</h3>
                 <Badge variant="outline" className="border-[var(--brand-border)] bg-[var(--brand-soft)] px-1.5 py-0 text-ui-3xs text-[var(--text-accent)]">
                   推荐
                 </Badge>
                 <Badge variant="outline" className="border-[var(--border-default)] bg-[var(--surface-raised)] px-1.5 py-0 text-ui-3xs text-[var(--text-secondary)]">
-                  内置端点
+                  内置模型
                 </Badge>
               </div>
               <p className="mt-1 text-ui-caption leading-5 text-[var(--text-secondary)]">
-                公司统一维护的模型服务，填写个人 API Key 即可使用。
+                使用火山引擎 Ark 的豆包模型服务，填写个人 API Key 即可使用。
               </p>
-              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] px-2.5 py-1.5 font-mono text-ui-caption text-[var(--text-secondary)]">
-                <LockKeyhole className="h-3.5 w-3.5 shrink-0 text-[var(--text-tertiary)]" />
-                <span className="truncate">{COMPANY_DEFAULT_ENDPOINT}</span>
+              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] px-2.5 py-1.5 text-ui-caption font-medium text-[var(--text-secondary)]">
+                <ProviderIcon providerId={DOUBAO_PROVIDER_ID} name={DOUBAO_PROVIDER_NAME} size="xs" />
+                <span className="truncate">Volcengine Ark / OpenAI-compatible</span>
               </div>
             </div>
           </div>
@@ -667,9 +676,6 @@ function CompanyPresetProviderCard({
               {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </button>
           </div>
-          <p className="mt-2 truncate text-ui-3xs text-[var(--text-tertiary)]" title={endpointPreview}>
-            预览: {endpointPreview}
-          </p>
           {(error || testResult) && (
             <div
               className={cn(
@@ -972,10 +978,10 @@ function AddProviderView({ onBack }: { onBack: () => void }) {
     }));
   }, [providers]);
 
-  const [providerKind, setProviderKind] = useState<ProviderKind>("anthropic");
+  const [providerKind, setProviderKind] = useState<ProviderKind>(DOUBAO_PROVIDER_ID);
   const preset = providerOptions.find((p) => p.id === providerKind);
   const selectedName = preset?.name ?? t("customEndpoint");
-  const [channelName, setChannelName] = useState("My Anthropic");
+  const [channelName, setChannelName] = useState(`My ${DOUBAO_PROVIDER_NAME}`);
   const [baseUrl, setBaseUrl] = useState(preset?.baseUrl ?? "");
   const [apiKey, setApiKey] = useState("");
   const [enabled, setEnabled] = useState(true);
@@ -1271,8 +1277,8 @@ function isProviderEnabled(provider: ProviderInfo) {
   return provider.enabled && provider.status !== "disabled";
 }
 
-function isCompanyDefaultProvider(provider: ProviderInfo) {
-  return provider.id.startsWith("custom_") && provider.base_url?.replace(/\/$/, "") === COMPANY_DEFAULT_ENDPOINT;
+function isLegacyCompanyDefaultProvider(provider: ProviderInfo) {
+  return provider.id.startsWith("custom_") && provider.base_url?.replace(/\/$/, "") === LEGACY_COMPANY_DEFAULT_ENDPOINT;
 }
 
 function getActiveConfiguredProviderId(

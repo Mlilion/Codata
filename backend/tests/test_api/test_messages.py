@@ -34,6 +34,45 @@ class TestListMessages:
         assert data["messages"][0]["data"]["role"] == "user"
         assert len(data["messages"][0]["parts"]) == 1
 
+    async def test_latest_page_ignores_hidden_and_empty_system_records(self, app_client, session_factory):
+        async with session_factory() as db:
+            async with db.begin():
+                s = await create_session(db, title="Display")
+                sid = s.id
+                user = await create_message(db, session_id=sid, data={"role": "user"})
+                await create_part(
+                    db,
+                    message_id=user.id,
+                    session_id=sid,
+                    data={"type": "text", "text": "question"},
+                )
+                answer = await create_message(db, session_id=sid, data={"role": "assistant"})
+                await create_part(
+                    db,
+                    message_id=answer.id,
+                    session_id=sid,
+                    data={"type": "text", "text": "answer"},
+                )
+                await create_message(
+                    db,
+                    session_id=sid,
+                    data={"role": "assistant", "agent": "memory", "system": True},
+                )
+                await create_message(
+                    db,
+                    session_id=sid,
+                    data={"role": "user", "system": True, "hidden": True},
+                )
+
+        resp = await app_client.get(
+            f"/api/messages/{sid}",
+            params={"offset": -1, "limit": 2},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] == 2
+        assert [message["id"] for message in data["messages"]] == [user.id, answer.id]
+
     async def test_negative_offset_latest(self, app_client, session_factory):
         async with session_factory() as db:
             async with db.begin():

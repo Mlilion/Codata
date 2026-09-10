@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     zhipu_api_key: str = ""         # CODATA_ZHIPU_API_KEY (智谱 GLM)
     siliconflow_api_key: str = ""   # CODATA_SILICONFLOW_API_KEY (硅基流动)
     xiaomi_api_key: str = ""        # CODATA_XIAOMI_API_KEY (MiMo)
+    doubao_api_key: str = ""        # CODATA_DOUBAO_API_KEY (Volcengine Ark / Doubao)
     custom_endpoints: str = "[]"    # CODATA_CUSTOM_ENDPOINTS
 
     # Comma-separated list of provider IDs to disable (e.g. "groq,deepseek")

@@ -11,6 +11,7 @@ import { SSE_EVENTS } from "@/types/streaming";
 import { notifyBackgroundFinish } from "@/lib/background-notify";
 import { artifactTypeFromExtension, languageFromExtension } from "@/lib/artifacts";
 import { canFinalizeMessagesHandoff } from "@/lib/message-handoff";
+import { mergeLatestMessagePage } from "@/lib/message-cache";
 import { MESSAGE_PAGE_SIZE } from "@/lib/message-pagination";
 import { useChatStore } from "@/stores/chat-store";
 import { useConnectionStore } from "@/stores/connection-store";
@@ -293,23 +294,6 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     });
   };
 
-  const canFinalizeFromCache = (sid: string) => {
-    if (hasRunningStreamingTool()) return false;
-    const qc = queryClientRef;
-    if (!qc) return false;
-    const callIds = currentStreamCallIds();
-    if (assistantMessageIds.size === 0 && callIds.size === 0) return false;
-    const data = qc.getQueryData<InfiniteData<PaginatedMessages>>(
-      queryKeys.messages.list(sid),
-    );
-    return data?.pages.some((page) =>
-      canFinalizeMessagesHandoff(page.messages, {
-        currentAssistantMessageIds: assistantMessageIds,
-        currentToolCallIds: callIds,
-      }),
-    ) ?? false;
-  };
-
   const canFinalizeFromPayload = (messages: PaginatedMessages | null | undefined) => {
     if (hasRunningStreamingTool()) return false;
     const callIds = currentStreamCallIds();
@@ -332,10 +316,12 @@ export async function startStream(sessionId: string, streamId: string): Promise<
       await waitForNextPaint();
     }
 
+    let activeStateKnown = false;
     try {
       const activeJobs = await api.get<Array<{ stream_id: string; session_id: string }>>(
         API.CHAT.ACTIVE,
       );
+      activeStateKnown = true;
       const ourStreamId = store.getState().sessions[sid]?.streamId;
       const stillActive = activeJobs.some(
         (job) =>
@@ -347,22 +333,25 @@ export async function startStream(sessionId: string, streamId: string): Promise<
       // Fall through to DB heuristic.
     }
 
-    if (!canFinalizeFromCache(sid)) {
-      try {
-        const latestPage = await api.get<PaginatedMessages>(API.MESSAGES.LIST(sid, MESSAGE_PAGE_SIZE, -1));
-        if (qc) {
-          qc.setQueryData<InfiniteData<PaginatedMessages>>(
-            queryKeys.messages.list(sid),
-            (old) => {
-              if (!old) return { pages: [latestPage], pageParams: [-1] };
-              return { ...old, pages: [...old.pages.slice(0, -1), latestPage] };
-            },
-          );
-        }
-        if (!canFinalizeFromPayload(latestPage)) return false;
-      } catch {
-        return false;
+    try {
+      // Always fetch the latest page after the backend says the job is no
+      // longer active. The cache may still contain an assistant shell or an
+      // older copy of the final message, so it cannot be the completion
+      // authority.
+      const latestPage = await api.get<PaginatedMessages>(
+        API.MESSAGES.LIST(sid, MESSAGE_PAGE_SIZE, -1),
+      );
+      if (qc) {
+        qc.setQueryData<InfiniteData<PaginatedMessages>>(
+          queryKeys.messages.list(sid),
+          (old) => mergeLatestMessagePage(old, latestPage),
+        );
       }
+      // If the active-job check failed, retain the stricter payload guard.
+      // When the check succeeds, the completed backend job is authoritative.
+      if (!activeStateKnown && !canFinalizeFromPayload(latestPage)) return false;
+    } catch {
+      return false;
     }
 
     store.getState().finishGeneration(sid);
@@ -387,6 +376,21 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     return false;
   };
 
+  // STEP_FINISH and DONE can arrive close together. Share one finalization
+  // request so they cannot race while replacing the infinite-query pages.
+  let finalizationPromise: Promise<boolean> | null = null;
+  const finishFromDatabaseOnce = (sid: string): Promise<boolean> => {
+    if (finalizationPromise) return finalizationPromise;
+    finalizationPromise = (async () => {
+      try {
+        return await finishFromDatabaseWithRetry(sid);
+      } finally {
+        finalizationPromise = null;
+      }
+    })();
+    return finalizationPromise;
+  };
+
   const client = new SSEClient({
     url: API.CHAT.STREAM(streamId),
     urlProvider: () => API.CHAT.STREAM(streamId),
@@ -401,7 +405,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
         toast.error("Connection lost. Response may be incomplete.");
         (async () => {
           try {
-            const finished = await finishFromDatabase(sessionId);
+            const finished = await finishFromDatabaseOnce(sessionId);
             if (finished) {
               stopStream(sessionId);
               return;
@@ -633,7 +637,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
       instance.stepFinishTimer = null;
       if (!store.getState().sessions[sessionId]?.isGenerating) return;
 
-      const finished = await finishFromDatabase(sessionId);
+      const finished = await finishFromDatabaseOnce(sessionId);
       if (finished) {
         stopStream(sessionId);
         return;
@@ -644,7 +648,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
         if (!store.getState().sessions[sessionId]?.isGenerating) return;
         console.warn("SSE safety net: forcing finishGeneration after step_finish timeout");
         try {
-          const finishedAfterWait = await finishFromDatabase(sessionId);
+          const finishedAfterWait = await finishFromDatabaseOnce(sessionId);
           if (finishedAfterWait) {
             stopStream(sessionId);
             return;
@@ -779,15 +783,13 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     reasoningBuffer.flush();
     let finished = false;
     try {
-      finished = await finishFromDatabaseWithRetry(sessionId);
+      finished = await finishFromDatabaseOnce(sessionId);
     } finally {
       if (!finished) store.getState().finishGeneration(sessionId);
     }
     const qc = queryClientRef;
     if (qc) {
-      setTimeout(() => {
-        qc.invalidateQueries({ queryKey: queryKeys.messages.list(sessionId) });
-      }, 500);
+      qc.invalidateQueries({ queryKey: queryKeys.messages.list(sessionId) });
       qc.invalidateQueries({ queryKey: queryKeys.sessions.all });
       qc.invalidateQueries({ queryKey: queryKeys.sessions.detail(sessionId) });
     }
@@ -807,15 +809,13 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     textBuffer.flush();
     reasoningBuffer.flush();
     try {
-      await finishFromDatabase(sessionId);
+      await finishFromDatabaseOnce(sessionId);
     } finally {
       store.getState().finishGeneration(sessionId);
     }
     const qc = queryClientRef;
     if (qc) {
-      setTimeout(() => {
-        qc.invalidateQueries({ queryKey: queryKeys.messages.list(sessionId) });
-      }, 500);
+      qc.invalidateQueries({ queryKey: queryKeys.messages.list(sessionId) });
       qc.invalidateQueries({ queryKey: queryKeys.sessions.detail(sessionId) });
     }
     maybeNotifyFinish(sessionId, "error", message);
@@ -838,7 +838,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     }
     if (instance.lastEventTimestamp > 0 && Date.now() - instance.lastEventTimestamp > IDLE_RECOVERY_MS) {
       console.warn(`SSE idle recovery for ${sessionId}: no events for 15s, attempting DB recovery`);
-      const finished = await finishFromDatabase(sessionId);
+      const finished = await finishFromDatabaseOnce(sessionId);
       if (finished) {
         stopStream(sessionId);
         return;

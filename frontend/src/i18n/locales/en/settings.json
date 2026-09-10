@@ -162,7 +162,7 @@
   "tabPluginsKeywords": "plugins skills extensions MCP",
   "tabRemote": "Channels",
   "tabRemoteDesc": "Messaging channels and QR setup",
-  "tabRemoteKeywords": "channels Feishu WeChat DingTalk WeCom Telegram QQ QR",
+  "tabRemoteKeywords": "channels Feishu WeChat WeCom QR",
   "tabUsage": "Usage",
   "tabUsageDesc": "Usage, costs, and call statistics",
   "tabUsageKeywords": "usage statistics cost tokens",

@@ -308,6 +308,7 @@ async def _phase2_summarize(
                             "role": "assistant",
                             "agent": "compaction",
                             "system": True,
+                            "hidden": True,
                             "cost": cost,
                             "tokens": usage_data,
                             "model_id": model_id,
