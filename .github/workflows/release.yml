@@ -1,0 +1,195 @@
+name: Release Desktop
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  release-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate release policy
+        run: |
+          npm run verify:open-source-boundary
+          npm run audit:open-source-boundary:strict
+          node --test scripts/release-workflow.test.mjs scripts/generate-release-manifests.test.mjs scripts/open-source-licenses.test.mjs scripts/verify-bundle.test.mjs
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: release-policy
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            platform: windows
+            artifact: windows-bundle
+            architecture: x64
+          - runner: macos-15
+            platform: macos-aarch64
+            artifact: macos-aarch64-bundle
+            architecture: arm64
+          - runner: macos-15-intel
+            platform: macos-x86_64
+            artifact: macos-x64-bundle
+            architecture: x64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: ${{ matrix.architecture }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          architecture: ${{ matrix.architecture }}
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            desktop-tauri/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop-tauri/src-tauri
+      - name: Install macOS system libraries
+        if: runner.os == 'macOS'
+        run: brew install cairo pango gdk-pixbuf pkg-config
+      - name: Install frontend and desktop dependencies
+        shell: bash
+        run: |
+          npm --prefix frontend ci --legacy-peer-deps
+          npm --prefix desktop-tauri ci
+      - name: Build frontend
+        run: npm --prefix frontend run build
+        env:
+          DESKTOP_BUILD: "true"
+          NEXT_PUBLIC_DESKTOP_BUILD: "true"
+      - name: Verify frontend assets
+        run: npm run verify:frontend-assets
+        env:
+          FRONTEND_ASSET_ROOT: frontend/out
+      - name: Build backend (PyInstaller)
+        shell: bash
+        run: |
+          cd backend
+          python -m pip install -r requirements.txt pyinstaller
+          python -m PyInstaller codata.spec --noconfirm
+      - name: Verify backend bundle
+        shell: bash
+        run: node scripts/verify-bundle.mjs backend/dist/codata-backend
+      - name: Download Node.js runtime
+        shell: bash
+        run: |
+          cd backend
+          python scripts/download_node.py
+          test -s resources/nodejs/LICENSE
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cd desktop-tauri
+          npx --no-install tauri build --bundles nsis --config '{"build":{"beforeBuildCommand":""}}'
+      - name: Verify Windows installer
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          shopt -s nullglob
+          installers=(desktop-tauri/src-tauri/target/release/bundle/nsis/*.exe)
+          if [ "${#installers[@]}" -ne 1 ]; then
+            echo "::error::Expected one Windows installer, found ${#installers[@]}."
+            exit 1
+          fi
+          mkdir -p artifacts/windows-bundle
+          cp "${installers[0]}" artifacts/windows-bundle/
+      - name: Build macOS application
+        if: runner.os == 'macOS'
+        run: |
+          cd desktop-tauri
+          npx --no-install tauri build --bundles app --config '{"build":{"beforeBuildCommand":""},"bundle":{"macOS":{"signingIdentity":"-"}}}'
+      - name: Repair, ad-hoc sign, and verify macOS application
+        if: runner.os == 'macOS'
+        run: |
+          app=desktop-tauri/src-tauri/target/release/bundle/macos/Codata.app
+          bash scripts/fix-macos-pyinstaller-frameworks.sh "$app/Contents/Resources/backend"
+          codesign --force --deep --sign - --timestamp=none \
+            --entitlements desktop-tauri/src-tauri/node.entitlements.plist "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          node scripts/verify-bundle.mjs "$app/Contents/Resources/backend"
+      - name: Package macOS DMG
+        if: runner.os == 'macOS'
+        env:
+          ARTIFACT_DIRECTORY: ${{ matrix.artifact }}
+          PACKAGE_ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          app=desktop-tauri/src-tauri/target/release/bundle/macos/Codata.app
+          staging="$RUNNER_TEMP/codata-dmg"
+          mkdir -p "$staging" "artifacts/$ARTIFACT_DIRECTORY"
+          ditto "$app" "$staging/Codata.app"
+          ln -s /Applications "$staging/Applications"
+          dmg="artifacts/$ARTIFACT_DIRECTORY/Codata_${GITHUB_REF_NAME#v}_${PACKAGE_ARCHITECTURE}.dmg"
+          hdiutil create -volname Codata -srcfolder "$staging" -ov -format UDZO "$dmg"
+          hdiutil verify "$dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: artifacts/${{ matrix.artifact }}/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish verified desktop installers
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Generate release download manifest
+        env:
+          CODATA_RELEASE_PLATFORMS: windows,macos
+        run: node scripts/generate-release-manifests.mjs artifacts
+      - name: Publish release to this repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          windows=(artifacts/windows-bundle/*.exe)
+          arm=(artifacts/macos-aarch64-bundle/*.dmg)
+          intel=(artifacts/macos-x64-bundle/*.dmg)
+          if [ "${#windows[@]}" -ne 1 ] || [ "${#arm[@]}" -ne 1 ] || [ "${#intel[@]}" -ne 1 ]; then
+            echo "::error::All three validated desktop installers are required before publishing."
+            exit 1
+          fi
+          cat > release-notes.txt <<'NOTES'
+          Initial open-source release of Codata.
+
+          Downloads: Windows x64, macOS Apple Silicon, and macOS Intel.
+          These initial installers are not publisher-signed; macOS apps use an
+          ad-hoc signature and are not notarized. Gatekeeper/SmartScreen may warn.
+          Only install artifacts from this repository if you trust the project.
+          Automatic updates are disabled; install subsequent releases manually.
+          Model providers, keys, and MCP data sources must be configured by users.
+          NOTES
+          assets=("${windows[0]}" "${arm[0]}" "${intel[0]}" release-site/downloads-latest.json)
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --title "Codata $GITHUB_REF_NAME" --notes-file release-notes.txt --latest
+          else
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" --repo "$GITHUB_REPOSITORY" \
+              --verify-tag --title "Codata $GITHUB_REF_NAME" --notes-file release-notes.txt --latest
+          fi

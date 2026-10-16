@@ -1,0 +1,34 @@
+{
+  "name": "codata",
+  "version": "1.1.23",
+  "private": true,
+  "license": "Apache-2.0",
+  "description": "Codata — Your local AI assistant",
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "node scripts/dev-backend.mjs",
+    "prepare:desktop-runtime": "cd backend && node -e \"const {execFileSync}=require('child_process');const {join}=require('path');const p=process.platform==='win32'?join('venv','Scripts','python.exe'):join('venv','bin','python');execFileSync(p,['scripts/download_node.py'],{stdio:'inherit'})\"",
+    "dev:all": "node scripts/dev-all.mjs",
+    "dev:desktop": "node scripts/dev-desktop.mjs",
+    "build:frontend": "cd frontend && cross-env DESKTOP_BUILD=true NEXT_PUBLIC_DESKTOP_BUILD=true npm run build",
+    "build:backend": "cd backend && node -e \"const {execFileSync}=require('child_process');const {join}=require('path');const p=process.platform==='win32'?join('venv','Scripts','pyinstaller.exe'):join('venv','bin','pyinstaller');execFileSync(p,['codata.spec','--noconfirm'],{stdio:'inherit'})\"",
+    "sync:desktop-meta": "node scripts/sync-desktop-meta.mjs",
+    "build:desktop": "npm run sync:desktop-meta && cd desktop-tauri && npx --no-install tauri build",
+    "verify:frontend-assets": "node --test scripts/verify-frontend-assets.test.mjs",
+    "verify:open-source-boundary": "node --test scripts/open-source-account-boundary.test.mjs scripts/open-source-frontend-boundary.test.mjs scripts/open-source-desktop-release-boundary.test.mjs scripts/open-source-enterprise-boundary.test.mjs",
+    "preflight": "npm run verify:open-source-boundary && npm run preflight:ui",
+    "preflight:ui": "cd frontend && npm run preflight:ui",
+    "audit:open-source-boundary": "node scripts/check-open-source-boundary.mjs",
+    "audit:open-source-boundary:strict": "node scripts/check-open-source-boundary.mjs --strict"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "esbuild": "^0.27.3",
+    "typescript": "^5.7.0",
+    "wait-on": "^8.0.0"
+  },
+  "dependencies": {
+    "agency-agents-zh": "^1.0.0"
+  }
+}

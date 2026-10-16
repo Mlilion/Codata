@@ -1,0 +1,777 @@
+"""ConnectorRegistry — manages deduplicated MCP server connections.
+
+Wraps McpManager (composition) and adds:
+- Deduplication by URL for remote servers, by name for local
+- Independent enable/disable per connector
+- Custom connector CRUD
+- Persistence of user state (enabled set + custom connectors)
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
+
+from app.connector.model import ConnectorInfo
+from app.mcp.manager import McpManager
+from app.mcp.tool_wrapper import McpToolWrapper
+from app.tool.base import ToolDefinition
+
+logger = logging.getLogger(__name__)
+
+
+def _default_auth(server_type: str) -> str:
+    """Default auth mode when a catalog entry doesn't declare one.
+
+    Local command connectors need no browser/token auth; remote connectors
+    default to OAuth (the common case for the hosted MCP catalog).
+    """
+    return "none" if server_type == "local" else "oauth"
+
+
+class ConnectorRegistry:
+    """Single source of truth for all MCP connector state."""
+
+    def __init__(self, project_dir: str | None = None) -> None:
+        self._connectors: dict[str, ConnectorInfo] = {}
+        self._mcp_manager: McpManager | None = None
+        self._tool_registry: Any | None = None  # set via set_tool_registry()
+        self._project_dir = project_dir
+
+        # Persistence paths
+        if project_dir:
+            self._state_path = Path(project_dir).resolve() / ".codata" / "connectors.json"
+        else:
+            self._state_path = Path.home() / ".codata" / "connectors.json"
+
+        self._persisted_state = self._load_state()
+
+        # Load static catalog (enriched metadata for known connectors)
+        self._catalog = self._load_catalog()
+
+    # ------------------------------------------------------------------
+    # Registration (called during startup)
+    # ------------------------------------------------------------------
+
+    def register_from_plugin(
+        self,
+        plugin_name: str,
+        mcp_servers: dict[str, dict[str, Any]],
+    ) -> list[str]:
+        """Extract unique connectors from a plugin's MCP config.
+
+        Deduplicates remote servers by URL, local servers by name.
+        Returns the list of connector IDs this plugin references.
+        """
+        connector_ids: list[str] = []
+
+        for raw_key, config in mcp_servers.items():
+            if not isinstance(config, dict):
+                continue
+
+            # Strip plugin namespace if present (e.g. "engineering:slack" → "slack")
+            if ":" in raw_key:
+                connector_id = raw_key.split(":", 1)[1]
+            else:
+                connector_id = raw_key
+
+            url = config.get("url", "")
+            server_type = config.get("type", "remote")
+
+            # Skip entries with no URL for remote servers
+            if server_type == "remote" and not url:
+                continue
+
+            # Check if this connector already exists (dedup)
+            existing = self._find_by_url(url) if url else self._connectors.get(connector_id)
+
+            if existing:
+                # Add plugin reference if not already there
+                if plugin_name not in existing.referenced_by:
+                    existing.referenced_by.append(plugin_name)
+                connector_ids.append(existing.id)
+                continue
+
+            # Create new connector, enriched with catalog metadata
+            catalog_entry = self._catalog.get(connector_id, {})
+
+            connector = ConnectorInfo(
+                id=connector_id,
+                name=catalog_entry.get("name", connector_id.replace("-", " ").title()),
+                url=url,
+                type=server_type,
+                description=catalog_entry.get(
+                    "description",
+                    f"{connector_id.replace('-', ' ').title()} integration",
+                ),
+                category=catalog_entry.get("category", "other"),
+                enabled=connector_id in self._persisted_state.get("enabled", []),
+                source="builtin",
+                auth=catalog_entry.get("auth", _default_auth(server_type)),
+                interactive_auth=catalog_entry.get("interactive_auth"),
+                local_config=(
+                    {
+                        k: v
+                        for k, v in config.items()
+                        if k not in ("type", "url", "enabled")
+                    }
+                    if server_type == "local"
+                    else {}
+                ),
+                referenced_by=[plugin_name],
+            )
+
+            self._connectors[connector_id] = connector
+            connector_ids.append(connector_id)
+
+        return connector_ids
+
+    def register_custom(
+        self,
+        id: str,
+        name: str,
+        url: str,
+        description: str = "",
+        category: str = "custom",
+        auth: str = "oauth",
+    ) -> ConnectorInfo:
+        """Add a user-defined custom connector.
+
+        A user connector may claim an empty-url ``builtin`` seed placeholder
+        (the seed exists only to be discoverable — the real URL is supplied
+        here), replacing it. Any other id collision is rejected.
+        """
+        if not id or not id.strip():
+            raise ValueError("Connector id must not be empty")
+
+        existing = self._connectors.get(id)
+        claimable_placeholder = (
+            existing is not None
+            and existing.type == "remote"
+            and existing.source == "builtin"
+            and not existing.url
+        )
+        if existing is not None and not claimable_placeholder:
+            raise ValueError(f"Connector '{id}' already exists")
+
+        # Filling in a seed connector's URL only *completes the placeholder* —
+        # it stays a builtin (no "custom" badge), regardless of whether the seed
+        # was registered before or after this call. A genuinely new id (not in
+        # the seed catalog) becomes a user custom connector.
+        catalog_entry = self._catalog.get(id, {})
+        is_seed = bool(catalog_entry.get("seed"))
+        connector = ConnectorInfo(
+            id=id,
+            name=name,
+            url=url,
+            type="remote",
+            description=description or f"{name} (custom connector)",
+            category=category,
+            enabled=False,
+            source="builtin" if is_seed else "custom",
+            # Claiming a seed placeholder inherits the seed's auth mode (e.g.
+            # a token-auth seed stays "token"); a genuinely new custom connector
+            # uses the auth mode the user picked in the add form.
+            auth=catalog_entry.get("auth", auth) if is_seed else auth,
+        )
+        self._connectors[id] = connector
+
+        # Make the new connector visible to the MCP manager. ``_config`` is
+        # built once at startup, so a connector added at runtime is otherwise
+        # invisible to ``reconnect``/``enable`` (client build falls through to
+        # ``_config.get(id) is None`` → returns False, no connection ever
+        # attempted). Register it here so it can connect without a restart.
+        if self._mcp_manager is not None:
+            self._mcp_manager._config[id] = {
+                "type": "remote",
+                "url": url,
+                "enabled": connector.enabled,
+            }
+
+        # Persist custom connector
+        customs = self._persisted_state.setdefault("custom", [])
+        customs.append({
+            "id": id,
+            "name": name,
+            "url": url,
+            "description": description,
+            "category": category,
+            "auth": auth,
+        })
+        self._persist_state()
+
+        return connector
+
+    def remove_custom(self, id: str) -> bool:
+        """Remove a custom connector. Returns False if not found or not custom."""
+        connector = self._connectors.get(id)
+        if not connector or connector.source != "custom":
+            return False
+
+        del self._connectors[id]
+
+        # Drop it from the MCP manager too (mirror of register_custom), so a
+        # removed connector doesn't linger in _config / _clients.
+        if self._mcp_manager is not None:
+            self._mcp_manager._config.pop(id, None)
+            self._mcp_manager._clients.pop(id, None)
+
+        # Remove from persisted custom list
+        customs = self._persisted_state.get("custom", [])
+        self._persisted_state["custom"] = [c for c in customs if c.get("id") != id]
+        self._persisted_state.get("enabled", [])
+        if id in self._persisted_state.get("enabled", []):
+            self._persisted_state["enabled"].remove(id)
+        self._persist_state()
+
+        return True
+
+    def _register_seed_connectors(self) -> None:
+        """Register catalog entries flagged ``seed`` into ``self._connectors``.
+
+        Unlike the rest of the catalog (which only *enriches* connectors already
+        referenced by a plugin or added by the user), seed connectors are meant
+        to surface as discoverable cards on their own — even with an empty URL
+        that the user fills in later.
+
+        Ids already present are skipped, so user custom / plugin connectors and
+        already-connected connectors always win over the seed.
+        """
+        for cid, entry in self._catalog.items():
+            if not entry.get("seed"):
+                continue
+            if cid in self._connectors:
+                continue
+            entry_type = entry.get("type", "remote")
+            self._connectors[cid] = ConnectorInfo(
+                id=cid,
+                name=entry.get("name", cid.replace("-", " ").title()),
+                url=entry.get("url", ""),
+                type=entry_type,
+                description=entry.get("description", ""),
+                category=entry.get("category", "other"),
+                enabled=cid in self._persisted_state.get("enabled", []),
+                source="builtin",
+                auth=entry.get("auth", _default_auth(entry_type)),
+                interactive_auth=entry.get("interactive_auth"),
+                local_config=(
+                    {
+                        "command": entry.get("command", []),
+                        "environment": entry.get("environment", {}),
+                    }
+                    if entry_type == "local"
+                    else {}
+                ),
+            )
+
+    # ------------------------------------------------------------------
+    # Lifecycle
+    # ------------------------------------------------------------------
+
+    async def startup(self) -> None:
+        """Build McpManager config from enabled connectors and start connections."""
+        # Self-heal: drop any empty-id custom records (a pre-fix bug persisted
+        # connectors whose name slugified to "", e.g. all-CJK names). They can
+        # never be enabled (they'd 404 on /connectors//enable) and re-persist
+        # themselves on every save, so purge them once at startup.
+        customs = self._persisted_state.get("custom", [])
+        cleaned = [c for c in customs if (c.get("id") or "").strip()]
+        if len(cleaned) != len(customs):
+            self._persisted_state["custom"] = cleaned
+            self._persisted_state["enabled"] = [
+                e for e in self._persisted_state.get("enabled", []) if (e or "").strip()
+            ]
+            self._persist_state()
+
+        # Restore custom connectors from persisted state. An id that is a seed
+        # in the catalog was a claimed placeholder (URL filled in by the user),
+        # so it stays a builtin — only genuinely new ids are "custom".
+        for custom in self._persisted_state.get("custom", []):
+            cid = custom.get("id", "")
+            if cid and cid not in self._connectors:
+                catalog_entry = self._catalog.get(cid, {})
+                is_seed = bool(catalog_entry.get("seed"))
+                has_fixed_seed_url = is_seed and bool(catalog_entry.get("url"))
+                self._connectors[cid] = ConnectorInfo(
+                    id=cid,
+                    name=(
+                        catalog_entry.get("name", cid)
+                        if has_fixed_seed_url
+                        else custom.get("name", cid)
+                    ),
+                    url=(
+                        catalog_entry["url"]
+                        if has_fixed_seed_url
+                        else custom.get("url", "")
+                    ),
+                    type="remote",
+                    description=(
+                        catalog_entry.get("description", "")
+                        if has_fixed_seed_url
+                        else custom.get("description", "")
+                    ),
+                    category=(
+                        catalog_entry.get("category", "other")
+                        if has_fixed_seed_url
+                        else custom.get("category", "custom")
+                    ),
+                    enabled=cid in self._persisted_state.get("enabled", []),
+                    source="builtin" if is_seed else "custom",
+                    # Seed claims inherit the catalog's auth mode; genuinely
+                    # custom connectors restore the auth the user picked.
+                    auth=(
+                        catalog_entry.get("auth", "oauth")
+                        if is_seed
+                        else custom.get("auth", "oauth")
+                    ),
+                )
+
+        # Register seed connectors (discoverable catalog cards) — after custom
+        # restore so user connectors with the same id win.
+        self._register_seed_connectors()
+
+        # Inject credentials into local connectors that need them
+        self._inject_local_credentials()
+
+        # Build MCP config dict from all connectors (enabled or not)
+        mcp_config: dict[str, Any] = {}
+        for cid, connector in self._connectors.items():
+            if connector.type == "local":
+                local_config = dict(connector.local_config)
+                mcp_config[cid] = {
+                    "type": "local",
+                    "enabled": connector.enabled,
+                    **local_config,
+                }
+            else:
+                mcp_config[cid] = {
+                    "type": "remote",
+                    "url": connector.url,
+                    "enabled": connector.enabled,
+                }
+
+        self._mcp_manager = McpManager(mcp_config, project_dir=self._project_dir)
+        await self._mcp_manager.startup()
+
+        logger.info(
+            "ConnectorRegistry: %d connectors (%d enabled)",
+            len(self._connectors),
+            sum(1 for c in self._connectors.values() if c.enabled),
+        )
+
+    async def shutdown(self) -> None:
+        """Disconnect all MCP servers."""
+        if self._mcp_manager:
+            await self._mcp_manager.shutdown()
+
+    # ------------------------------------------------------------------
+    # CRUD / state
+    # ------------------------------------------------------------------
+
+    def list_connectors(self) -> list[ConnectorInfo]:
+        """Return all connectors sorted by name."""
+        return sorted(self._connectors.values(), key=lambda c: c.name)
+
+    def get(self, id: str) -> ConnectorInfo | None:
+        """Get a single connector by ID."""
+        return self._connectors.get(id)
+
+    async def enable(self, id: str) -> bool:
+        """Enable a connector and attempt to connect it."""
+        connector = self._connectors.get(id)
+        if not connector or connector.enabled:
+            return False
+
+        connector.enabled = True
+        enabled = self._persisted_state.setdefault("enabled", [])
+        if id not in enabled:
+            enabled.append(id)
+        self._persist_state()
+        logger.info("Connector enabled: %s", id)
+
+        # Actually connect the MCP server
+        if self._mcp_manager:
+            try:
+                await self._mcp_manager.reconnect(id)
+            except Exception as e:
+                logger.warning("Failed to connect '%s' after enable: %s", id, e)
+            self.sync_tools()
+
+        return True
+
+    async def disable(self, id: str) -> bool:
+        """Disable a connector and disconnect it."""
+        connector = self._connectors.get(id)
+        if not connector or not connector.enabled:
+            return False
+
+        connector.enabled = False
+        enabled = self._persisted_state.get("enabled", [])
+        if id in enabled:
+            enabled.remove(id)
+        self._persist_state()
+        logger.info("Connector disabled: %s", id)
+
+        # Disconnect the MCP server
+        if self._mcp_manager:
+            client = self._mcp_manager._clients.get(id)
+            if client:
+                try:
+                    await client.close()
+                    client.status = "disabled"
+                    client.error = None
+                except Exception as e:
+                    logger.warning("Failed to disconnect '%s' after disable: %s", id, e)
+            self.sync_tools()
+
+        return True
+
+    async def connect(self, id: str, redirect_uri: str) -> dict[str, str] | None:
+        """Start OAuth flow for a connector. Returns auth URL info or None."""
+        if not self._mcp_manager:
+            return None
+        return await self._mcp_manager.start_auth(id, redirect_uri)
+
+    async def complete_auth(self, state: str, code: str) -> bool:
+        """Complete OAuth flow with auth code."""
+        if not self._mcp_manager:
+            return False
+        result = await self._mcp_manager.complete_auth(state, code)
+        if result:
+            self.sync_tools()
+        return result
+
+    async def disconnect(self, id: str) -> bool:
+        """Revoke OAuth tokens and disconnect."""
+        if not self._mcp_manager:
+            return False
+        result = await self._mcp_manager.disconnect_auth(id)
+        self.sync_tools()
+        return result
+
+    async def interactive_auth_status(self, id: str) -> dict[str, Any]:
+        """Return downstream-service auth state through a trusted MCP tool."""
+        connector, config, client = self._interactive_auth_context(id)
+        status_config = config.get("status", {})
+        tool = status_config.get("tool") if isinstance(status_config, dict) else None
+        if not isinstance(tool, str) or not tool:
+            raise ValueError(f"Connector '{id}' has no interactive auth status tool")
+        args = status_config.get("args", {})
+        result = await client.call_tool(tool, args if isinstance(args, dict) else {})
+        payload = self._decode_mcp_payload(result)
+        payload.setdefault("connector_id", connector.id)
+        return payload
+
+    async def run_interactive_auth_action(
+        self,
+        id: str,
+        service_id: str,
+        action_id: str,
+    ) -> dict[str, Any]:
+        """Run a catalog-whitelisted login/logout action on a local MCP."""
+        connector, config, client = self._interactive_auth_context(id)
+        services = config.get("services", [])
+        service = next(
+            (
+                item
+                for item in services
+                if isinstance(item, dict) and item.get("id") == service_id
+            ),
+            None,
+        )
+        if service is None:
+            raise ValueError(f"Unknown auth service '{service_id}' for connector '{id}'")
+        actions = service.get("actions", {})
+        action = actions.get(action_id) if isinstance(actions, dict) else None
+        if not isinstance(action, dict):
+            raise ValueError(
+                f"Auth action '{action_id}' is not allowed for service '{service_id}'"
+            )
+        tool = action.get("tool")
+        if not isinstance(tool, str) or not tool:
+            raise ValueError(f"Auth action '{action_id}' has no tool")
+        args = action.get("args", {})
+        result = await client.call_tool(tool, args if isinstance(args, dict) else {})
+        payload = self._decode_mcp_payload(result)
+        payload.setdefault("connector_id", connector.id)
+        payload.setdefault("service_id", service_id)
+        payload.setdefault("action_id", action_id)
+        return payload
+
+    async def reconnect(self, id: str) -> bool:
+        """Reconnect a specific connector."""
+        if not self._mcp_manager:
+            return False
+        result = await self._mcp_manager.reconnect(id)
+        self.sync_tools()
+        return result
+
+    # ------------------------------------------------------------------
+    # Tool registry integration
+    # ------------------------------------------------------------------
+
+    def set_tool_registry(self, registry: Any) -> None:
+        """Bind a ToolRegistry so MCP tool changes are synced automatically."""
+        self._tool_registry = registry
+
+    def sync_tools(self) -> None:
+        """Synchronise MCP tools in the ToolRegistry with current connections.
+
+        Removes stale MCP tools and adds newly available ones.
+        Called automatically after enable/disable/connect/disconnect.
+        """
+        if not self._tool_registry:
+            return
+
+        # Remove all existing MCP tools (they start with a connector id prefix)
+        existing_ids = [
+            tid for tid, tool in list(self._tool_registry._tools.items())
+            if isinstance(tool, McpToolWrapper)
+        ]
+        for tid in existing_ids:
+            self._tool_registry.unregister(tid)
+
+        # Re-add tools from currently connected servers
+        mcp_tools = self.tools()
+        for tool in mcp_tools:
+            self._tool_registry.register(tool)
+
+        # Register/unregister ToolSearchTool based on MCP tool availability
+        from app.tool.builtin.tool_search import ToolSearchTool
+
+        has_search = self._tool_registry.get("tool_search") is not None
+        if mcp_tools and not has_search:
+            self._tool_registry.register(ToolSearchTool(self._tool_registry))
+        elif not mcp_tools and has_search:
+            self._tool_registry.unregister("tool_search")
+
+        logger.info(
+            "MCP tools synced: %d tools from connected servers",
+            len(mcp_tools),
+        )
+
+    # ------------------------------------------------------------------
+    # Tool / status access (delegates to McpManager)
+    # ------------------------------------------------------------------
+
+    def tools(self) -> list[ToolDefinition]:
+        """Get all tools from connected MCP servers."""
+        if not self._mcp_manager:
+            return []
+        return self._mcp_manager.tools()
+
+    def status(self) -> dict[str, dict[str, Any]]:
+        """Return connection status of all connectors.
+
+        Merges McpManager runtime status with ConnectorInfo metadata.
+        """
+        mcp_status = self._mcp_manager.status() if self._mcp_manager else {}
+
+        result: dict[str, dict[str, Any]] = {}
+        for cid, connector in self._connectors.items():
+            runtime = mcp_status.get(cid, {})
+            mcp_connected = runtime.get("status") == "connected"
+            effective_status = runtime.get("status", "disabled" if not connector.enabled else "disconnected")
+
+            # A transport handshake succeeding does NOT mean the connector is
+            # usable: some servers (datasage, google-workspace) complete the
+            # MCP handshake unauthenticated and only reject at tool-call time.
+            # For connectors that require credentials, downgrade a "connected"
+            # transport to "needs_auth" until the credential is actually present,
+            # so the UI never shows a green dot the agent can't use.
+            if mcp_connected and not self._has_required_credential(cid, connector):
+                mcp_connected = False
+                effective_status = "needs_auth"
+
+            # The mirror case: a token-auth server that *rejects* the
+            # unauthenticated handshake (e.g. WeKnora returns 401) lands in
+            # "failed"/"disconnected", so the credential-missing branch above
+            # never fires and the UI would show no token input. When a token
+            # connector is enabled but has no stored token, surface needs_auth
+            # regardless of transport status so the token field appears.
+            elif (
+                connector.enabled
+                and connector.auth == "token"
+                and not self._has_required_credential(cid, connector)
+            ):
+                mcp_connected = False
+                effective_status = "needs_auth"
+
+            result[cid] = {
+                **connector.to_dict(),
+                "connected": mcp_connected,
+                "status": effective_status,
+                "error": runtime.get("error"),
+                "tools_count": runtime.get("tools", 0),
+            }
+
+        return result
+
+    def _has_required_credential(self, cid: str, connector: ConnectorInfo) -> bool:
+        """Whether a connector that needs credentials actually has them.
+
+        Returns True (no gating) for connectors that don't require a
+        credential, or when the required credential is present. Returns False
+        only when a credential is required but missing — which callers use to
+        downgrade a transport-"connected" status to needs_auth.
+        """
+        # Google Workspace uses its own Google OAuth store (refresh_token),
+        # not the MCP token store.
+        if cid == "google-workspace":
+            from app.api.google_auth import load_google_tokens
+            tokens = load_google_tokens(self._project_dir)
+            return bool(tokens and tokens.get("refresh_token"))
+
+        # Token-auth connectors (e.g. datasage) need a stored MCP token.
+        if connector.auth == "token":
+            store = getattr(self._mcp_manager, "_token_store", None)
+            if store is None:
+                return False
+            return store.has_token(cid)
+
+        # oauth / none: nothing extra to check here — the transport status is
+        # authoritative (OAuth connectors fail the handshake without tokens
+        # and fall through to needs_auth via the manager).
+        return True
+
+    def _interactive_auth_context(self, id: str):
+        connector = self._connectors.get(id)
+        if connector is None:
+            raise ValueError(f"Connector not found: {id}")
+        config = connector.interactive_auth
+        if not isinstance(config, dict):
+            raise ValueError(f"Connector '{id}' does not support interactive authentication")
+        if not connector.enabled:
+            raise ValueError(f"Connector '{id}' must be enabled first")
+        if not self._mcp_manager:
+            raise RuntimeError("MCP manager is not available")
+        client = self._mcp_manager._clients.get(id)
+        if client is None or client.status != "connected":
+            raise RuntimeError(f"Connector '{id}' MCP transport is not connected")
+        return connector, config, client
+
+    @staticmethod
+    def _decode_mcp_payload(result: Any) -> dict[str, Any]:
+        if getattr(result, "isError", False):
+            text = "\n".join(
+                str(getattr(item, "text", ""))
+                for item in getattr(result, "content", [])
+                if getattr(item, "text", None)
+            )
+            raise RuntimeError(text or "Interactive authentication tool failed")
+
+        structured = getattr(result, "structuredContent", None)
+        if isinstance(structured, dict):
+            return structured
+
+        text = "\n".join(
+            str(getattr(item, "text", ""))
+            for item in getattr(result, "content", [])
+            if getattr(item, "text", None)
+        ).strip()
+        if not text:
+            return {}
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError:
+            return {"message": text}
+        return payload if isinstance(payload, dict) else {"result": payload}
+
+    @property
+    def mcp_manager(self) -> McpManager | None:
+        """Access the underlying McpManager (for backward compatibility)."""
+        return self._mcp_manager
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _inject_local_credentials(self) -> None:
+        """Inject stored credentials into local connectors as environment vars.
+
+        google-workspace-mcp expects:
+          GOOGLE_WORKSPACE_CLIENT_ID
+          GOOGLE_WORKSPACE_CLIENT_SECRET
+          GOOGLE_WORKSPACE_REFRESH_TOKEN
+        """
+        gw = self._connectors.get("google-workspace")
+        if not gw or gw.type != "local":
+            return
+
+        try:
+            from app.config import get_settings
+            settings = get_settings()
+            client_id = settings.google_client_id
+            client_secret = settings.google_client_secret
+        except Exception:
+            return
+
+        if not client_id:
+            return
+
+        from app.api.google_auth import load_google_tokens
+        tokens = load_google_tokens(self._project_dir)
+
+        env = gw.local_config.setdefault("environment", {})
+        env["GOOGLE_WORKSPACE_CLIENT_ID"] = client_id
+        env["GOOGLE_WORKSPACE_CLIENT_SECRET"] = client_secret
+
+        if tokens and tokens.get("refresh_token"):
+            env["GOOGLE_WORKSPACE_REFRESH_TOKEN"] = tokens["refresh_token"]
+
+    def _find_by_url(self, url: str) -> ConnectorInfo | None:
+        """Find a connector by URL (for dedup)."""
+        if not url:
+            return None
+        normalized = self._normalize_url(url)
+        for connector in self._connectors.values():
+            if self._normalize_url(connector.url) == normalized:
+                return connector
+        return None
+
+    @staticmethod
+    def _normalize_url(url: str) -> str:
+        """Normalize URL for deduplication comparison."""
+        parsed = urlparse(url)
+        # Strip trailing slashes, lowercase host
+        path = parsed.path.rstrip("/")
+        return f"{parsed.scheme}://{parsed.netloc.lower()}{path}"
+
+    def _load_catalog(self) -> dict[str, dict[str, Any]]:
+        """Load the static connector catalog with enriched metadata."""
+        catalog_path = Path(__file__).parent.parent / "data" / "connectors.json"
+        if not catalog_path.is_file():
+            return {}
+        try:
+            data = json.loads(catalog_path.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning("Cannot read connector catalog: %s", e)
+            return {}
+
+    def _load_state(self) -> dict[str, Any]:
+        """Load persisted user state (enabled set + custom connectors)."""
+        if not self._state_path.is_file():
+            return {"enabled": [], "custom": []}
+        try:
+            data = json.loads(self._state_path.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return data
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning("Cannot read connector state: %s", e)
+        return {"enabled": [], "custom": []}
+
+    def _persist_state(self) -> None:
+        """Save user state to disk."""
+        try:
+            self._state_path.parent.mkdir(parents=True, exist_ok=True)
+            self._state_path.write_text(
+                json.dumps(self._persisted_state, indent=2),
+                encoding="utf-8",
+            )
+        except OSError as e:
+            logger.warning("Cannot persist connector state: %s", e)

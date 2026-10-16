@@ -1,0 +1,94 @@
+"""Agent registry tests."""
+
+from app.agent.agent import AgentRegistry, BUILTIN_AGENTS
+
+
+class TestAgentRegistry:
+    def test_builtin_agents_loaded(self):
+        r = AgentRegistry()
+        agents = r.list_agents(include_hidden=True)
+        names = {a.name for a in agents}
+        assert names == {"build", "plan", "data", "explore", "general", "compaction", "title", "summary"}
+
+    def test_data_agent_is_readonly_analysis(self):
+        from app.agent.permission import evaluate
+
+        r = AgentRegistry()
+        data = r.get("data")
+        assert data is not None and data.mode == "primary"
+        assert data.system_prompt  # loads data.txt
+        # Read-only for the workspace: filesystem mutation and shell denied.
+        for denied in ("write", "edit", "bash", "publish_knowledge"):
+            assert evaluate(denied, "*", data.permissions) == "deny"
+        # code_execute is allowed for in-memory analysis of query results
+        # (sort / aggregate / share-of-total); the sandbox + the write/edit/bash
+        # denies keep it from touching the workspace.
+        for allowed in (
+            "run_query",
+            "chart_spec",
+            "read",
+            "search",
+            "question",
+            "code_execute",
+            "build_report",
+        ):
+            assert evaluate(allowed, "*", data.permissions) == "allow"
+        # The underlying MCP tool must stay behind the guarded run_query wrapper.
+        assert evaluate("Datasage_execute_sql", "*", data.permissions) == "deny"
+
+    def test_default_agent_is_build(self):
+        r = AgentRegistry()
+        default = r.default_agent()
+        assert default.name == "build"
+        assert default.mode == "primary"
+
+    def test_get_agent(self):
+        r = AgentRegistry()
+        agent = r.get("explore")
+        assert agent is not None
+        assert agent.mode == "subagent"
+
+    def test_get_nonexistent_returns_none(self):
+        r = AgentRegistry()
+        assert r.get("nonexistent") is None
+
+    def test_hidden_agents_excluded_by_default(self):
+        r = AgentRegistry()
+        visible = r.list_agents(include_hidden=False)
+        names = {a.name for a in visible}
+        assert "compaction" not in names
+        assert "title" not in names
+        assert "summary" not in names
+        assert "build" in names
+
+    def test_primary_agents(self):
+        r = AgentRegistry()
+        primaries = r.primary_agents()
+        assert all(a.mode == "primary" for a in primaries)
+        assert {a.name for a in primaries} == {"build", "plan", "data"}
+
+    def test_subagents(self):
+        r = AgentRegistry()
+        subs = r.subagents()
+        assert all(a.mode == "subagent" for a in subs)
+        assert {a.name for a in subs} == {"explore", "general"}
+
+    def test_explore_has_restricted_tools(self):
+        r = AgentRegistry()
+        explore = r.get("explore")
+        assert explore is not None
+        assert "read" in explore.tools
+        assert "write" not in explore.tools
+
+    def test_title_has_temperature(self):
+        r = AgentRegistry()
+        title = r.get("title")
+        assert title is not None
+        assert title.temperature == 0.5
+
+    def test_register_custom_agent(self):
+        from app.schemas.agent import AgentInfo
+        r = AgentRegistry()
+        custom = AgentInfo(name="custom", description="test", mode="subagent")
+        r.register(custom)
+        assert r.get("custom") is not None

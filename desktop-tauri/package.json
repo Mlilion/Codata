@@ -1,0 +1,8 @@
+{
+  "name": "codata-desktop-tauri",
+  "private": true,
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.10.1"
+  }
+}

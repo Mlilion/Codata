@@ -1,0 +1,177 @@
+team:
+  id: data-analysis-report
+  name: 数据分析专家团
+  description: 连接用户配置的数据源,完成数据发现、SQL 查询、指标口径核对、归因洞察与可视化,交付带图表的分析报告。
+  icon: bar-chart-2
+  category: 综合分析
+  tags: [数据分析, SQL, 指标, 归因, 可视化, MCP]
+  version: "2.0"
+  process: workflow
+  concurrency: 2
+  default_max_tool_rounds: 10
+  interaction_mode: auto
+  max_clarifying_questions: 4
+  question_timeout_seconds: 300
+  on_question_timeout: continue_with_assumptions
+  expert_output_style: concise
+  expert_visible_max_chars: 1800
+  coordinator_visible_max_chars: 2400
+  coordinator_context_policy: summary
+  coordinator_context_max_chars: 36000
+  coordinator_prompt: |
+    你是数据分析专家团协调者。把数据发现、指标查询、归因洞察和可视化整合成一份可交付分析报告。
+    报告必须区分事实、推断和建议;对缺失数据、口径不一致、样本偏差要明确说明。
+    数据来自用户连接的数据源。先用 tool_search 发现实际可用的工具并检查参数，不假定语义模型可用；run_query 仅适用于兼容 execute_sql 的数据源，其他协议使用数据源自己的查询工具。不要臆造数据;无法确认的字段/口径必须点明。
+  finalization:
+    mode: deliverable
+    member: reporter
+    tools: [write, present_file, artifact]
+    deliverable:
+      required: true
+      type: html
+      title: 数据分析报告
+      filename_template: data-analysis-report.html
+      source: final_report
+      presentation: both
+      tools: [write, present_file, artifact]
+  inputs:
+    - name: analysis_goal
+      description: 本次分析要回答的核心业务问题。
+      required: true
+    - name: metric_focus
+      description: 重点关注的指标、维度或业务线;没有则留空。
+      required: false
+      default: ""
+    - name: reporting_period
+      description: 报告周期,例如本周、本月、Q2 或指定日期范围。
+      required: false
+      default: ""
+  skills: [data-analysis, charting, report, data-report-html]
+  members:
+    - id: data_explorer
+      name: 数据发现
+      role: SQL 与数据发现专家
+      goal: 用已连接数据源的工具发现相关表/指标,确认字段、口径、可用维度,产出可查询的数据地图。
+      role_ref: data/sql-query-expert
+      tools: [search, run_query, skill]
+      skills: [data-analysis]
+      icon: database
+    - id: metric_analyst
+      name: 指标分析
+      role: 指标口径与趋势分析专家
+      goal: 基于确认的口径,用 run_query 查询核心指标,做趋势/对比/异常分析。
+      role_ref: data/metric-caliber-expert
+      tools: [run_query, chart_spec, search, skill]
+      skills: [data-analysis, charting]
+      icon: bar-chart-2
+    - id: attribution_analyst
+      name: 归因洞察
+      role: 归因与业务洞察专家
+      goal: 对指标变化做维度下钻和归因,找出驱动因素与风险,给出可执行建议。
+      role_ref: data/attribution-analyst
+      tools: [run_query, chart_spec, skill]
+      skills: [data-analysis]
+      icon: lightbulb
+    - id: reporter
+      name: 报告交付
+      role: 可视化与报告交付专家
+      goal: 用 chart_spec 出关键图表,汇总成面向管理层的结构化分析报告。
+      role_ref: data/visualization-expert
+      tools: [run_query, chart_spec, write, present_file, artifact, build_report, skill]
+      skills: [report, charting]
+      icon: file-text
+  tasks:
+    - id: discover_data
+      name: 数据发现与口径确认
+      member: data_explorer
+      task: |
+        用 tool_search 发现已连接数据源的工具，检查其参数后发现本次分析需要的数据。
+
+        用户需求:
+        {{user_input}}
+
+        分析目标:
+        {{analysis_goal}}
+
+        重点指标:
+        {{metric_focus}}
+
+        报告周期:
+        {{reporting_period}}
+
+        步骤:先用 search 找到相关表和已注册指标,确认字段与口径;
+        必要时用 run_query 试探性查询验证数据可用性。
+        输出:可用表/指标清单、字段与口径说明、可分析维度、缺失或风险项、建议的查询方向。
+        注意:不要臆造表名/列名 —— 一切以确认到的 schema 为准。
+      expected_output: 数据地图与口径确认结果。
+      output: data_map
+      context_policy: explicit
+      context_max_chars: 16000
+      timeout_seconds: 360
+      retry_count: 1
+    - id: analyze_metrics
+      name: 指标查询与趋势分析
+      member: metric_analyst
+      depends_on: [discover_data]
+      context: [discover_data]
+      task: |
+        基于数据发现结果,用 run_query 查询核心指标并分析。
+
+        数据地图:
+        {{data_map}}
+
+        步骤:用 run_query 执行查询(优先用已注册指标的权威口径),对关键结果用 chart_spec 出图。
+        输出:核心指标现状与趋势、分组对比、异常点、以及需要谨慎解释的口径问题。
+      expected_output: 指标查询结果与趋势分析(含图表)。
+      output: metric_insights
+      context_policy: explicit
+      context_max_chars: 20000
+      timeout_seconds: 480
+      retry_count: 1
+    - id: attribute_and_recommend
+      name: 归因下钻与业务建议
+      member: attribution_analyst
+      depends_on: [discover_data, analyze_metrics]
+      context: [discover_data, analyze_metrics]
+      task: |
+        对指标变化做归因下钻,转成业务建议。
+
+        数据地图:
+        {{data_map}}
+
+        指标洞察:
+        {{metric_insights}}
+
+        步骤:用 run_query 按关键维度下钻(找驱动因素),必要时 chart_spec 出对比图。
+        输出:归因结论(哪些维度/因素驱动了变化)、行动建议与优先级、风险提醒、待确认问题。
+      expected_output: 归因结论与业务建议。
+      output: attribution_insights
+      context_policy: explicit
+      context_max_chars: 22000
+      timeout_seconds: 420
+      retry_count: 1
+    - id: write_report
+      name: 生成分析报告
+      member: reporter
+      depends_on: [discover_data, analyze_metrics, attribute_and_recommend]
+      context: [discover_data, analyze_metrics, attribute_and_recommend]
+      task: |
+        生成最终数据分析报告。
+
+        数据地图:
+        {{data_map}}
+
+        指标洞察:
+        {{metric_insights}}
+
+        归因与建议:
+        {{attribution_insights}}
+
+        报告必须包含:摘要、数据口径与来源、关键发现(配关键图表)、异常与解释、
+        归因结论、建议行动、风险与待确认问题。区分事实/推断/建议。
+      expected_output: 可交付的数据分析报告。
+      output: final_report
+      context_policy: explicit
+      context_max_chars: 32000
+      timeout_seconds: 360
+      retry_count: 1

@@ -1,0 +1,934 @@
+"""Configuration management endpoints."""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import uuid
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
+
+import httpx
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+
+from app.config import get_custom_endpoints, get_settings
+from app.dependencies import ProviderRegistryDep, SettingsDep
+from app.provider.catalog import PROVIDER_CATALOG
+from app.provider.factory import create_provider as create_desktop_provider
+from app.provider.local import (
+    LOCAL_BASE_URL_ENV,
+    LOCAL_PROVIDER_ID,
+    create_local_provider,
+)
+from app.provider.openrouter import OpenRouterProvider
+from app.schemas.provider import (
+    ApiKeyStatus,
+    ApiKeyUpdate,
+    CustomEndpointConfig,
+    CustomEndpointCreate,
+    CustomEndpointUpdate,
+    ProviderInfo,
+    ProviderKeyUpdate,
+    ProviderTestResult,
+    ProviderToggleUpdate,
+)
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+_custom_endpoints_lock = asyncio.Lock()
+
+# Persist runtime config in current working directory.
+#
+# Desktop mode (`run.py`) changes cwd to the app data directory, so this
+# becomes a writable per-user `.env` (instead of the read-only app bundle path
+# when running from a mounted DMG volume).
+# Server deployments can also point this working directory at a writable data path.
+_ENV_PATH = Path(".env")
+
+
+def _mask_key(key: str) -> str:
+    """Mask API key for display: show first 7 and last 4 chars."""
+    if len(key) <= 11:
+        return "****"
+    return f"{key[:7]}...{key[-4:]}"
+
+
+def _build_custom_endpoint_info(
+    ce: dict[str, Any],
+    *,
+    enabled: bool,
+    status: str,
+    model_count: int = 0,
+) -> ProviderInfo:
+    """Build ProviderInfo for a custom endpoint."""
+    return ProviderInfo(
+        id=ce["id"],
+        name=ce.get("name", "Custom Endpoint"),
+        is_configured=True,
+        enabled=enabled,
+        masked_key=_mask_key(ce.get("api_key", "")) if ce.get("api_key") else None,
+        model_count=model_count,
+        status=status,
+        base_url=ce.get("base_url"),
+    )
+
+
+async def _validate_provider_connection(
+    provider_id: str,
+    api_key: str,
+    *,
+    base_url: str | None = None,
+) -> tuple[int, list[str]]:
+    """Create a temporary provider and list models without mutating settings."""
+    try:
+        test_provider = create_desktop_provider(
+            provider_id,
+            api_key,
+            base_url=base_url,
+            proxy_url=get_settings().proxy_url or None,
+        )
+        models = await test_provider.list_models()
+    except ImportError as e:
+        raise HTTPException(
+            400,
+            f"Provider '{provider_id}' requires an additional package: {e}",
+        )
+    except Exception as e:
+        logger.warning("Provider validation failed for %s: %s", provider_id, e)
+        raise HTTPException(400, f"Validation failed: {e}")
+
+    if not models:
+        raise HTTPException(
+            502,
+            f"Provider '{provider_id}' authenticated but returned no models. "
+            "Check the endpoint, proxy, and model availability.",
+        )
+    return len(models), [m.name or m.id for m in models[:20]]
+
+
+def _update_env_file(key: str, value: str) -> None:
+    """Update or add a key=value pair in the backend .env file.
+
+    Values are single-quoted to prevent python-dotenv from interpreting
+    special characters (``#`` as inline comments, whitespace stripping, etc.).
+    """
+    lines: list[str] = []
+    found = False
+    # Single-quote the value; escape any embedded single quotes.
+    escaped = value.replace("'", "'\\''")
+    entry = f"{key}='{escaped}'"
+
+    if _ENV_PATH.exists():
+        lines = _ENV_PATH.read_text(encoding="utf-8").splitlines()
+        for i, line in enumerate(lines):
+            if line.startswith(f"{key}=") or line.startswith(f"{key} ="):
+                lines[i] = entry
+                found = True
+                break
+
+    if not found:
+        lines.append(entry)
+
+    _ENV_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _remove_env_key(key: str) -> None:
+    """Remove a key from the backend .env file entirely."""
+    if not _ENV_PATH.exists():
+        return
+    lines = _ENV_PATH.read_text(encoding="utf-8").splitlines()
+    lines = [l for l in lines if not l.startswith(f"{key}=") and not l.startswith(f"{key} =")]
+    _ENV_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+class LocalProviderStatus(BaseModel):
+    """Status for the locally-configured OpenAI-compatible endpoint."""
+
+    base_url: str = ""
+    is_configured: bool = False
+    is_connected: bool = False
+    status: str = "unconfigured"  # "connected" | "error" | "unconfigured"
+
+
+class LocalProviderUpdate(BaseModel):
+    """Request payload for configuring the local endpoint."""
+
+    base_url: str
+
+
+
+def _normalize_local_base_url(value: str) -> str:
+    """Normalize user input and ensure it includes a scheme."""
+    trimmed = value.strip()
+    if not trimmed:
+        raise HTTPException(400, "Base URL cannot be empty")
+    parsed = urlparse(trimmed)
+    if not parsed.scheme or not parsed.netloc:
+        raise HTTPException(400, "Base URL must include http:// or https://")
+    return trimmed.rstrip("/")
+
+
+def _normalize_optional_http_base_url(value: str) -> str:
+    trimmed = value.strip()
+    if not trimmed:
+        return ""
+    parsed = urlparse(trimmed)
+    if not parsed.scheme or not parsed.netloc:
+        raise HTTPException(400, "Base URL must include http:// or https://")
+    if parsed.scheme not in {"http", "https"}:
+        raise HTTPException(400, "Base URL must use http:// or https://")
+    return trimmed.rstrip("/")
+
+
+
+def _local_provider_status(settings: Any, registry: Any) -> LocalProviderStatus:
+    """Build a status object from the current configuration + registry state."""
+    base_url = settings.local_base_url or ""
+    provider = registry.get_provider(LOCAL_PROVIDER_ID)
+    is_connected = bool(base_url and provider)
+    status = "connected" if is_connected else ("error" if base_url else "unconfigured")
+    return LocalProviderStatus(
+        base_url=base_url,
+        is_configured=bool(base_url),
+        is_connected=is_connected,
+        status=status,
+    )
+
+
+
+@router.get("/config/api-key", response_model=ApiKeyStatus)
+async def get_api_key_status(registry: ProviderRegistryDep) -> ApiKeyStatus:
+    """Get the current API key configuration status."""
+    provider = registry.get_provider("openrouter")
+
+    if provider is None or not getattr(provider, "_api_key", ""):
+        return ApiKeyStatus(is_configured=False)
+
+    return ApiKeyStatus(
+        is_configured=True,
+        masked_key=_mask_key(provider._api_key),
+    )
+
+
+@router.post("/config/api-key", response_model=ApiKeyStatus)
+async def update_api_key(registry: ProviderRegistryDep, body: ApiKeyUpdate) -> ApiKeyStatus:
+    """Update the OpenRouter API key, validate it, and re-initialize the provider."""
+    api_key = body.api_key.strip()
+    if not api_key:
+        raise HTTPException(status_code=400, detail="API key cannot be empty")
+
+    try:
+        # Validate by attempting to fetch models with the new key
+        test_provider = OpenRouterProvider(api_key)
+        models = await test_provider.list_models()
+        if not models:
+            raise HTTPException(
+                status_code=400,
+                detail="API key is valid but returned no models",
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning("API key validation failed: %s", e)
+        raise HTTPException(
+            status_code=400,
+            detail=f"API key validation failed: {e}",
+        )
+
+    # Key is valid — replace the provider in the registry
+    new_provider = OpenRouterProvider(api_key)
+    registry.register(new_provider)
+
+    # Refresh the model index so the frontend picks up the new models
+    try:
+        await registry.refresh_models()
+    except Exception as e:
+        logger.warning("Model refresh failed after API key update: %s — will retry on next request", e)
+
+    # Persist to .env so it survives restarts
+    _update_env_file("CODATA_OPENROUTER_API_KEY", api_key)
+
+    return ApiKeyStatus(
+        is_configured=True,
+        masked_key=_mask_key(api_key),
+        is_valid=True,
+    )
+
+
+@router.delete("/config/api-key", response_model=ApiKeyStatus)
+async def delete_api_key(settings: SettingsDep, registry: ProviderRegistryDep) -> ApiKeyStatus:
+    """Delete the stored OpenRouter API key."""
+    settings.openrouter_api_key = ""
+    _remove_env_key("CODATA_OPENROUTER_API_KEY")
+    registry.unregister("openrouter")
+
+    return ApiKeyStatus(is_configured=False)
+
+
+# ── Ollama (Local LLM) ────────────────────────────────────────────────────
+
+
+class OllamaStatus(BaseModel):
+    is_configured: bool = False
+    base_url: str | None = None
+    model_count: int = 0
+    error: str | None = None
+
+
+class OllamaConnect(BaseModel):
+    base_url: str = "http://localhost:11434"
+
+
+@router.get("/config/ollama", response_model=OllamaStatus)
+async def get_ollama_status(settings: SettingsDep, registry: ProviderRegistryDep) -> OllamaStatus:
+    """Get the current Ollama configuration status."""
+    provider = registry.get_provider("ollama")
+
+    if provider is None or not settings.ollama_base_url:
+        return OllamaStatus(is_configured=False)
+
+    # Check live connectivity
+    status = await provider.health_check()
+    return OllamaStatus(
+        is_configured=True,
+        base_url=settings.ollama_base_url,
+        model_count=status.model_count,
+        error=status.error,
+    )
+
+
+@router.post("/config/ollama", response_model=OllamaStatus)
+async def connect_ollama(
+    settings: SettingsDep, registry: ProviderRegistryDep, body: OllamaConnect,
+) -> OllamaStatus:
+    """Connect to an Ollama instance: validate, register provider, persist."""
+    from app.provider.ollama import OllamaProvider
+
+    base_url = body.base_url.strip().rstrip("/")
+    if not base_url:
+        raise HTTPException(400, "base_url cannot be empty")
+
+    # Validate by health-checking the target URL
+    test_provider = OllamaProvider(base_url=base_url)
+    status = await test_provider.health_check()
+    if status.status != "connected":
+        raise HTTPException(
+            400,
+            f"Cannot connect to Ollama at {base_url}: {status.error or 'unknown error'}",
+        )
+
+    # Register (replaces any prior Ollama provider)
+    registry.register(test_provider)
+    try:
+        await registry.refresh_models()
+    except Exception as e:
+        logger.warning("Model refresh failed after Ollama connect: %s", e)
+
+    # Persist to .env and runtime settings
+    _update_env_file("CODATA_OLLAMA_BASE_URL", base_url)
+    settings.ollama_base_url = base_url
+
+    return OllamaStatus(
+        is_configured=True,
+        base_url=base_url,
+        model_count=status.model_count,
+    )
+
+
+@router.delete("/config/ollama", response_model=OllamaStatus)
+async def disconnect_ollama(settings: SettingsDep, registry: ProviderRegistryDep) -> OllamaStatus:
+    """Disconnect Ollama: remove provider and clear config."""
+    settings.ollama_base_url = ""
+    _remove_env_key("CODATA_OLLAMA_BASE_URL")
+
+    registry.unregister("ollama")
+
+    return OllamaStatus(is_configured=False)
+
+
+# ── Generic Multi-Provider API ─────────────────────────────────────────────
+
+
+def _get_disabled_set(settings) -> set[str]:
+    return {s.strip() for s in settings.disabled_providers.split(",") if s.strip()}
+
+
+@router.get("/config/providers", response_model=list[ProviderInfo])
+async def list_providers(settings: SettingsDep, registry: ProviderRegistryDep) -> list[ProviderInfo]:
+    """List all BYOK providers with their configuration status."""
+    disabled = _get_disabled_set(settings)
+
+    result: list[ProviderInfo] = []
+    for pid, pdef in PROVIDER_CATALOG.items():
+        api_key = getattr(settings, pdef.settings_key, "")
+        is_disabled = pid in disabled
+        provider = registry.get_provider(pid)
+
+        base_url = None
+        if pdef.kind == "openai_compat_azure":
+            base_url = getattr(settings, "azure_openai_base_url", "")
+        elif pid == "openai":
+            base_url = getattr(settings, "openai_base_url", "") or None
+
+        if api_key and is_disabled:
+            result.append(ProviderInfo(
+                id=pid,
+                name=pdef.name,
+                is_configured=True,
+                enabled=False,
+                masked_key=_mask_key(api_key),
+                status="disabled",
+                base_url=base_url,
+            ))
+        elif provider and api_key:
+            models = [m for p, m in registry._full_models if m.provider_id == pid]
+            result.append(ProviderInfo(
+                id=pid,
+                name=pdef.name,
+                is_configured=True,
+                enabled=True,
+                masked_key=_mask_key(api_key),
+                model_count=len(models),
+                status="connected",
+                base_url=base_url,
+            ))
+        elif api_key:
+            result.append(ProviderInfo(
+                id=pid,
+                name=pdef.name,
+                is_configured=True,
+                enabled=True,
+                masked_key=_mask_key(api_key),
+                status="error",
+                base_url=base_url,
+            ))
+        else:
+            result.append(ProviderInfo(
+                id=pid,
+                name=pdef.name,
+                is_configured=False,
+                enabled=not is_disabled,
+                status="unconfigured",
+                base_url=base_url,
+            ))
+
+
+    # Inject Custom Endpoints
+    for ce in get_custom_endpoints(settings):
+        pid = ce["id"]
+        is_disabled = pid in disabled or not ce.get("enabled", True)
+        provider = registry.get_provider(pid)
+
+        if is_disabled:
+            result.append(_build_custom_endpoint_info(ce, enabled=False, status="disabled"))
+        elif provider:
+            models = [m for p, m in registry._full_models if m.provider_id == pid]
+            result.append(_build_custom_endpoint_info(ce, enabled=True, status="connected", model_count=len(models)))
+        else:
+            result.append(_build_custom_endpoint_info(ce, enabled=True, status="error"))
+
+    return result
+
+
+@router.post("/config/providers/{provider_id}/key", response_model=ProviderInfo)
+async def set_provider_key(
+    provider_id: str, body: ProviderKeyUpdate, settings: SettingsDep, registry: ProviderRegistryDep,
+) -> ProviderInfo:
+    """Set/update API key for a provider. Validates, registers, and persists."""
+    pdef = PROVIDER_CATALOG.get(provider_id)
+    if not pdef:
+        raise HTTPException(404, f"Unknown provider: {provider_id}")
+
+    api_key = body.api_key.strip()
+    if not api_key:
+        raise HTTPException(400, "API key cannot be empty")
+
+    # Azure needs a base_url from the request body or existing settings
+    extra_kwargs: dict[str, str] = {}
+    if pdef.kind in ("openai_compat_azure",):
+        url_setting_map = {
+            "openai_compat_azure": "azure_openai_base_url",
+        }
+        url_setting = url_setting_map[pdef.kind]
+        base_url = getattr(body, "base_url", None) or getattr(settings, url_setting, "")
+        if not base_url:
+            raise HTTPException(400, f"{pdef.name} requires a base_url to be set")
+        extra_kwargs["base_url"] = base_url
+
+        # Persist base_url
+        setattr(settings, url_setting, base_url)
+        _update_env_file(f"CODATA_{url_setting.upper()}", base_url)
+    elif provider_id == "openai":
+        # Free configuration: optionally point the OpenAI provider at any
+        # OpenAI-compatible endpoint. Empty keeps the catalog default
+        # (api.openai.com) — nothing company-specific is hardcoded.
+        base_url = (getattr(body, "base_url", None) or "").strip() or getattr(settings, "openai_base_url", "")
+        if base_url:
+            extra_kwargs["base_url"] = base_url
+            setattr(settings, "openai_base_url", base_url)
+            _update_env_file("CODATA_OPENAI_BASE_URL", base_url)
+
+    model_count, _ = await _validate_provider_connection(provider_id, api_key, **extra_kwargs)
+
+    # Register in the registry (replaces any existing instance)
+    new_provider = create_desktop_provider(
+        provider_id,
+        api_key,
+        proxy_url=settings.proxy_url or None,
+        **extra_kwargs,
+    )
+    disabled = _get_disabled_set(settings)
+    should_enable = body.enabled is not False
+    if should_enable:
+        disabled.discard(provider_id)
+        registry.register(new_provider)
+    else:
+        disabled.add(provider_id)
+        registry.unregister(provider_id)
+
+    if should_enable:
+        try:
+            await registry.refresh_models()
+        except Exception as e:
+            logger.warning(
+                "Model refresh failed after %s key update: %s — will retry on next request",
+                provider_id, e,
+            )
+
+    # Persist to .env
+    env_key = f"CODATA_{pdef.settings_key.upper()}"
+    _update_env_file(env_key, api_key)
+    settings.disabled_providers = ",".join(sorted(disabled))
+    _update_env_file("CODATA_DISABLED_PROVIDERS", settings.disabled_providers)
+
+    # Update runtime settings
+    setattr(settings, pdef.settings_key, api_key)
+
+    return ProviderInfo(
+        id=provider_id,
+        name=pdef.name,
+        is_configured=True,
+        enabled=should_enable,
+        masked_key=_mask_key(api_key),
+        model_count=model_count if should_enable else 0,
+        status="connected" if should_enable else "disabled",
+        base_url=extra_kwargs.get("base_url"),
+    )
+
+
+@router.post("/config/providers/{provider_id}/test", response_model=ProviderTestResult)
+async def test_provider_key(provider_id: str, body: ProviderKeyUpdate, settings: SettingsDep) -> ProviderTestResult:
+    """Validate a provider key without saving it."""
+    pdef = PROVIDER_CATALOG.get(provider_id)
+    if not pdef:
+        raise HTTPException(404, f"Unknown provider: {provider_id}")
+
+    api_key = body.api_key.strip()
+    if not api_key:
+        raise HTTPException(400, "API key cannot be empty")
+
+    extra_kwargs: dict[str, str] = {}
+    if pdef.kind == "openai_compat_azure":
+        base_url = body.base_url or getattr(settings, "azure_openai_base_url", "")
+        if not base_url:
+            raise HTTPException(400, f"{pdef.name} requires a base_url to be set")
+        extra_kwargs["base_url"] = base_url
+    elif provider_id == "openai":
+        base_url = (body.base_url or "").strip() or getattr(settings, "openai_base_url", "")
+        if base_url:
+            extra_kwargs["base_url"] = base_url
+
+    model_count, models = await _validate_provider_connection(provider_id, api_key, **extra_kwargs)
+    return ProviderTestResult(model_count=model_count, models=models)
+
+
+@router.delete("/config/providers/{provider_id}/key", response_model=ProviderInfo)
+async def delete_provider_key(
+    provider_id: str, settings: SettingsDep, registry: ProviderRegistryDep,
+) -> ProviderInfo:
+    """Remove API key for a provider."""
+    pdef = PROVIDER_CATALOG.get(provider_id)
+    if not pdef:
+        raise HTTPException(404, f"Unknown provider: {provider_id}")
+
+    # Clear runtime settings
+    setattr(settings, pdef.settings_key, "")
+
+    # Remove from .env
+    env_key = f"CODATA_{pdef.settings_key.upper()}"
+    _remove_env_key(env_key)
+
+    if pdef.kind == "openai_compat_azure":
+        settings.azure_openai_base_url = ""
+        _remove_env_key("CODATA_AZURE_OPENAI_BASE_URL")
+
+    # Unregister provider
+    registry.unregister(provider_id)
+
+    return ProviderInfo(
+        id=provider_id,
+        name=pdef.name,
+        is_configured=False,
+        status="unconfigured",
+    )
+
+
+@router.post("/config/providers/{provider_id}/toggle", response_model=ProviderInfo)
+async def toggle_provider(
+    provider_id: str,
+    settings: SettingsDep,
+    registry: ProviderRegistryDep,
+    body: ProviderToggleUpdate | None = None,
+) -> ProviderInfo:
+    """Enable or disable a provider. Disabled providers keep their key but aren't used.
+
+    If ``enabled`` is provided, the operation is idempotent. Without a body, the
+    endpoint keeps the legacy toggle behavior for older clients.
+    """
+    pdef = PROVIDER_CATALOG.get(provider_id)
+    if not pdef:
+        raise HTTPException(404, f"Unknown provider: {provider_id}")
+    disabled = _get_disabled_set(settings)
+
+    api_key = getattr(settings, pdef.settings_key, "")
+    is_currently_disabled = provider_id in disabled
+    target_enabled = body.enabled if body and body.enabled is not None else is_currently_disabled
+
+    if target_enabled:
+        # Enable: remove from disabled list, register provider if needed.
+        disabled.discard(provider_id)
+        provider = registry.get_provider(provider_id)
+        if api_key and provider is None:
+            try:
+                extra_kwargs: dict[str, str] = {}
+                if pdef.kind == "openai_compat_azure":
+                    azure_url = getattr(settings, "azure_openai_base_url", "")
+                    if azure_url:
+                        extra_kwargs["base_url"] = azure_url
+                provider = create_desktop_provider(
+                    provider_id,
+                    api_key,
+                    proxy_url=settings.proxy_url or None,
+                    **extra_kwargs,
+                )
+                registry.register(provider)
+                await registry.refresh_models()
+            except Exception as e:
+                logger.warning("Failed to enable provider %s: %s", provider_id, e)
+    else:
+        # Disable: add to disabled list, unregister provider
+        disabled.add(provider_id)
+        registry.unregister(provider_id)
+
+    # Persist disabled list
+    settings.disabled_providers = ",".join(sorted(disabled))
+    _update_env_file("CODATA_DISABLED_PROVIDERS", settings.disabled_providers)
+
+    # Build response
+    provider = registry.get_provider(provider_id)
+    new_enabled = provider_id not in disabled
+    if new_enabled and provider and api_key:
+        models = [m for p, m in registry._full_models if m.provider_id == provider_id]
+        return ProviderInfo(
+            id=provider_id, name=pdef.name, is_configured=True, enabled=True,
+            masked_key=_mask_key(api_key), model_count=len(models), status="connected",
+        )
+    elif api_key and not new_enabled:
+        return ProviderInfo(
+            id=provider_id, name=pdef.name, is_configured=True, enabled=False,
+            masked_key=_mask_key(api_key), status="disabled",
+        )
+    else:
+        return ProviderInfo(
+            id=provider_id, name=pdef.name, is_configured=bool(api_key),
+            enabled=new_enabled, status="unconfigured",
+        )
+
+
+@router.post("/config/custom/test", response_model=ProviderTestResult)
+async def test_custom_endpoint(body: CustomEndpointCreate) -> ProviderTestResult:
+    """Validate a custom endpoint without saving it."""
+    endpoint_id = f"custom_test_{uuid.uuid4().hex[:8]}"
+    api_key = body.api_key.strip() if body.api_key else ""
+    model_count, models = await _validate_provider_connection(
+        endpoint_id,
+        api_key,
+        base_url=body.base_url,
+    )
+    return ProviderTestResult(model_count=model_count, models=models)
+
+
+@router.post("/config/custom", response_model=ProviderInfo)
+async def create_custom_endpoint(
+    body: CustomEndpointCreate, settings: SettingsDep, registry: ProviderRegistryDep
+) -> ProviderInfo:
+    """Create a new custom endpoint."""
+    base_url = body.base_url
+    api_key = body.api_key.strip() if body.api_key else ""
+    name = body.name.strip() or "Custom Endpoint"
+    enabled = body.enabled
+
+    endpoint_id = f"custom_{uuid.uuid4().hex[:8]}"
+
+    model_count, _ = await _validate_provider_connection(endpoint_id, api_key, base_url=base_url)
+    test_provider = create_desktop_provider(endpoint_id, api_key, base_url=base_url)
+
+    async with _custom_endpoints_lock:
+        endpoints = get_custom_endpoints(settings)
+        new_config = {
+            "id": endpoint_id,
+            "name": name,
+            "base_url": base_url,
+            "api_key": api_key,
+            "enabled": enabled,
+        }
+        endpoints.append(new_config)
+
+        settings.custom_endpoints = json.dumps(endpoints)
+        _update_env_file("CODATA_CUSTOM_ENDPOINTS", settings.custom_endpoints)
+
+    if enabled:
+        registry.register(test_provider)
+        try:
+            await registry.refresh_models()
+        except Exception as e:
+            logger.warning("Failed to refresh models after adding custom endpoint %s: %s", endpoint_id, e)
+
+    return ProviderInfo(
+        id=endpoint_id,
+        name=name,
+        is_configured=True,
+        enabled=enabled,
+        masked_key=_mask_key(api_key) if api_key else None,
+        model_count=model_count if enabled else 0,
+        status="connected" if enabled else "disabled",
+        base_url=base_url,
+    )
+
+
+@router.delete("/config/custom/{endpoint_id}", response_model=ProviderInfo)
+async def delete_custom_endpoint(
+    endpoint_id: str, settings: SettingsDep, registry: ProviderRegistryDep
+) -> ProviderInfo:
+    async with _custom_endpoints_lock:
+        endpoints = get_custom_endpoints(settings)
+        found = None
+        for i, e in enumerate(endpoints):
+            if e.get("id") == endpoint_id:
+                found = endpoints.pop(i)
+                break
+
+        if not found:
+            raise HTTPException(404, "Custom endpoint not found")
+
+        settings.custom_endpoints = json.dumps(endpoints)
+        _update_env_file("CODATA_CUSTOM_ENDPOINTS", settings.custom_endpoints)
+
+    registry.unregister(endpoint_id)
+
+    return ProviderInfo(
+        id=endpoint_id, name=found.get("name", "Custom Endpoint"),
+        is_configured=False, status="unconfigured"
+    )
+
+@router.patch("/config/custom/{endpoint_id}", response_model=ProviderInfo)
+async def update_custom_endpoint(
+    endpoint_id: str,
+    body: CustomEndpointUpdate,
+    settings: SettingsDep,
+    registry: ProviderRegistryDep,
+) -> ProviderInfo:
+    """Update a custom endpoint (partial update)."""
+    models: list = []
+    test_provider = None
+    needs_rebuild = body.base_url is not None or body.api_key is not None
+
+    # --- Phase 1: read current config (under lock) ---
+    async with _custom_endpoints_lock:
+        endpoints = get_custom_endpoints(settings)
+
+        found = None
+        found_idx = -1
+        for i, e in enumerate(endpoints):
+            if e.get("id") == endpoint_id:
+                found = e
+                found_idx = i
+                break
+
+        if not found:
+            raise HTTPException(404, "Custom endpoint not found")
+
+    name = body.name.strip() if body.name is not None else found.get("name", "Custom Endpoint")
+    base_url = body.base_url if body.base_url is not None else found.get("base_url", "")
+    api_key = body.api_key.strip() if body.api_key is not None else found.get("api_key", "")
+    enabled = body.enabled if body.enabled is not None else found.get("enabled", True)
+
+    # --- Phase 2: validate (outside lock — network I/O) ---
+    if needs_rebuild:
+        try:
+            test_provider = create_desktop_provider(endpoint_id, api_key, base_url=base_url)
+            models = await test_provider.list_models()
+        except Exception as e:
+            logger.warning("Failed validation for custom endpoint %s: %s", name, e)
+            raise HTTPException(400, f"Validation failed: {e}")
+    else:
+        provider = registry.get_provider(endpoint_id)
+        models = [m for p, m in registry._full_models if m.provider_id == endpoint_id] if provider else []
+
+    # --- Phase 3: persist (under lock) ---
+    async with _custom_endpoints_lock:
+        # Re-read in case another request mutated while we validated.
+        endpoints = get_custom_endpoints(settings)
+        found_idx = next((i for i, e in enumerate(endpoints) if e.get("id") == endpoint_id), -1)
+        if found_idx == -1:
+            raise HTTPException(404, "Custom endpoint was deleted during update")
+
+        updated_config = {
+            "id": endpoint_id,
+            "name": name,
+            "base_url": base_url,
+            "api_key": api_key,
+            "enabled": enabled,
+        }
+        endpoints[found_idx] = updated_config
+
+        settings.custom_endpoints = json.dumps(endpoints)
+        _update_env_file("CODATA_CUSTOM_ENDPOINTS", settings.custom_endpoints)
+
+    if enabled and needs_rebuild and test_provider is not None:
+        registry.unregister(endpoint_id)
+        registry.register(test_provider)
+        try:
+            await registry.refresh_models()
+        except Exception as e:
+            logger.warning("Failed to refresh models after updating custom endpoint %s: %s", endpoint_id, e)
+    elif not enabled:
+        registry.unregister(endpoint_id)
+
+    return ProviderInfo(
+        id=endpoint_id, name=name, is_configured=True, enabled=enabled,
+        masked_key=_mask_key(api_key) if api_key else None,
+        model_count=len(models), status="connected" if enabled else "disabled", base_url=base_url
+    )
+
+# ── Default model (server-side mirror of the UI selection) ──────────────────
+
+
+class DefaultModelStatus(BaseModel):
+    """Currently persisted default model for headless paths."""
+
+    model: str | None = None
+    provider_id: str | None = None
+
+
+class DefaultModelUpdate(BaseModel):
+    """Set (or clear, when model is null/empty) the default model."""
+
+    model: str | None = None
+    provider_id: str | None = None
+
+
+@router.get("/config/default-model", response_model=DefaultModelStatus)
+async def get_default_model(settings: SettingsDep) -> DefaultModelStatus:
+    """Return the persisted default model used by headless paths."""
+    return DefaultModelStatus(
+        model=settings.default_model or None,
+        provider_id=settings.default_provider_id or None,
+    )
+
+
+@router.put("/config/default-model", response_model=DefaultModelStatus)
+async def set_default_model(
+    body: DefaultModelUpdate, settings: SettingsDep, registry: ProviderRegistryDep,
+) -> DefaultModelStatus:
+    """Persist the UI's default model so channels/scheduler/API can use it.
+
+    A null/empty model clears the setting ("Automatic" — fall back to heuristic).
+    """
+    model = (body.model or "").strip()
+    provider_id = (body.provider_id or "").strip()
+
+    if not model:
+        settings.default_model = ""
+        settings.default_provider_id = ""
+        _remove_env_key("CODATA_DEFAULT_MODEL")
+        _remove_env_key("CODATA_DEFAULT_PROVIDER_ID")
+        return DefaultModelStatus()
+
+    # Validate the model exists in the registry before persisting.
+    if registry.resolve_model(model, provider_id or None) is None:
+        raise HTTPException(400, f"Model '{model}' is not available")
+
+    settings.default_model = model
+    settings.default_provider_id = provider_id
+    _update_env_file("CODATA_DEFAULT_MODEL", model)
+    if provider_id:
+        _update_env_file("CODATA_DEFAULT_PROVIDER_ID", provider_id)
+    else:
+        _remove_env_key("CODATA_DEFAULT_PROVIDER_ID")
+
+    return DefaultModelStatus(model=model, provider_id=provider_id or None)
+
+
+# ── Local OpenAI-compatible endpoint ────────────────────────────────────────
+
+@router.get("/config/local", response_model=LocalProviderStatus)
+async def get_local_provider(settings: SettingsDep, registry: ProviderRegistryDep) -> LocalProviderStatus:
+    """Return the stored local endpoint configuration."""
+    return _local_provider_status(settings, registry)
+
+
+@router.post("/config/local", response_model=LocalProviderStatus)
+async def set_local_provider(
+    settings: SettingsDep, registry: ProviderRegistryDep, body: LocalProviderUpdate,
+) -> LocalProviderStatus:
+    """Register a locally-hosted OpenAI-compatible endpoint."""
+    base_url = _normalize_local_base_url(body.base_url)
+    try:
+        test_provider = create_local_provider(base_url)
+        models = await test_provider.list_models()
+        if not models:
+            raise HTTPException(400, "Local endpoint returned no models")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning("Local provider validation failed for %s: %s", base_url, e)
+        raise HTTPException(400, f"Local endpoint validation failed: {e}")
+    registry.unregister(LOCAL_PROVIDER_ID)
+    registry.register(create_local_provider(base_url))
+
+    try:
+        await registry.refresh_models()
+    except Exception as e:
+        logger.warning("Model refresh failed after local provider registration: %s", e)
+
+    _update_env_file(LOCAL_BASE_URL_ENV, base_url)
+    settings.local_base_url = base_url
+
+    return LocalProviderStatus(
+        base_url=base_url,
+        is_configured=True,
+        is_connected=True,
+        status="connected",
+    )
+
+
+@router.delete("/config/local", response_model=LocalProviderStatus)
+async def delete_local_provider(settings: SettingsDep, registry: ProviderRegistryDep) -> LocalProviderStatus:
+    """Remove the local endpoint configuration."""
+    settings.local_base_url = ""
+    _remove_env_key(LOCAL_BASE_URL_ENV)
+
+    registry.unregister(LOCAL_PROVIDER_ID)
+
+    try:
+        await registry.refresh_models()
+    except Exception as e:
+        logger.warning("Model refresh failed after removing local provider: %s", e)
+
+    return LocalProviderStatus()

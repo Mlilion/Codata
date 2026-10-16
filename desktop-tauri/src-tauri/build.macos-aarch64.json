@@ -1,0 +1,12 @@
+{
+  "build": {
+    "beforeBuildCommand": ""
+  },
+  "bundle": {
+    "targets": ["dmg", "app"],
+    "resources": {
+      "../../backend/dist/codata-backend": "backend",
+      "../../backend/resources/nodejs": "nodejs"
+    }
+  }
+}

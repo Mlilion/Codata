@@ -1,0 +1,74 @@
+"""Session schemas."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any
+
+from pydantic import BaseModel, field_validator
+
+
+class SessionCreate(BaseModel):
+    """Create a new session."""
+
+    project_id: str | None = None
+    directory: str | None = None
+    title: str | None = None
+    agent: str = "build"
+
+
+class SessionUpdate(BaseModel):
+    """Update session fields."""
+
+    title: str | None = None
+    directory: str | None = None
+    is_pinned: bool | None = None
+    time_archived: datetime | None = None
+    permission: dict[str, Any] | None = None
+
+
+class SessionResponse(BaseModel):
+    """Session detail response."""
+
+    id: str
+    project_id: str | None = None
+    parent_id: str | None = None
+    slug: str | None = None
+    directory: str | None = None
+    title: str | None = None
+    version: str = "0.0.1"
+    app_mode: str | None = None
+    summary_additions: int | None = None
+    summary_deletions: int | None = None
+    summary_files: int | None = None
+    summary_diffs: list[Any] | None = None
+    is_pinned: bool = False
+    permission: dict[str, Any] | list[Any] | None = None
+    has_compaction: bool = False
+    time_created: datetime
+    time_updated: datetime
+    time_compacting: datetime | None = None
+    time_archived: datetime | None = None
+
+    @field_validator("time_created", "time_updated", "time_compacting", "time_archived", mode="before")
+    @classmethod
+    def attach_utc_to_sqlite_timestamps(cls, value):
+        if isinstance(value, datetime) and value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
+
+    model_config = {"from_attributes": True}
+
+
+class SessionSearchResult(BaseModel):
+    """A single search result with optional content snippet."""
+
+    session: SessionResponse
+    snippet: str | None = None
+
+
+class SessionList(BaseModel):
+    """Paginated session list."""
+
+    items: list[SessionResponse]
+    total: int
