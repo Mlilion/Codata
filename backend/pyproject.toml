@@ -63,7 +63,6 @@ dependencies = [
 [project.optional-dependencies]
 mcp = ["mcp>=1.0.0"]
 local = ["litellm>=1.55.0"]
-yakagent = ["yakagent>=0.1.0"]
 office = [
     "pdfplumber>=0.11.0",
 ]

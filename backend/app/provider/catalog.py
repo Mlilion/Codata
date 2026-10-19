@@ -43,13 +43,16 @@ PROVIDER_CATALOG: dict[str, ProviderDef] = {
         id="anthropic",
         name="Anthropic",
         settings_key="anthropic_api_key",
-        kind="native_anthropic",
+        kind="openai_compat",
+        base_url="https://api.anthropic.com/v1",
+        default_headers={"anthropic-version": "2023-06-01"},
     ),
     "google": ProviderDef(
         id="google",
         name="Google Gemini",
         settings_key="google_api_key",
-        kind="native_gemini",
+        kind="openai_compat",
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai",
     ),
     "groq": ProviderDef(
         id="groq",

@@ -1,7 +1,6 @@
 """Provider factory — creates the right provider instance by ID.
 
-Lazy imports ensure that native SDK dependencies (anthropic, google-genai)
-are only loaded when the provider is actually used.
+Lazy imports keep heavyweight dependencies out of the default path.
 """
 
 from __future__ import annotations
@@ -24,9 +23,8 @@ def create_provider(
     """Create a desktop provider by ID.
 
     Routes to the correct implementation:
-    - "anthropic" → AnthropicDesktopProvider (native SDK adapter)
-    - "google"    → GeminiDesktopProvider (native SDK adapter)
-    - Others      → GenericOpenAIProvider (OpenAI-compatible)
+    - "openrouter" → OpenRouterProvider (special litellm adapter)
+    - All others   → GenericOpenAIProvider (OpenAI-compatible)
 
     Args:
         provider_id: Provider ID from the catalog.
@@ -36,7 +34,6 @@ def create_provider(
 
     Raises:
         ValueError: If provider_id is not in the catalog.
-        ImportError: If a native SDK is required but not installed.
     """
     pdef = PROVIDER_CATALOG.get(provider_id)
     if pdef is None:
@@ -58,14 +55,7 @@ def create_provider(
         from app.provider.openrouter import OpenRouterProvider
         return OpenRouterProvider(api_key, proxy_url=proxy_url)
 
-    if pdef.kind == "native_anthropic":
-        from app.provider.anthropic_provider import AnthropicDesktopProvider
-        return AnthropicDesktopProvider(api_key=api_key)
-
-    if pdef.kind == "native_gemini":
-        from app.provider.gemini_provider import GeminiDesktopProvider
-        return GeminiDesktopProvider(api_key=api_key)
-
+    # All other providers use the OpenAI-compatible path
     if pdef.kind in ("openai_compat", "openai_compat_azure", "openai_compat_custom"):
         from app.provider.generic_openai import GenericOpenAIProvider
 
