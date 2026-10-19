@@ -235,6 +235,19 @@ Gatekeeper assessments before uploading artifacts. Signing material is removed
 even when a build fails. Missing credentials or rejected notarization fail the
 release; there is no unsigned/ad-hoc fallback.
 
+After notarization is accepted, both architectures use
+[`scripts/staple-macos.sh`](scripts/staple-macos.sh) for the app and DMG.
+It retries both ticket download/attachment (`staple`) and online ticket
+validation (`validate`) only when output explicitly identifies a transient
+network failure. Each operation allows six attempts with delays of 10, 20, 40,
+60, and 60 seconds. Error 68 alone is not sufficient to retry: it can also mean
+that an artifact has not been notarized. Invalid or revoked tickets and
+certificate errors fail immediately; persistent network failures still block
+the release. Signing, accepted notarization, ticket validation, and Gatekeeper
+assessments remain mandatory. A failed Intel job and a successful ARM job do not
+by themselves indicate an architecture bug: they run on different hosted
+machines and contact Apple's ticket service at different times.
+
 Local development does not require these secrets. Automatic updater signing is
 separate and remains disabled. Real signing, Apple submission, and Gatekeeper
 validation require macOS and valid credentials; policy and mocked notarization

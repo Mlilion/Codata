@@ -72,15 +72,17 @@ test("macOS release requires Developer ID signing and notarizes both app and DMG
   assert.match(workflow, /Sign macOS native dependencies[\s\S]*?Build macOS application/);
   assert.match(workflow, /unset APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID/);
   assert.match(workflow, /fix-macos-pyinstaller-frameworks\.sh[\s\S]*?sign-macos-bundle\.sh "\$app\/Contents\/Resources\/backend"[\s\S]*?sign-macos-bundle\.sh "\$app\/Contents\/Resources\/nodejs"/);
-  assert.match(workflow, /Notarize and staple macOS application[\s\S]*?notarize-macos\.sh "\$archive"[\s\S]*?validate-macos-staple\.sh "\$app"[\s\S]*?spctl --assess --type execute/);
-  assert.match(workflow, /Package macOS DMG[\s\S]*?codesign --force --timestamp[\s\S]*?notarize-macos\.sh "\$dmg"[\s\S]*?validate-macos-staple\.sh "\$dmg"[\s\S]*?spctl --assess --type open/);
+  assert.match(workflow, /Notarize and staple macOS application[\s\S]*?notarize-macos\.sh "\$archive"[\s\S]*?staple-macos\.sh "\$app"[\s\S]*?spctl --assess --type execute/);
+  assert.match(workflow, /Package macOS DMG[\s\S]*?codesign --force --timestamp[\s\S]*?notarize-macos\.sh "\$dmg"[\s\S]*?staple-macos\.sh "\$dmg"[\s\S]*?spctl --assess --type open/);
+  assert.doesNotMatch(workflow, /xcrun stapler|validate-macos-staple/);
+  assert.equal((workflow.match(/bash scripts\/staple-macos\.sh/g) || []).length, 2);
   assert.match(workflow, /Clean up Apple signing material\s+if: always\(\) && runner\.os == 'macOS'/);
   assert.match(workflow, /security delete-keychain/);
   const signingScript = fs.readFileSync("scripts/sign-macos-bundle.sh", "utf8");
   assert.match(signingScript, /--options runtime --timestamp/);
   assert.match(signingScript, /find "\$bundle_dir" -depth -type d/);
   assert.match(workflow, /VERIFY_BUNDLE_SKIP_SMOKE: "1"/);
-  assert.match(ciWorkflow, /scripts\/notarize-macos\.test\.mjs scripts\/validate-macos-staple\.test\.mjs/);
+  assert.match(ciWorkflow, /scripts\/notarize-macos\.test\.mjs scripts\/staple-macos\.test\.mjs/);
 });
 
 test("Intel macOS freezes cryptography from a compatible universal2 wheel", () => {
@@ -101,8 +103,8 @@ test("Intel macOS freezes cryptography from a compatible universal2 wheel", () =
 
 test("CI gates releases on strict open-source boundary and release policy tests", () => {
   assert.match(ciWorkflow, /npm run audit:open-source-boundary:strict/);
-  assert.match(ciWorkflow, /node --test scripts\/release-workflow\.test\.mjs scripts\/generate-release-manifests\.test\.mjs scripts\/open-source-licenses\.test\.mjs scripts\/verify-bundle\.test\.mjs[\s\S]*?scripts\/validate-macos-staple\.test\.mjs/);
-  assert.match(workflow, /node --test scripts\/release-workflow\.test\.mjs[\s\S]*?scripts\/validate-macos-staple\.test\.mjs/);
+  assert.match(ciWorkflow, /node --test scripts\/release-workflow\.test\.mjs scripts\/generate-release-manifests\.test\.mjs scripts\/open-source-licenses\.test\.mjs scripts\/verify-bundle\.test\.mjs[\s\S]*?scripts\/staple-macos\.test\.mjs/);
+  assert.match(workflow, /node --test scripts\/release-workflow\.test\.mjs[\s\S]*?scripts\/staple-macos\.test\.mjs/);
   assert.match(ciWorkflow, /python scripts\/test_download_node\.py/);
 });
 
