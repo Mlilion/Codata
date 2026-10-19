@@ -99,6 +99,7 @@ Show user-configured models, MCP data sources, and channel settings such as Feis
 - [Development Commands](#development-commands)
 - [Repository Layout](#repository-layout)
 - [Data Boundary](#data-boundary)
+- [Community](#community)
 - [Development Notes](#development-notes)
 
 </details>
@@ -312,6 +313,27 @@ catalogs/downloads, and some CDN-backed previews can use the network. See
 [Security Policy](SECURITY.md) for the data boundary and
 [Third-party notices](THIRD_PARTY_NOTICES.md) for redistribution requirements.
 PPTX files can be downloaded, but visual PPTX preview is not included.
+
+## Community
+
+Join the Codata user group to ask questions, share analytics workflows, and suggest features. The group is hosted on WeChat and is primarily Chinese-speaking.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/community/wechat-group.jpg" width="260" alt="Codata Agent community group QR code" />
+      <br />
+      <sub><b>Codata Agent group</b><br />Scan with WeChat to join</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/community/wechat-moilion.jpg" width="260" alt="Maintainer WeChat QR code" />
+      <br />
+      <sub><b>Maintainer WeChat</b><br />Add with the note "Codata"</sub>
+    </td>
+  </tr>
+</table>
+
+Group invite QR codes expire (usually after 7 days). If the left code no longer works, scan the maintainer's code on the right and add a note saying "Codata"; you will be invited to the group. You can also report issues via [GitHub Issues](https://github.com/Mlilion/Codata/issues).
 
 ## Development Notes
 

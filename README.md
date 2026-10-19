@@ -96,6 +96,7 @@ Codata 的产品主线是一条清晰的数据分析链路：
 - [开发命令](#开发命令)
 - [仓库结构](#仓库结构)
 - [数据边界](#数据边界)
+- [社群与交流](#社群与交流)
 - [开发说明](#开发说明)
 
 </details>
@@ -288,6 +289,27 @@ Codata 默认在本地存储对话、看板状态、生成产物、设置、记�
 数据库分析依赖用户已连接的数据平台及其权限。用户需要自行选择符合安全、隐私和合规要求的 provider 路径、模型访问方式、数据源权限、SQL 安全规则、连接器范围和部署设置。
 
 本地优先不等于完全离线：云模型、MCP 工具、消息渠道、目录与运行时下载，以及部分依赖 CDN 的预览会访问网络。数据边界见 [安全策略](SECURITY.md)，分发义务见 [第三方声明](THIRD_PARTY_NOTICES.md)。PPTX 文件可下载，但不提供可视化预览。
+
+## 社群与交流
+
+欢迎加入 Codata 用户交流群，反馈使用问题、交流数据分析场景和建议新功能。
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/community/wechat-group.jpg" width="260" alt="Codata Agent 交流群二维码" />
+      <br />
+      <sub><b>Codata Agent 交流群</b><br />微信扫码直接进群</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/community/wechat-moilion.jpg" width="260" alt="维护者微信二维码" />
+      <br />
+      <sub><b>维护者微信</b><br />扫码添加，备注「Codata」</sub>
+    </td>
+  </tr>
+</table>
+
+群二维码有时效限制（通常 7 天），过期后请扫描右侧维护者微信二维码，备注「Codata」，维护者会拉你进群。也可以通过 [GitHub Issues](https://github.com/Mlilion/Codata/issues) 反馈问题。
 
 ## 开发说明
 
