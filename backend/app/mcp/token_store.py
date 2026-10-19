@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -147,11 +148,32 @@ class McpTokenStore:
         return {}
 
     def _persist(self) -> None:
+        """
+        Persist tokens to disk with 0600 permissions (owner read/write only).
+
+        Uses the same secure write pattern as session tokens: write to a temp
+        file with explicit mode, then atomic rename.
+        """
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
-            self._path.write_text(
-                json.dumps(self._data, indent=2),
-                encoding="utf-8",
-            )
+            tmp = self._path.with_suffix(self._path.suffix + ".tmp")
+            payload = json.dumps(self._data, indent=2).encode("utf-8")
+
+            # Open with 0600 mode to prevent other users from reading tokens
+            flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+            fd = os.open(str(tmp), flags, 0o600)
+            try:
+                os.write(fd, payload)
+            finally:
+                os.close(fd)
+
+            # Belt-and-braces: set mode again in case umask interfered
+            try:
+                os.chmod(str(tmp), 0o600)
+            except OSError:
+                pass
+
+            # Atomic rename to final location
+            os.replace(str(tmp), str(self._path))
         except OSError as e:
             logger.warning("Cannot persist MCP tokens: %s", e)

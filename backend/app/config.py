@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./data/codata.db"
 
     # --- Server ---
-    host: str = "0.0.0.0"
+    host: str = "127.0.0.1"  # Localhost-only by default; use 0.0.0.0 to expose on all interfaces
     port: int = 8000
     debug: bool = False
     # Dev-only fixed session token. Used by npm run dev:all so the Next.js

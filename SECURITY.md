@@ -64,3 +64,13 @@ Out of scope:
 - Vulnerabilities in third-party model provider APIs
 - Social engineering attacks
 - Denial of service against local application
+
+## Security Design Decisions
+
+Codata is an agent framework that gives LLMs access to local tools by design. Some capabilities that would be vulnerabilities in a sandboxed application are intentional here:
+
+- **Code execution (`code_execute` tool):** Executes model-generated Python/JavaScript in the local environment. This is the core feature that enables agents to run scripts, test code, and automate tasks. Protected by session token authentication.
+- **Web fetch without SSRF guards (`web_fetch` tool):** Agents can fetch any URL, including internal network addresses like `169.254.169.254`. This enables legitimate use cases like accessing local development servers or internal documentation. Auth-gated like all privileged tools.
+- **File system access:** Agents read and write files within the configured project directory. Path-traversal protections enforce workspace boundaries, but authorized agents have full read/write within that scope.
+
+These are not security bugs—they are the intended trust model. **The security boundary is at the session token:** only trusted clients (the Tauri desktop app, authenticated API clients) should have access. Network exposure defaults to `127.0.0.1` (localhost-only) to minimize attack surface.
