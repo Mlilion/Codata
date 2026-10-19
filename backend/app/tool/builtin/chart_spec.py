@@ -1,6 +1,6 @@
 """Chart spec tool — turn a query result into a chart the frontend can render.
 
-The model calls this after obtaining a tabular result (e.g. from datasage
+The model calls this after obtaining a tabular result (e.g. from data client
 execute_sql) when the data is worth visualising. Chart-type selection and
 field mapping are semantic judgements the model makes; this tool only
 validates the spec and ships it (together with the data) to the frontend via

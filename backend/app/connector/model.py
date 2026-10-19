@@ -25,7 +25,7 @@ class ConnectorInfo:
     source: str = "builtin"  # "builtin" | "custom"
     # How this connector authenticates:
     #   "oauth" — browser OAuth flow (default for remote connectors)
-    #   "token" — user pastes a PAT / API key (e.g. datasage MCP Key)
+    #   "token" — user pastes a PAT / API key (e.g. data client MCP Key)
     #   "none"  — no auth needed (local command connectors, open endpoints)
     # Drives status(): a "token" connector whose transport handshake
     # succeeds but has no stored token is reported as needs_auth, not

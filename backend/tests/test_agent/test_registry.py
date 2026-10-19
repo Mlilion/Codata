@@ -34,7 +34,7 @@ class TestAgentRegistry:
         ):
             assert evaluate(allowed, "*", data.permissions) == "allow"
         # The underlying MCP tool must stay behind the guarded run_query wrapper.
-        assert evaluate("Datasage_execute_sql", "*", data.permissions) == "deny"
+        assert evaluate("DataClient_execute_sql", "*", data.permissions) == "deny"
 
     def test_default_agent_is_build(self):
         r = AgentRegistry()

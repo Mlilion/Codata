@@ -175,17 +175,17 @@ class McpToolWrapper(ToolDefinition):
             error, metadata = _parse_interactive_auth_error(error)
             return ToolResult(error=error, metadata=metadata)
 
-        # Structure known datasage results into metadata so the frontend can
+        # Structure known data client results into metadata so the frontend can
         # render SQL / tables / charts instead of a raw text blob.
         metadata: dict[str, Any] = {}
         try:
-            from app.mcp.datasage_parser import parse_datasage_result
+            from app.mcp.data_client_parser import parse_data_client_result
 
-            parsed = parse_datasage_result(self._tool_id, args, output)
+            parsed = parse_data_client_result(self._tool_id, args, output)
             if parsed:
                 metadata.update(parsed)
         except Exception:
-            logger.debug("datasage metadata parse failed", exc_info=True)
+            logger.debug("data_client metadata parse failed", exc_info=True)
 
         return ToolResult(
             output=output,

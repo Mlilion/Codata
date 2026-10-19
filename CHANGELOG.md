@@ -15,7 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), and this pro
 
 ### Added
 
-- Full HTML usage and configuration guide (`docs/codata-guide.html`) covering install, model/API key/MCP/datasage setup, usage, software updates, FAQ, and an admin release manual.
+- Full HTML usage and configuration guide (`docs/codata-guide.html`) covering install, model/API key/MCP/data-client setup, usage, software updates, FAQ, and an admin release manual.
 - Download landing page (`site/index.html`) that resolves the latest release from GitHub Releases at runtime.
 - GitHub Pages workflow publishing the guide and download page.
 - Download and documentation entry points in the README (English and Chinese).

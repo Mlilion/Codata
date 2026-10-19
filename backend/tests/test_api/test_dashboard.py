@@ -53,7 +53,7 @@ class _FakeClient:
 
 class _FakeManager:
     def __init__(self, client):
-        self._clients = {"datasage": client} if client else {}
+        self._clients = {"data-client": client} if client else {}
 
 
 def _install_manager(app_client, client):

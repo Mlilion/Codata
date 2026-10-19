@@ -37,7 +37,7 @@ export interface CaliberInfo {
   [key: string]: unknown;
 }
 
-/** A tabular query result (from datasage execute_sql / chart_spec). */
+/** A tabular query result (from data-client execute_sql / chart_spec). */
 export interface SqlResultData {
   sql?: string;
   requestedSql?: string;

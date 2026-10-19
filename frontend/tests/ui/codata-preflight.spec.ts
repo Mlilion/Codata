@@ -158,7 +158,7 @@ test.describe("Codata UI preflight", () => {
     await expect(page).toHaveURL(/\/c\/session-data$/, { timeout: 15_000 });
   });
 
-  test("desktop data path: datasage result renders as an inline data card with tabs", async ({ page }) => {
+  test("desktop data path: data-client result renders as an inline data card with tabs", async ({ page }) => {
     await page.goto("/c/session-data");
     await expect(page.getByRole("button", { name: "Codata", exact: true })).toHaveAttribute("aria-pressed", "true");
 

@@ -26,7 +26,7 @@ class TestGeneratorToolGating:
 
 
 class TestDataAnalysisPreset:
-    def test_preset_specialized_for_datasage(self):
+    def test_preset_specialized_for_data_client(self):
         reg = ExpertTeamRegistry(presets_dir=PRESETS_DIR)
         reg.scan()
         team = reg.get("data-analysis-report")

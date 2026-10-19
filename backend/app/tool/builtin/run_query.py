@@ -1,6 +1,6 @@
-"""run_query — reliable SQL execution against the datasage data platform.
+"""run_query — reliable SQL execution against the data client platform.
 
-A thin orchestration layer over datasage's raw ``execute_sql`` MCP tool that
+A thin orchestration layer over data client's raw ``execute_sql`` MCP tool that
 the data agent uses instead of calling execute_sql directly. It adds the
 reliability the model shouldn't have to hand-manage:
 
@@ -20,8 +20,8 @@ import json
 import logging
 from typing import Any
 
-from app.mcp.datasage_client import extract_text, find_execute_sql_client
-from app.mcp.datasage_parser import _parse_execute_sql, _parse_job_status
+from app.mcp.data_client_helper import extract_text, find_execute_sql_client
+from app.mcp.data_client_parser import _parse_execute_sql, _parse_job_status
 from app.tool.base import ToolDefinition, ToolResult
 from app.tool.context import ToolContext
 
@@ -227,7 +227,7 @@ def _format_rows_preview(columns: list[str], rows: list[list], row_count: int) -
 def _result_from_parsed(parsed: dict[str, Any], sql: str) -> ToolResult:
     """Wrap a parsed sql_result metadata dict into a ToolResult.
 
-    metadata shape matches datasage_parser output → DataResultCard renders it.
+    metadata shape matches data_client_parser output → DataResultCard renders it.
     output carries a readable row preview so the LLM can actually reason over
     the data (summarise, cite numbers, pass rows to chart_spec).
     """

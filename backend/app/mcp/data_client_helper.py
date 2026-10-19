@@ -1,10 +1,10 @@
-"""Shared helpers for reaching the datasage MCP server from backend code.
+"""Shared helpers for reaching the data client MCP server from backend code.
 
 Both the dashboard-refresh endpoint and the run_query orchestration tool need
-to find the connected datasage client and pull text out of a tool call. The
-datasage server name is user-configurable, so we locate it by the tool it
+to find the connected data client and pull text out of a tool call. The
+data client server name is user-configurable, so we locate it by the tool it
 exposes (``execute_sql``) rather than by a fixed name — same principle as the
-datasage result parser's suffix matching.
+data client result parser's suffix matching.
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
-"""Datasage MCP result parser.
+"""Data Client MCP result parser.
 
-Turns the raw text output of a few key datasage tools into structured
+Turns the raw text output of a few key data client tools into structured
 ``metadata`` so the frontend can render SQL / result tables / charts instead
 of a raw ``<pre>`` blob.
 
@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 
 # Tool IDs are ``{sanitised_server_name}_{sanitised_tool_name}``. We match on
 # the *tool-name* suffix rather than a hardcoded server name, so this works
-# regardless of what the user named their datasage MCP server ("Datasage",
-# "datasage", "DataSage", "数据平台", …). The bare tool names below never
+# regardless of what the user named their data client MCP server ("DataClient",
+# "data_client", "DataPlatform", "数据平台", …). The bare tool names below never
 # contain characters that ``sanitise_name`` would rewrite, so the suffix is
 # stable.
 EXECUTE_SQL = "execute_sql"
@@ -60,7 +60,7 @@ KNOWN_TOOLS = frozenset(
 
 
 def _match_tool(tool_id: str) -> str | None:
-    """Return the known datasage tool name a ``tool_id`` refers to, or None.
+    """Return the known data client tool name a ``tool_id`` refers to, or None.
 
     ``tool_id`` is ``{server}_{tool}``; we accept an exact tool-name match or a
     ``_{tool}`` suffix so any server name works.
@@ -74,12 +74,12 @@ def _match_tool(tool_id: str) -> str | None:
 MAX_ROWS = 500
 
 
-def parse_datasage_result(
+def parse_data_client_result(
     tool_id: str,
     args: dict[str, Any],
     raw_text: str,
 ) -> dict[str, Any] | None:
-    """Parse a datasage tool result into structured metadata.
+    """Parse a data client tool result into structured metadata.
 
     Returns a dict to merge into ``ToolResult.metadata``, or ``None`` when the
     output isn't recognised (caller leaves metadata untouched).
@@ -106,7 +106,7 @@ def parse_datasage_result(
         if tool in (SEARCH_INDICATORS, COMPILE_METRIC_SQL):
             return _parse_indicators(payload)
     except Exception:  # defensive: never break the tool result over parsing
-        logger.debug("datasage parse failed for %s", tool_id, exc_info=True)
+        logger.debug("data_client parse failed for %s", tool_id, exc_info=True)
     return None
 
 

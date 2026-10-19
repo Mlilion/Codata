@@ -1331,9 +1331,9 @@ function artifactToolPart(
   };
 }
 
-// A persisted datasage tool result carrying structured codata_kind metadata,
+// A persisted data-client tool result carrying structured codata_kind metadata,
 // used to prove the inline data card renders from history (P0-2 / main-area
-// card flow). Mirrors the shape the backend datasage_parser emits.
+// card flow). Mirrors the shape the backend data_client_parser emits.
 const dataMessagePage = {
   total: 2,
   offset: 0,
@@ -1380,8 +1380,8 @@ const dataMessagePage = {
           time_created: "2026-04-21T11:02:10.000Z",
           data: {
             type: "tool",
-            tool: "Datasage_execute_sql",
-            call_id: "datasage-exec-2",
+            tool: "DataClient_execute_sql",
+            call_id: "data-client-exec-2",
             state: {
               status: "completed",
               input: { sql: "SELECT * FROM dws.events_wide" },
@@ -1409,8 +1409,8 @@ const dataMessagePage = {
           time_created: "2026-04-21T11:02:30.000Z",
           data: {
             type: "tool",
-            tool: "Datasage_execute_sql",
-            call_id: "datasage-exec-1",
+            tool: "DataClient_execute_sql",
+            call_id: "data-client-exec-1",
             state: {
               status: "completed",
               input: { sql: "SELECT channel, dau FROM dws.dau_by_channel LIMIT 3" },

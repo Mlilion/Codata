@@ -80,10 +80,10 @@
 
 ## 已评估（无需操作）的发现
 
-### 8. **产品命名：datasage**
-**位置：** `backend/app/mcp/datasage_*.py`, `app/tool/builtin/run_query.py`  
-**评估：** `datasage` 是数据平台 MCP 集成的产品名称，代码注释已说明服务器名称可由用户配置。这是产品级命名决策，不是秘密泄漏。  
-**建议：** 发布负责人确认 `datasage` 是可接受的公开名称
+### 8. **产品命名：data-client**
+**位置：** `backend/app/mcp/data_client_*.py`, `app/tool/builtin/run_query.py`  
+**评估：** `data-client` 是数据平台 MCP 集成的通用适配器名称，代码注释已说明服务器名称可由用户配置。这是产品级命名决策，不是秘密泄漏。  
+**建议：** 发布负责人确认 `data-client` 是可接受的公开名称
 
 ### 9. **第三方资产：LLM 品牌图标**
 **位置：** `frontend/public/llm-icons/*.png` (27 个供应商 logo)  
@@ -100,7 +100,7 @@
 ## 清洁验证（无问题）
 
 ✅ **无硬编码秘密** — 所有 API keys、tokens、密码来自环境变量或配置文件，默认值为空字符串  
-✅ **无企业/个人信息泄漏** — `schneider`, `se.com`, `sesa874078`, `datasage.flow.chat`, 内网 IP、员工 ID 等均不在追踪代码中（仅出现在边界扫描器的测试模式中，符合预期）  
+✅ **无企业/个人信息泄漏** — `schneider`, `se.com`, `sesa874078`, 内网 IP、员工 ID 等均不在追踪代码中（仅出现在边界扫描器的测试模式中，符合预期）  
 ✅ **后端 URL 默认 localhost** — `frontend/src/lib/backend-url.ts:3` → `http://localhost:8000`  
 ✅ **License 字段一致** — 所有 `package.json`, `pyproject.toml` 均为 `Apache-2.0`，根目录 `LICENSE` 为 Apache 2.0 完整文本  
 ✅ **第三方声明完整准确** — `THIRD_PARTY_NOTICES.md` 引用的所有 bundled licenses 均存在并已验证  
@@ -133,7 +133,7 @@ npm run audit:open-source-boundary:strict  # 严格审计
 
 ## 推荐的发布前行动
 
-1. **必须：** 确认 `datasage` 是可接受的公开产品名称（#8）
+1. **必须：** 确认 `data-client` 是可接受的公开适配器名称（#8）
 2. **可选：** 确认维护者对 LLM 品牌图标的立场（#9，notice 已标记）
 3. **可选：** 补充 README 截图（#10，已标记"待补充"）
 4. **验证：** 运行 `npm run audit:open-source-boundary:strict` 最终检查
@@ -177,4 +177,4 @@ npm run audit:open-source-boundary:strict  # 严格审计
 
 所有 MEDIUM 和 LOW 优先级问题已修复或明确说明。无硬编码秘密，无企业/个人信息泄漏，安全设计合理，文档完整。
 
-发布前确认 `datasage` 产品命名决策，然后可安全发布。
+发布前确认 `data-client` 适配器命名决策，然后可安全发布。

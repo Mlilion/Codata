@@ -291,7 +291,7 @@ class SessionPrompt:
             self.request.skills = _normalize_selected_skills([*self.request.skills, "create_expert_teams"])
         elif self.request.mode == "codata":
             # Codata data-workspace mode routes to the dedicated data agent
-            # (read-only + datasage-focused), unless it doesn't exist.
+            # (read-only + data-client-focused), unless it doesn't exist.
             if self.agent_registry.get("data") is not None:
                 self.request.agent = "data"
         self.agent = self.agent_registry.get(self.request.agent) or self.agent_registry.default_agent()

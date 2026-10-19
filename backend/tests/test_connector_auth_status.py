@@ -2,7 +2,7 @@
 token is actually stored — even if the MCP transport handshake succeeds
 without one.
 
-Regression origin: a token-auth MCP endpoint (originally the datasage data
+Regression origin: a token-auth MCP endpoint (originally the data-client data
 platform) completed the MCP initialize + list_tools handshake WITHOUT a token
 (it defers auth to tool-call time), so `client.connect()` succeeded and
 status() reported `connected`. The user saw a green "connected" dot but every

@@ -68,7 +68,7 @@ BUILTIN_AGENTS: dict[str, AgentInfo] = {
         name="data",
         description="Data-analysis agent: query the data platform, chart results",
         mode="primary",
-        tools=[],  # Empty = all tools (so datasage MCP tools stay discoverable);
+        tools=[],  # Empty = all tools (so data client MCP tools stay discoverable);
                    # dangerous builtins denied via permissions below.
         permissions=Ruleset(rules=[
             PermissionRule(action="allow", permission="*"),

@@ -73,13 +73,13 @@ def _get_mcp_manager(request: Request):
 
 
 async def _rerun_sql(request: Request, sql: str) -> dict:
-    """Re-run a stored SQL via datasage execute_sql; return fresh sql_result.
+    """Re-run a stored SQL via data client execute_sql; return fresh sql_result.
 
     Raises RefreshError with a user-facing message on any failure (no data
     source, async job, SQL error, non-tabular result).
     """
-    from app.mcp.datasage_client import extract_text, find_execute_sql_client
-    from app.mcp.datasage_parser import _parse_execute_sql
+    from app.mcp.data_client_helper import extract_text, find_execute_sql_client
+    from app.mcp.data_client_parser import _parse_execute_sql
 
     manager = _get_mcp_manager(request)
     client = find_execute_sql_client(manager)

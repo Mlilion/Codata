@@ -1,7 +1,7 @@
 ---
 name: data-report-html
 description: 当用户需要一份数据分析报告、HTML 报告，或可分享/可交付的分析产物时使用。把分析结果整理成结构化数据，调用 build_report 工具生成一个带 echarts 交互图表的单文件 HTML 报告（浅色主题，右侧面板查看,可在浏览器打开）。
-tags: [数据分析, 报告, HTML, datasage]
+tags: [数据分析, 报告, HTML, data-client]
 icon: "📄"
 ---
 

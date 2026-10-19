@@ -578,7 +578,7 @@ class ConnectorRegistry:
             effective_status = runtime.get("status", "disabled" if not connector.enabled else "disconnected")
 
             # A transport handshake succeeding does NOT mean the connector is
-            # usable: some servers (datasage, google-workspace) complete the
+            # usable: some servers (data-client, google-workspace) complete the
             # MCP handshake unauthenticated and only reject at tool-call time.
             # For connectors that require credentials, downgrade a "connected"
             # transport to "needs_auth" until the credential is actually present,
@@ -626,7 +626,7 @@ class ConnectorRegistry:
             tokens = load_google_tokens(self._project_dir)
             return bool(tokens and tokens.get("refresh_token"))
 
-        # Token-auth connectors (e.g. datasage) need a stored MCP token.
+        # Token-auth connectors (e.g. data-client) need a stored MCP token.
         if connector.auth == "token":
             store = getattr(self._mcp_manager, "_token_store", None)
             if store is None:

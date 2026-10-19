@@ -71,7 +71,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const ALL_CATEGORY_LABEL = "全部";
 const BASE_CATEGORY_OPTIONS = ["综合分析", "经营诊断", "转化漏斗", "用户留存", "实验分析", "数据工程", "数据分析"];
-const HIDDEN_FILTER_TAGS = new Set(["datasage"]);
+const HIDDEN_FILTER_TAGS = new Set(["data-client"]);
 
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   code: Code2,

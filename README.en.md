@@ -116,7 +116,7 @@ Codata is focused on data work rather than generic chat. In Codata mode, the ass
 7. Explain results with concrete numbers, caveats, and the SQL behind the answer.
 8. Produce charts, dashboards, or reports when the result should be reused.
 
-Connect your own MCP data source; no service endpoints or organization-specific connectors are preconfigured. The agent discovers the source's available schema and query tools. Registered metrics are preferred when available, but a semantic model is not required. The built-in `run_query` wrapper and SQL-based dashboard refresh require a compatible `execute_sql` result protocol (the existing Datasage adapter); other sources use their own MCP query tools and may not support automatic dashboard refresh. When no data source is connected, Codata asks you to connect one.
+Connect your own MCP data source; no service endpoints or organization-specific connectors are preconfigured. The agent discovers the source's available schema and query tools. Registered metrics are preferred when available, but a semantic model is not required. The built-in `run_query` wrapper and SQL-based dashboard refresh require a compatible `execute_sql` result protocol (the reference data-client adapter); other sources use their own MCP query tools and may not support automatic dashboard refresh. When no data source is connected, Codata asks you to connect one.
 
 ## Core Capabilities
 

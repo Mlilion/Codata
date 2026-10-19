@@ -480,7 +480,7 @@ function ConnectorRow({
               return;
             }
             await toggle.mutateAsync({ id, enable: checked });
-            // Token-auth connectors (e.g. datasage) have no OAuth server —
+            // Token-auth connectors (e.g. data-client) have no OAuth server —
             // enabling just connects the transport; the backend then reports
             // needs_auth until a token is pasted, which surfaces the token
             // input below. Don't run a doomed OAuth discovery for them.

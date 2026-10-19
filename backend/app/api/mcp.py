@@ -10,7 +10,7 @@ from typing import Any
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
-from app.mcp.datasage_client import find_execute_sql_client
+from app.mcp.data_client_helper import find_execute_sql_client
 
 router = APIRouter(prefix="/mcp")
 

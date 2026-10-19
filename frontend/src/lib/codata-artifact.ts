@@ -40,7 +40,7 @@ export function hasCodataResult(metadata?: Record<string, unknown> | null): bool
   return typeof metadata.codata_kind === "string" && CODATA_KINDS.has(metadata.codata_kind);
 }
 
-/** Intermediate Datasage payloads are retained for traceability but hidden from the answer. */
+/** Intermediate data-client payloads are retained for traceability but hidden from the answer. */
 export function isTraceOnlyCodataResult(metadata?: Record<string, unknown> | null): boolean {
   return metadata?.visibility === "trace";
 }
