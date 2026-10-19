@@ -6,6 +6,8 @@
   <h3>本地优先的 Data Agent：自然语言查数、SQL、图表、看板和专家团分析工作流</h3>
 
   <p>
+    <a href="https://github.com/Mlilion/Codata/releases/latest"><b>⬇ 下载 Codata（Windows / macOS）</b></a>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="README.en.md">English</a>
   </p>
 
@@ -195,7 +197,16 @@ User
 ## 下载与文档
 
 - 桌面端下载（Windows / macOS）：https://github.com/Mlilion/Codata/releases/latest
+- 最新版本清单（JSON，含各平台安装包直链、大小和 SHA-256）：https://github.com/Mlilion/Codata/releases/latest/download/downloads-latest.json
 - 源码与版本发布：https://github.com/Mlilion/Codata
+
+下载页中包含以下安装包：
+
+| 平台 | 安装包 |
+| --- | --- |
+| Windows x64 | `Codata_<版本>_x64-setup.exe`（NSIS 安装程序） |
+| macOS Apple Silicon | `Codata_<版本>_arm64.dmg` |
+| macOS Intel | `Codata_<版本>_x64.dmg` |
 
 > 开源版默认关闭自动更新，请从 GitHub Releases 手动安装新版本。发布构建覆盖 Windows x64、macOS Apple Silicon 和 Intel；Linux 尚未完成发布验收。macOS 发布流程要求 Developer ID 正式签名、Apple 公证及票据装订，缺少凭据或验证失败会阻止发布；Windows 安装包尚未配置发行者签名，可能触发 SmartScreen 提示。维护者配置见[发布签名说明](CONTRIBUTING.md#macos-release-signing-and-notarization)。
 

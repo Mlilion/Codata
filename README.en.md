@@ -6,6 +6,8 @@
   <h3>Local-first Data Agent for natural-language analytics, SQL, charts, dashboards, and expert-team workflows</h3>
 
   <p>
+    <a href="https://github.com/Mlilion/Codata/releases/latest"><b>⬇ Download Codata (Windows / macOS)</b></a>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="README.md">简体中文</a>
   </p>
 
@@ -195,7 +197,16 @@ User
 ## Download & Docs
 
 - Desktop download (Windows / macOS): https://github.com/Mlilion/Codata/releases/latest
+- Latest release manifest (JSON with per-platform direct links, sizes, and SHA-256): https://github.com/Mlilion/Codata/releases/latest/download/downloads-latest.json
 - Source and releases: https://github.com/Mlilion/Codata
+
+The download page contains the following installers:
+
+| Platform | Installer |
+| --- | --- |
+| Windows x64 | `Codata_<version>_x64-setup.exe` (NSIS installer) |
+| macOS Apple Silicon | `Codata_<version>_arm64.dmg` |
+| macOS Intel | `Codata_<version>_x64.dmg` |
 
 > Automatic updates are disabled in the default open-source build. Install new
 > versions manually from GitHub Releases. Release builds target Windows x64 and
