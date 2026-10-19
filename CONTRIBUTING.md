@@ -12,7 +12,7 @@ Please keep contributions aligned with the open-source product boundary:
 ## Development Setup
 
 Follow the Windows PowerShell or macOS/Linux installation commands in
-[Quick Start](README.md#quick-start). Use the checked-in npm lockfiles (`npm ci`)
+[Quick Start](README.en.md#quick-start). Use the checked-in npm lockfiles (`npm ci`)
 and install the Python `dev` extra; add `build` for desktop packaging.
 
 Run the full development stack:
@@ -176,10 +176,59 @@ grant. A package being downloadable is not permission to redistribute it.
   downloads, and uninstall behavior without relying on maintainer-local state.
 - Inspect the installer for required licenses and notices. Record the actual
   packaged dependency versions, not only development version ranges.
-- Publish source, Windows, and macOS installers to `Mlilion/Codata`. Initial
-  macOS builds are ad-hoc signed, not notarized; state this in release notes.
-  The default
+- Publish source, Windows, and macOS installers to `Mlilion/Codata`. macOS apps
+  and DMGs must be Developer ID signed, notarized, and stapled. Windows installers
+  remain unsigned; state this in release notes. The default
   open-source build uses manual updates; do not enable automatic updates until
   maintainers control and verify the endpoint and signing keys.
 - Verify the private security-report mailbox is monitored. Do not publish
   support promises that the maintainers cannot meet.
+
+## macOS release signing and notarization
+
+Tag-triggered releases build natively for Apple Silicon and Intel. Both require
+the following repository **Actions secrets** (Settings > Secrets and variables >
+Actions). Secrets are not copied when a source folder or repository is copied;
+configure them in `Mlilion/Codata`. Do not store private keys or passwords in
+repository variables, source files, or public logs.
+
+| Secret | Value |
+| --- | --- |
+| `APPLE_CERTIFICATE` | Base64-encoded `.p12` containing the Developer ID Application certificate and its private key. |
+| `APPLE_CERTIFICATE_PASSWORD` | Password used when exporting the `.p12`. |
+| `APPLE_SIGNING_IDENTITY` | Full identity, such as `Developer ID Application: Your Name (TEAMID)`. |
+
+Export the certificate and private key from macOS Keychain Access. Obtain the
+identity with `security find-identity -v -p codesigning`. Encode the exported file
+with `openssl base64 -A -in DeveloperID.p12`; treat the output as a secret.
+
+Also configure **one** notarization credential set:
+
+| Apple ID method | Value |
+| --- | --- |
+| `APPLE_ID` | Apple Developer account email. |
+| `APPLE_PASSWORD` | App-specific password, not the account login password. |
+| `APPLE_TEAM_ID` | Developer team ID. |
+
+| App Store Connect API method | Value |
+| --- | --- |
+| `APPLE_API_ISSUER` | API issuer ID. |
+| `APPLE_API_KEY` | API key ID. |
+| `APPLE_API_KEY_PRIVATE_KEY` | Full contents of the matching `.p8` private key, including PEM headers and line breaks. |
+
+When both sets are complete, Apple ID credentials take precedence. The workflow
+writes the API private key to a temporary file and sets `APPLE_API_KEY_PATH`
+itself; do not configure a path to a maintainer's local file on a hosted runner.
+
+The workflow imports the certificate into a temporary keychain, signs bundled
+Python/Node native binaries and the app with hardened runtime and timestamps,
+submits the app to Apple, staples and validates its ticket, then packages, signs,
+notarizes, and staples the DMG. It checks notarization status explicitly and runs
+Gatekeeper assessments before uploading artifacts. Signing material is removed
+even when a build fails. Missing credentials or rejected notarization fail the
+release; there is no unsigned/ad-hoc fallback.
+
+Local development does not require these secrets. Automatic updater signing is
+separate and remains disabled. Real signing, Apple submission, and Gatekeeper
+validation require macOS and valid credentials; policy and mocked notarization
+tests alone do not prove an installer has passed these checks.

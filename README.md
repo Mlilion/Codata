@@ -3,128 +3,175 @@
 <div align="center">
   <img src="frontend/public/logo.svg" width="96" alt="Codata" />
 
-  <h3>Local-first Data Agent for natural-language analytics, SQL, charts, dashboards, and expert-team workflows</h3>
+  <h3>本地优先的 Data Agent：自然语言查数、SQL、图表、看板和专家团分析工作流</h3>
 
   <p>
-    <a href="README.zh-CN.md">简体中文</a>
+    <a href="README.en.md">English</a>
   </p>
 
-  <p><sub>Ask data questions. Inspect the SQL. Pin charts. Turn analysis into reusable work.</sub></p>
+  <p><sub>用自然语言问数据，看 SQL、看结果、出图表，并把有价值的分析沉淀到看板。</sub></p>
 </div>
 
-Codata is an open-source, local-first desktop Data Agent workspace. It connects a local desktop app, a Next.js interface, and a FastAPI agent backend so analysts and business teams can ask questions in natural language, let the agent discover tables and metric definitions, run SQL, render result cards, create charts, and pin useful outputs into dashboards.
+Codata 是一个开源、本地优先的桌面 Data Agent 工作区。它把本地桌面应用、Next.js 前端和 FastAPI Agent 后端组合在一起，让分析师和业务团队可以用自然语言提出数据问题，由 Agent 发现表和指标口径、生成或复用 SQL、执行查询、展示结果卡片、生成图表，并把有价值的结果钉到看板。
 
-The product is designed around a practical analytics loop:
+Codata 的产品主线是一条清晰的数据分析链路：
 
 ```text
-Ask a data question
-  -> discover tables / metrics
-  -> generate or reuse SQL
-  -> execute against the connected data platform
-  -> inspect results, SQL, and charts
-  -> pin charts to dashboards or escalate to an expert team
+提出数据问题
+  -> 发现表 / 字段 / 指标口径
+  -> 生成或复用 SQL
+  -> 在已连接的数据平台执行查询
+  -> 查看结果、SQL 和图表
+  -> 钉到看板，或交给专家团做深度分析
 ```
 
-## Highlights
+## 亮点
 
-- **Natural-language data analysis**: ask questions such as "compare paid conversion by channel" or "find the biggest drop this week".
-- **Data-source aware agent flow**: the Data Agent is prompted to inspect schemas, search registered metrics, avoid invented tables or columns, run SQL, and fix query errors.
-- **SQL result cards**: query results render as structured artifacts with table, SQL, and chart-ready metadata.
-- **Metric caliber discipline**: core business metrics should prefer registered indicator definitions; custom SQL caliber is made explicit when no verified metric exists.
-- **Dashboards**: pin chart results into named dashboards, rename items, reorder layouts, and refresh pinned SQL-backed cards.
-- **Expert teams for deeper analysis**: reusable multi-agent teams can split work across data discovery, SQL, attribution, visualization, and reporting specialists.
-- **Local-first desktop runtime**: conversations, settings, dashboards, memory, artifacts, and workflow metadata are stored locally by default.
-- **Bring your own models**: configure OpenAI-compatible providers, custom endpoints, direct provider adapters, or local Ollama models.
-- **Extensible tools and connectors**: MCP, skills, plugins, file tools, report generation, and desktop integrations are available where configured.
+- **自然语言数据分析**：直接问“按渠道对比付费转化率”或“找出本周最大异常下滑”。
+- **面向数据源的 Agent 流程**：Data Agent 会先检查 schema、搜索注册指标、避免臆造表字段、执行 SQL，并根据错误修复查询。
+- **SQL 结果卡片**：查询结果以结构化 artifact 展示，保留表格、SQL、字段、行数据和图表元数据。
+- **指标口径约束**：核心业务指标优先使用已注册指标定义；没有权威口径时，会显式标注为自定义口径。
+- **看板沉淀**：把图表结果钉到命名看板，支持重命名、布局调整、删除和基于原 SQL 刷新。
+- **专家团深度分析**：复杂问题可以交给多 Agent 专家团，拆分成数据发现、SQL、归因、可视化和报告交付等步骤。
+- **本地优先桌面运行时**：对话、设置、看板、记忆、artifact 和工作流元数据默认存储在本机。
+- **自带模型**：支持 OpenAI-compatible provider、自定义 endpoint、直接 provider adapter 或本地 Ollama。
+- **可扩展工具体系**：按配置启用 MCP、技能、插件、文件工具、报告生成和桌面集成能力。
+
+## 功能截图
+
+以下按功能分区展示，截图待补充。建议将图片放在 `docs/screenshots/`，使用下方约定的文件名，再将对应占位说明替换为图片：
+
+```markdown
+![数据分析工作区](docs/screenshots/workspace.png)
+```
+
+截图前请隐藏 API Key、访问令牌、个人信息和真实业务数据，使用演示数据展示。
+
+### 数据分析工作区
+
+自然语言提出问题，在同一工作区查看分析过程和回答。
+
+> 截图待补充：`docs/screenshots/workspace.png`
+
+### SQL、结果与图表
+
+展示查询结果卡片、SQL 查看、表格和图表，突出分析结果可检查。
+
+> 截图待补充：`docs/screenshots/sql-results.png`
+
+### 数据看板
+
+将有价值的图表钉到看板，集中查看、调整布局和刷新结果。
+
+> 截图待补充：`docs/screenshots/dashboards.png`
+
+### 专家团分析
+
+展示专家团配置、任务分工和执行过程，说明复杂分析如何协作完成。
+
+> 截图待补充：`docs/screenshots/expert-teams.png`
+
+### 文件与分析产物
+
+展示文件处理、生成报告，以及与对话并排的产物预览。
+
+> 截图待补充：`docs/screenshots/artifacts.png`
+
+### 模型、数据源与消息渠道
+
+展示用户自定义模型、MCP 数据源，以及飞书、钉钉等消息渠道配置入口。
+
+> 截图待补充：`docs/screenshots/integrations.png`
 
 <details>
-<summary><kbd>Table of Contents</kbd></summary>
+<summary><kbd>目录</kbd></summary>
 
-- [Data Agent Workflow](#data-agent-workflow)
-- [Core Capabilities](#core-capabilities)
-- [Dashboards and Artifacts](#dashboards-and-artifacts)
-- [Expert Teams](#expert-teams)
-- [Architecture](#architecture)
-- [Quick Start](#quick-start)
-- [Development Commands](#development-commands)
-- [Repository Layout](#repository-layout)
-- [Data Boundary](#data-boundary)
-- [Development Notes](#development-notes)
+- [Data Agent 工作流](#data-agent-工作流)
+- [核心能力](#核心能力)
+- [看板与产物](#看板与产物)
+- [专家团](#专家团)
+- [技术架构](#技术架构)
+- [功能截图](#功能截图)
+- [快速开始](#快速开始)
+- [开发命令](#开发命令)
+- [仓库结构](#仓库结构)
+- [数据边界](#数据边界)
+- [开发说明](#开发说明)
 
 </details>
 
-## Data Agent Workflow
+## Data Agent 工作流
 
-Codata is focused on data work rather than generic chat. In Codata mode, the assistant is expected to:
+Codata 不是通用聊天壳，而是围绕数据分析设计的桌面 Agent。在 Codata 模式下，助手应当：
 
-1. Understand the user's analytical intent.
-2. Discover available tables, fields, and metric definitions through the connected data platform.
-3. Prefer registered metric calculation rules for core business indicators.
-4. Write SQL only after schema and caliber are clear.
-5. Run the query through the data execution tool.
-6. Repair SQL when the data platform returns errors.
-7. Explain results with concrete numbers, caveats, and the SQL behind the answer.
-8. Produce charts, dashboards, or reports when the result should be reused.
+1. 理解用户的分析目标。
+2. 通过已连接的数据平台发现可用表、字段和指标定义。
+3. 核心业务指标优先使用注册指标的计算口径。
+4. 在 schema 和口径明确后再写 SQL。
+5. 通过数据执行工具运行查询。
+6. 根据数据平台返回的错误修复 SQL。
+7. 用具体数字、口径说明、限制和 SQL 解释结论。
+8. 在需要复用时生成图表、看板或报告。
 
-Connect your own MCP data source; no service endpoints or organization-specific connectors are preconfigured. The agent discovers the source's available schema and query tools. Registered metrics are preferred when available, but a semantic model is not required. The built-in `run_query` wrapper and SQL-based dashboard refresh require a compatible `execute_sql` result protocol (the existing Datasage adapter); other sources use their own MCP query tools and may not support automatic dashboard refresh. When no data source is connected, Codata asks you to connect one.
+请自行配置 MCP 数据源；项目不预置服务地址或组织专用连接器。Agent 会发现数据源实际提供的 schema 和查询工具；有注册指标时优先使用，但不要求必须存在语义模型。内置 `run_query` 和基于 SQL 的看板刷新需要兼容的 `execute_sql` 返回协议（现有 Datasage 适配器）；其他数据源使用自身 MCP 查询工具，可能不支持自动刷新看板。未连接数据源时，Codata 会引导用户先连接数据源。
 
-## Core Capabilities
+## 核心能力
 
-### Natural-language querying
+### 自然语言查数
 
-Users can describe the question in business language. Codata turns that request into a data workflow: schema inspection, metric lookup, SQL generation, execution, and explanation.
+用户用业务语言描述问题，Codata 将其转成数据分析流程：schema 检查、指标检索、SQL 生成、执行查询和结论解释。
 
-### SQL and result inspection
+### SQL 与结果可检查
 
-SQL-backed outputs are not hidden behind prose. Result cards preserve the query result, SQL text, columns, rows, and chart metadata so users can inspect how the answer was produced.
+SQL 结果不会被藏在一段文字后面。Codata 会保留查询结果、SQL、字段、行数据和图表元数据，方便用户确认答案从哪里来。
 
-### Metric and caliber awareness
+### 指标口径意识
 
-For core metrics such as DAU, GMV, conversion rate, retention, revenue, or cost, Codata is designed to look for registered indicator definitions before hand-writing SQL. If no registered metric exists, the answer should label the calculation as a custom caliber.
+对于 DAU、GMV、转化率、留存、收入、成本等核心指标，Codata 会优先查找注册指标定义。没有注册指标时，回答中应说明这是自定义口径，避免把未经验证的 SQL 当成权威指标。
 
-### Charts and dashboards
+### 图表和看板
 
-Codata can render chart-ready data artifacts and pin useful results into dashboards. Dashboard items store a snapshot of the SQL result and can refresh through the connected data execution path when possible.
+Codata 可以把查询结果渲染成图表卡片，并钉到看板。看板项会保存 SQL 结果快照，在数据源可用时可以沿原执行路径刷新。
 
-### Analysis memory
+### 分析记忆
 
-Codata stores structured analysis memory locally so recurring topics, metric preferences, and user conventions can inform later data sessions.
+Codata 会在本地保存结构化分析记忆，让常见主题、指标偏好和用户习惯能在后续数据会话中继续发挥作用。
 
-### Files and reports
+### 文件和报告
 
-The desktop runtime can read local files such as CSV, Excel, PDFs, documents, and workspace files. Data analysis can be turned into Markdown, HTML, office files, code artifacts, or dashboard panels depending on the selected workflow.
+桌面运行时可以读取 CSV、Excel、PDF、文档和工作区文件。数据分析结果可以根据工作流交付为 Markdown、HTML、办公文档、代码 artifact 或看板面板。
 
-## Dashboards and Artifacts
+## 看板与产物
 
-Codata separates daily analytical Q&A from reusable outputs:
+Codata 将日常探索和可复用产物分开：
 
-- **Inline result cards** are useful for one-off exploration.
-- **Pinned dashboard charts** are useful for repeat monitoring and comparison.
-- **Generated reports** are useful when an analysis needs to be shared or preserved as a snapshot.
-- **Artifact panels** make generated files, HTML, code, and previews visible alongside the conversation.
+- **内联结果卡片**：适合一次性探索和追问。
+- **看板图表**：适合长期监控、复盘和对比。
+- **生成报告**：适合把一次分析保存为可分享的静态快照。
+- **Artifact 面板**：让生成文件、HTML、代码和预览与对话并排展示。
 
-## Expert Teams
+## 专家团
 
-Expert teams are Codata's orchestration layer for complex analysis. A team is a structured configuration with members, tasks, dependencies, context policies, tools, and a finalization rule.
+专家团是 Codata 处理复杂分析的编排层。一个专家团是一份结构化配置，包含成员、任务、依赖、上下文策略、工具和最终交付规则。
 
-For data work, an expert team can divide a complex request into roles such as:
+在数据场景中，专家团可以把一个复杂问题拆给不同角色：
 
-- data discovery and schema inspection
-- metric caliber verification
-- SQL execution and correction
-- attribution or anomaly analysis
-- chart specification
-- report writing and final delivery
+- 数据发现与 schema 检查
+- 指标口径确认
+- SQL 执行与纠错
+- 归因分析或异常定位
+- 图表规格设计
+- 报告撰写与最终交付
 
-Codata supports three execution modes:
+Codata 支持三种执行模式：
 
-| Mode | Best for | How it works |
+| 模式 | 适合场景 | 工作方式 |
 | --- | --- | --- |
-| `sequential` | Linear analysis workflows | Runs tasks in order. |
-| `workflow` | Fixed dependency graphs | Builds a DAG and runs dependency-ready tasks. |
-| `hierarchical` | Open-ended investigations | A manager agent delegates work to specialists and synthesizes the final answer. |
+| `sequential` | 线性分析流程 | 按任务顺序执行。 |
+| `workflow` | 固定依赖图 | 构建 DAG，运行依赖已满足的任务。 |
+| `hierarchical` | 开放式复杂调查 | Manager Agent 委派专家并综合最终答案。 |
 
-## Architecture
+## 技术架构
 
 ```text
 User
@@ -134,35 +181,31 @@ User
   -> agent runtime, data tools, dashboards, expert teams, storage, providers, MCP
 ```
 
-- **Tauri desktop shell**: native packaging, desktop permissions, updater integration, bundled resources, and platform-specific behavior.
-- **Next.js frontend**: Codata workspace, chat, data result cards, dashboards, expert teams, artifacts, settings, plugins, and activity panels.
-- **FastAPI backend**: agent loop, resumable streaming, MCP tool integration, SQL execution wrapper, dashboard refresh, expert-team orchestration, file parsing, SQLite persistence, provider routing, and scheduled jobs.
+- **Tauri 桌面外壳**：原生打包、桌面权限、updater 集成、资源打包和平台相关行为。
+- **Next.js 前端**：Codata 工作区、聊天、数据结果卡、看板、专家团、artifact、设置、插件和活动面板。
+- **FastAPI 后端**：Agent loop、可恢复流式输出、MCP 工具集成、SQL 执行封装、看板刷新、专家团编排、文件解析、SQLite 持久化、provider 路由和定时任务。
 
-## Download & Docs
+## 下载与文档
 
-- Desktop download (Windows / macOS): https://github.com/Mlilion/Codata/releases/latest
-- Source and releases: https://github.com/Mlilion/Codata
+- 桌面端下载（Windows / macOS）：https://github.com/Mlilion/Codata/releases/latest
+- 源码与版本发布：https://github.com/Mlilion/Codata
 
-> Automatic updates are disabled in the default open-source build. Install new
-> versions manually from GitHub Releases. Release builds target Windows x64 and
-> macOS Apple Silicon / Intel; Linux is not release-validated. Initial installers
-> are not publisher-signed. macOS builds use ad-hoc signatures without Apple
-> notarization, so Gatekeeper may warn or block them.
+> 开源版默认关闭自动更新，请从 GitHub Releases 手动安装新版本。发布构建覆盖 Windows x64、macOS Apple Silicon 和 Intel；Linux 尚未完成发布验收。macOS 发布流程要求 Developer ID 正式签名、Apple 公证及票据装订，缺少凭据或验证失败会阻止发布；Windows 安装包尚未配置发行者签名，可能触发 SmartScreen 提示。维护者配置见[发布签名说明](CONTRIBUTING.md#macos-release-signing-and-notarization)。
 
-## Quick Start
+## 快速开始
 
-### Prerequisites
+### 环境要求
 
-- Node.js 20 or newer.
-- Python 3.12 or newer.
-- Rust and Cargo for Tauri desktop builds.
-- Platform-specific Tauri prerequisites for macOS, Windows, or Linux.
-- A configured model provider, OpenAI-compatible endpoint, custom endpoint, or local Ollama model.
-- A user-configured MCP data source for live database analysis.
+- Node.js 20 或更新版本。
+- Python 3.12 或更新版本。
+- Rust 和 Cargo，用于 Tauri 桌面构建。
+- macOS、Windows 或 Linux 对应的 Tauri 平台依赖。
+- 可用的模型 provider、OpenAI-compatible endpoint、自定义 endpoint 或本地 Ollama 模型。
+- 用户自行配置的 MCP 数据源，用于真实数据库分析。
 
-### Install dependencies
+### 安装依赖
 
-Windows PowerShell (Python 3.12, Node.js, and npm on PATH):
+Windows PowerShell（需已安装 Python 3.12、Node.js 和 npm）：
 
 ```powershell
 git clone https://github.com/Mlilion/Codata.git
@@ -174,7 +217,7 @@ py -3.12 -m venv backend\venv
 .\backend\venv\Scripts\python.exe -m pip install -e "./backend[dev,build]"
 ```
 
-macOS / Linux:
+macOS / Linux：
 
 ```bash
 git clone https://github.com/Mlilion/Codata.git
@@ -186,25 +229,19 @@ python3.12 -m venv backend/venv
 ./backend/venv/bin/python -m pip install -e "./backend[dev,build]"
 ```
 
-Python development dependencies use version ranges; release packaging uses
-`backend/requirements.txt`. For a release build, install that file into the build
-environment and retain the resolved dependency inventory. Do not assume a
-development install reproduces the release environment.
+开发依赖使用版本范围，发布打包使用 `backend/requirements.txt`。发布构建应在构建环境中安装该文件并保留实际解析的依赖清单，不应认为开发环境自动等同于发布环境。
 
-### Run the development stack
+### 启动开发栈
 
 ```bash
 npm run dev:all
 ```
 
-The frontend development server uses port `3000`. The backend development server uses port `8000`. Desktop development starts the Tauri shell against the local frontend and backend stack.
+前端开发服务器使用 `3000` 端口，后端开发服务器使用 `8000` 端口。桌面开发会启动 Tauri 外壳并连接本地前端和后端栈。
 
-Use `dev:all` for authenticated browser development; starting only the frontend
-does not create the shared development session token. You can inspect the UI
-without model credentials, but model calls require your own key or local model.
-Live data analysis requires your own MCP connection; no demo database is bundled.
+浏览器开发请使用 `dev:all`，单独启动前端不会生成前后端共享的开发会话令牌。不配置模型凭证也能查看界面，但模型调用需要用户自己的 Key 或本地模型；真实查数需要用户自己的 MCP 连接，项目不附带演示数据库。
 
-## Development Commands
+## 开发命令
 
 ```bash
 npm run dev:frontend
@@ -217,14 +254,9 @@ npm run sync:desktop-meta
 npm run build:desktop
 ```
 
-Before the first desktop development/build, run `npm run prepare:desktop-runtime`.
-It downloads the pinned Node.js runtime, including its license. Desktop builds
-also require the platform's Tauri system prerequisites, a working Rust toolchain,
-and the backend build extra (PyInstaller) installed above. `build:desktop` builds
-frontend/backend resources through Tauri's build hook. Local unsigned builds do
-not need release tokens or signing keys.
+首次桌面开发或构建前，运行 `npm run prepare:desktop-runtime` 下载固定版本的 Node.js 运行时及其许可证。桌面构建还需要平台对应的 Tauri 系统依赖、Rust 工具链和上述 build extra（PyInstaller）。`build:desktop` 会通过 Tauri 构建钩子生成前后端资源；本地未签名构建不需要发布令牌或签名密钥。
 
-Verification commands:
+验证命令：
 
 ```bash
 npm run verify:open-source-boundary
@@ -233,34 +265,30 @@ npm run verify:frontend-assets
 npm run preflight:ui
 ```
 
-The desktop release build expects the exported frontend in `frontend/out` and the bundled backend in `backend/dist/codata-backend`. Run `npm run sync:desktop-meta` before desktop builds so Tauri metadata matches the root package version.
+桌面发布构建依赖 `frontend/out` 中导出的前端静态资源，以及 `backend/dist/codata-backend` 中的后端 bundle。桌面构建前运行 `npm run sync:desktop-meta`，确保 Tauri metadata 与根 package 版本一致。
 
-## Repository Layout
+## 仓库结构
 
 ```text
-desktop-tauri/    Tauri v2 desktop shell and Rust integration
-frontend/         Next.js UI for Codata workspace, chat, dashboards, expert teams, settings, and artifacts
-backend/          FastAPI backend, agent runtime, data tools, expert orchestration, storage, and providers
-scripts/          Build, release, verification, signing, and version utilities
-design-system/    Product design references and visual assets
+desktop-tauri/    Tauri v2 桌面外壳与 Rust 集成
+frontend/         Next.js UI，包含 Codata 工作区、聊天、看板、专家团、设置和 artifact
+backend/          FastAPI 后端、Agent runtime、数据工具、专家编排、存储和 provider 层
+scripts/          构建、发布、验证、签名和版本工具
+design-system/    产品设计参考和视觉资产
 ```
 
-## Data Boundary
+## 数据边界
 
-Model providers and MCP connections are user-configured. There is no default model/API proxy; optionally set `CODATA_PROXY_URL` to your own HTTP proxy. No enterprise SSO connector or SAP browser integration is bundled. Existing user settings outside this source tree are not erased by this change; review saved connectors before reusing an older installation.
+模型供应商和 MCP 连接均由用户配置，不内置模型/API 默认代理；如有需要，可通过 `CODATA_PROXY_URL` 设置自己的 HTTP 代理。项目不再内置企业 SSO 连接器和 SAP 浏览器集成。本次源码清理不会擦除源码目录外的用户设置，复用旧安装前请检查已保存的连接器。
 
-Run `npm run audit:open-source-boundary:strict` before publishing. It checks the current source snapshot, including untracked files, without requiring Git metadata. It does not audit Git history, grant permission to publish employer-owned code, or replace a credentials/license review.
+发布前运行 `npm run audit:open-source-boundary:strict`。检查覆盖当前源码快照（包括未跟踪文件），无需 Git 元数据；不覆盖 Git 历史，也不代替公司代码发布授权、凭据和许可证审查。
 
-Codata stores conversations, dashboard state, generated artifacts, settings, memories, and workflow metadata locally by default. When users choose a cloud model or external connector, the relevant prompt context and payload are sent to that configured provider or connector.
+Codata 默认在本地存储对话、看板状态、生成产物、设置、记忆和工作流元数据。当用户选择云端模型或外部连接器时，相关 prompt 上下文和必要 payload 会发送给对应 provider 或 connector。
 
-For database work, Codata depends on the connected data platform and its permissions. Users are responsible for choosing provider routes, model access, data-source permissions, SQL safety rules, connector scopes, and deployment settings that fit their privacy and compliance requirements.
+数据库分析依赖用户已连接的数据平台及其权限。用户需要自行选择符合安全、隐私和合规要求的 provider 路径、模型访问方式、数据源权限、SQL 安全规则、连接器范围和部署设置。
 
-Local-first does not mean fully offline: cloud models, MCP tools, channels,
-catalogs/downloads, and some CDN-backed previews can use the network. See
-[Security Policy](SECURITY.md) for the data boundary and
-[Third-party notices](THIRD_PARTY_NOTICES.md) for redistribution requirements.
-PPTX files can be downloaded, but visual PPTX preview is not included.
+本地优先不等于完全离线：云模型、MCP 工具、消息渠道、目录与运行时下载，以及部分依赖 CDN 的预览会访问网络。数据边界见 [安全策略](SECURITY.md)，分发义务见 [第三方声明](THIRD_PARTY_NOTICES.md)。PPTX 文件可下载，但不提供可视化预览。
 
-## Development Notes
+## 开发说明
 
-See [Contributing](CONTRIBUTING.md) for the issue, review, and contribution process. Before merging, run the verification commands that match the area you changed, and pay special attention to data-source permissions, model-provider routing, SQL safety, and what context may leave the local machine. See [Security Policy](SECURITY.md) for security handling expectations.
+Issue、评审和贡献流程见 [贡献指南](CONTRIBUTING.md)。合并前请根据修改范围运行对应验证命令，并重点关注数据源权限、模型 provider 路由、SQL 安全规则，以及哪些上下文可能离开本机。安全处理要求见 [安全策略](SECURITY.md)。

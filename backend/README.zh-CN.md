@@ -22,7 +22,7 @@ python -m uvicorn app.main:create_app --factory --reload
 - API 文档：http://localhost:8000/docs
 - 健康检查：http://localhost:8000/health
 
-Windows 安装和带认证的浏览器开发请使用根目录的 [快速开始](../README.zh-CN.md#快速开始)，并运行 `npm run dev:all`。桌面打包还需要 Python `build` extra（PyInstaller），以及在根目录运行 `npm run prepare:desktop-runtime`。
+Windows 安装和带认证的浏览器开发请使用根目录的 [快速开始](../README.md#快速开始)，并运行 `npm run dev:all`。桌面打包还需要 Python `build` extra（PyInstaller），以及在根目录运行 `npm run prepare:desktop-runtime`。
 
 ## 架构
 

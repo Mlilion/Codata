@@ -28,7 +28,7 @@ test("release builds and validates desktop installers before publishing to the s
 });
 
 test("release workflow does not require updater signing or publish updater manifests", () => {
-  assert.doesNotMatch(workflow, /TAURI_SIGNING|\.exe\.sig|(?:^|[ /"])latest\.json|\/update\/latest\.json|signer sign|--key/);
+  assert.doesNotMatch(workflow, /TAURI_SIGNING|\.exe\.sig|(?:^|[ /"])latest\.json|\/update\/latest\.json|signer sign/);
   assert.match(workflow, /downloads-latest\.json/);
   assert.equal(tauriConfig.bundle.createUpdaterArtifacts, undefined);
   assert.equal("updater" in tauriConfig.plugins, false);
@@ -54,8 +54,31 @@ test("release workflow packages native macOS architectures and validates fronten
   assert.match(workflow, /fix-macos-pyinstaller-frameworks\.sh/);
   assert.match(workflow, /codesign --verify --deep --strict/);
   assert.match(workflow, /hdiutil verify/);
-  assert.match(workflow, /not notarized/);
-  assert.doesNotMatch(workflow, /APPLE_CERTIFICATE|APPLE_PASSWORD|APPLE_ID/);
+});
+
+test("macOS release requires Developer ID signing and notarizes both app and DMG", () => {
+  assert.match(workflow, /Require and import Apple signing credentials[\s\S]*?actions\/setup-python/);
+  for (const name of [
+    "APPLE_CERTIFICATE", "APPLE_CERTIFICATE_PASSWORD", "APPLE_SIGNING_IDENTITY",
+    "APPLE_ID", "APPLE_PASSWORD", "APPLE_TEAM_ID",
+    "APPLE_API_ISSUER", "APPLE_API_KEY", "APPLE_API_KEY_PRIVATE_KEY",
+  ]) {
+    assert.ok(workflow.includes(`secrets.${name}`), `missing secret binding: ${name}`);
+  }
+  assert.doesNotMatch(workflow, /vars\.APPLE_|signingIdentity":"-"|--sign -|--timestamp=none|ad-hoc/);
+  assert.match(workflow, /security import[\s\S]*?security set-key-partition-list/);
+  assert.match(workflow, /Sign macOS native dependencies[\s\S]*?Build macOS application/);
+  assert.match(workflow, /unset APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID/);
+  assert.match(workflow, /fix-macos-pyinstaller-frameworks\.sh[\s\S]*?sign-macos-bundle\.sh "\$app\/Contents\/Resources\/backend"[\s\S]*?sign-macos-bundle\.sh "\$app\/Contents\/Resources\/nodejs"/);
+  assert.match(workflow, /Notarize and staple macOS application[\s\S]*?notarize-macos\.sh "\$archive"[\s\S]*?stapler validate "\$app"[\s\S]*?spctl --assess --type execute/);
+  assert.match(workflow, /Package macOS DMG[\s\S]*?codesign --force --timestamp[\s\S]*?notarize-macos\.sh "\$dmg"[\s\S]*?stapler validate "\$dmg"[\s\S]*?spctl --assess --type open/);
+  assert.match(workflow, /Clean up Apple signing material\s+if: always\(\) && runner\.os == 'macOS'/);
+  assert.match(workflow, /security delete-keychain/);
+  const signingScript = fs.readFileSync("scripts/sign-macos-bundle.sh", "utf8");
+  assert.match(signingScript, /--options runtime --timestamp/);
+  assert.match(signingScript, /find "\$bundle_dir" -depth -type d/);
+  assert.match(workflow, /VERIFY_BUNDLE_SKIP_SMOKE: "1"/);
+  assert.match(ciWorkflow, /scripts\/notarize-macos\.test\.mjs/);
 });
 
 test("CI gates releases on strict open-source boundary and release policy tests", () => {

@@ -24,7 +24,7 @@ jobs:
         run: npm run audit:open-source-boundary:strict
 
       - name: Run release policy tests
-        run: node --test scripts/release-workflow.test.mjs scripts/generate-release-manifests.test.mjs scripts/open-source-licenses.test.mjs scripts/verify-bundle.test.mjs scripts/verify-release-site.test.mjs scripts/open-source-licenses.test.mjs
+        run: node --test scripts/release-workflow.test.mjs scripts/generate-release-manifests.test.mjs scripts/open-source-licenses.test.mjs scripts/verify-bundle.test.mjs scripts/verify-release-site.test.mjs scripts/notarize-macos.test.mjs
 
   backend:
     name: Backend Tests

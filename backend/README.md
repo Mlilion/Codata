@@ -23,7 +23,7 @@ After startup:
 - Health check: http://localhost:8000/health
 
 For Windows setup and authenticated browser development, use the root
-[Quick Start](../README.md#quick-start) and `npm run dev:all`.
+[Quick Start](../README.en.md#quick-start) and `npm run dev:all`.
 Desktop packaging additionally needs the Python `build` extra (PyInstaller)
 and `npm run prepare:desktop-runtime` from the repository root.
 

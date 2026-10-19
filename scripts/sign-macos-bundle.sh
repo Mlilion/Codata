@@ -54,6 +54,11 @@ sort -rn "$tmp_candidates" | cut -f2- | while IFS= read -r file_path; do
   codesign --verify --strict --verbose=2 "$file_path"
 done
 
+find "$bundle_dir" -depth -type d \( -name "*.framework" -o -name "*.app" -o -name "*.xpc" \) -print | while IFS= read -r container; do
+  codesign --force --options runtime --timestamp --sign "$identity" "$container"
+  codesign --verify --strict --verbose=2 "$container"
+done
+
 launcher="$bundle_dir/codata-backend"
 if [ -f "$launcher" ]; then
   codesign --verify --deep --strict --verbose=2 "$launcher"

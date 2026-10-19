@@ -19,7 +19,7 @@ jobs:
         run: |
           npm run verify:open-source-boundary
           npm run audit:open-source-boundary:strict
-          node --test scripts/release-workflow.test.mjs scripts/generate-release-manifests.test.mjs scripts/open-source-licenses.test.mjs scripts/verify-bundle.test.mjs
+          node --test scripts/release-workflow.test.mjs scripts/generate-release-manifests.test.mjs scripts/open-source-licenses.test.mjs scripts/verify-bundle.test.mjs scripts/notarize-macos.test.mjs
 
   build:
     name: Build ${{ matrix.platform }}
@@ -41,8 +41,56 @@ jobs:
             artifact: macos-x64-bundle
             architecture: x64
     runs-on: ${{ matrix.runner }}
+    env:
+      APPLE_SIGNING_IDENTITY: ${{ matrix.platform != 'windows' && secrets.APPLE_SIGNING_IDENTITY || '' }}
+      APPLE_ID: ${{ matrix.platform != 'windows' && secrets.APPLE_ID || '' }}
+      APPLE_PASSWORD: ${{ matrix.platform != 'windows' && secrets.APPLE_PASSWORD || '' }}
+      APPLE_TEAM_ID: ${{ matrix.platform != 'windows' && secrets.APPLE_TEAM_ID || '' }}
+      APPLE_API_ISSUER: ${{ matrix.platform != 'windows' && secrets.APPLE_API_ISSUER || '' }}
+      APPLE_API_KEY: ${{ matrix.platform != 'windows' && secrets.APPLE_API_KEY || '' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Require and import Apple signing credentials
+        if: runner.os == 'macOS'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_PRIVATE_KEY: ${{ secrets.APPLE_API_KEY_PRIVATE_KEY }}
+        run: |
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is required for signed macOS releases."
+              exit 1
+            fi
+          done
+          if [[ "$APPLE_SIGNING_IDENTITY" != "Developer ID Application: "* ]]; then
+            echo "::error::APPLE_SIGNING_IDENTITY must be a Developer ID Application identity."
+            exit 1
+          fi
+          if [ -n "$APPLE_ID" ] && [ -n "$APPLE_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            echo "Using Apple ID for notarization."
+          elif [ -n "$APPLE_API_ISSUER" ] && [ -n "$APPLE_API_KEY" ] && [ -n "$APPLE_API_KEY_PRIVATE_KEY" ]; then
+            api_key_path="$RUNNER_TEMP/codata-notary-key.p8"
+            printf '%s' "$APPLE_API_KEY_PRIVATE_KEY" > "$api_key_path"
+            chmod 600 "$api_key_path"
+            echo "APPLE_API_KEY_PATH=$api_key_path" >> "$GITHUB_ENV"
+          else
+            echo "::error::Set APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID or APPLE_API_ISSUER, APPLE_API_KEY, APPLE_API_KEY_PRIVATE_KEY for notarization."
+            exit 1
+          fi
+          certificate="$RUNNER_TEMP/codata-certificate.p12"
+          keychain="$RUNNER_TEMP/codata-signing.keychain-db"
+          keychain_password="$(uuidgen)"
+          echo "::add-mask::$keychain_password"
+          printf '%s' "$APPLE_CERTIFICATE" | base64 -D > "$certificate"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$certificate" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -k "$keychain"
+          security list-keychains -d user -s "$keychain" login.keychain-db
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain"
+          security find-identity -v -p codesigning "$keychain"
+          rm -f "$certificate"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -91,6 +139,11 @@ jobs:
           cd backend
           python scripts/download_node.py
           test -s resources/nodejs/LICENSE
+      - name: Sign macOS native dependencies
+        if: runner.os == 'macOS'
+        run: |
+          bash scripts/sign-macos-bundle.sh backend/dist/codata-backend "$APPLE_SIGNING_IDENTITY"
+          bash scripts/sign-macos-bundle.sh backend/resources/nodejs "$APPLE_SIGNING_IDENTITY" desktop-tauri/src-tauri/node.entitlements.plist
       - name: Build Windows installer
         if: runner.os == 'Windows'
         shell: bash
@@ -112,16 +165,36 @@ jobs:
       - name: Build macOS application
         if: runner.os == 'macOS'
         run: |
+          unset APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID
+          unset APPLE_API_ISSUER APPLE_API_KEY APPLE_API_KEY_PATH
           cd desktop-tauri
-          npx --no-install tauri build --bundles app --config '{"build":{"beforeBuildCommand":""},"bundle":{"macOS":{"signingIdentity":"-"}}}'
-      - name: Repair, ad-hoc sign, and verify macOS application
+          npx --no-install tauri build --bundles app --config '{"build":{"beforeBuildCommand":""}}'
+      - name: Repair, Developer ID sign, and verify macOS application
         if: runner.os == 'macOS'
         run: |
           app=desktop-tauri/src-tauri/target/release/bundle/macos/Codata.app
           bash scripts/fix-macos-pyinstaller-frameworks.sh "$app/Contents/Resources/backend"
-          codesign --force --deep --sign - --timestamp=none \
-            --entitlements desktop-tauri/src-tauri/node.entitlements.plist "$app"
+          bash scripts/sign-macos-bundle.sh "$app/Contents/Resources/backend" "$APPLE_SIGNING_IDENTITY"
+          bash scripts/sign-macos-bundle.sh "$app/Contents/Resources/nodejs" "$APPLE_SIGNING_IDENTITY" desktop-tauri/src-tauri/node.entitlements.plist
+          codesign --force --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$app/Contents/MacOS/codata"
+          codesign --force --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
+      - name: Notarize and staple macOS application
+        if: runner.os == 'macOS'
+        run: |
+          app=desktop-tauri/src-tauri/target/release/bundle/macos/Codata.app
+          archive="$RUNNER_TEMP/Codata-notarize.zip"
+          ditto -c -k --keepParent "$app" "$archive"
+          bash scripts/notarize-macos.sh "$archive"
+          xcrun stapler staple "$app"
+          xcrun stapler validate "$app"
+          spctl --assess --type execute --verbose=4 "$app"
+      - name: Verify backend inside signed application
+        if: runner.os == 'macOS'
+        env:
+          VERIFY_BUNDLE_SKIP_SMOKE: "1"
+        run: |
+          app=desktop-tauri/src-tauri/target/release/bundle/macos/Codata.app
           node scripts/verify-bundle.mjs "$app/Contents/Resources/backend"
       - name: Package macOS DMG
         if: runner.os == 'macOS'
@@ -137,6 +210,20 @@ jobs:
           dmg="artifacts/$ARTIFACT_DIRECTORY/Codata_${GITHUB_REF_NAME#v}_${PACKAGE_ARCHITECTURE}.dmg"
           hdiutil create -volname Codata -srcfolder "$staging" -ov -format UDZO "$dmg"
           hdiutil verify "$dmg"
+          codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$dmg"
+          bash scripts/notarize-macos.sh "$dmg"
+          xcrun stapler staple "$dmg"
+          xcrun stapler validate "$dmg"
+          codesign --verify --strict --verbose=2 "$dmg"
+          spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
+      - name: Clean up Apple signing material
+        if: always() && runner.os == 'macOS'
+        run: |
+          keychain="$RUNNER_TEMP/codata-signing.keychain-db"
+          if [ -f "$keychain" ]; then
+            security delete-keychain "$keychain"
+          fi
+          rm -f "$RUNNER_TEMP/codata-certificate.p12" "$RUNNER_TEMP/codata-notary-key.p8"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
@@ -178,8 +265,8 @@ jobs:
           Initial open-source release of Codata.
 
           Downloads: Windows x64, macOS Apple Silicon, and macOS Intel.
-          These initial installers are not publisher-signed; macOS apps use an
-          ad-hoc signature and are not notarized. Gatekeeper/SmartScreen may warn.
+          macOS applications and DMGs are Developer ID signed, notarized by Apple,
+          and stapled. The Windows installer is unsigned; SmartScreen may warn.
           Only install artifacts from this repository if you trust the project.
           Automatic updates are disabled; install subsequent releases manually.
           Model providers, keys, and MCP data sources must be configured by users.
