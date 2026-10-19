@@ -16,6 +16,8 @@ block_cipher = None
 
 # Collect packages that PyInstaller sometimes misses
 uvicorn_datas, uvicorn_binaries, uvicorn_hiddenimports = collect_all('uvicorn')
+# Keep an extracted package even when the platform wheel has no C extensions.
+sqlalchemy_datas, sqlalchemy_binaries, sqlalchemy_hiddenimports = collect_all('sqlalchemy', include_py_files=True)
 wcmatch_datas, wcmatch_binaries, wcmatch_hiddenimports = collect_all('wcmatch')
 croniter_datas, croniter_binaries, croniter_hiddenimports = collect_all('croniter')
 dingtalk_stream_datas, dingtalk_stream_binaries, dingtalk_stream_hiddenimports = collect_all('dingtalk_stream')
@@ -246,6 +248,7 @@ a = Analysis(
     pathex=[backend_dir],
     binaries=(
         uvicorn_binaries
+        + sqlalchemy_binaries
         + wcmatch_binaries
         + croniter_binaries
         + dingtalk_stream_binaries
@@ -257,6 +260,7 @@ a = Analysis(
     datas=(
         datas
         + uvicorn_datas
+        + sqlalchemy_datas
         + wcmatch_datas
         + croniter_datas
         + dingtalk_stream_datas
@@ -268,6 +272,7 @@ a = Analysis(
     hiddenimports=(
         hiddenimports
         + uvicorn_hiddenimports
+        + sqlalchemy_hiddenimports
         + wcmatch_hiddenimports
         + croniter_hiddenimports
         + dingtalk_stream_hiddenimports

@@ -32,3 +32,18 @@ test("verify-bundle finds at least one expert preset to require", () => {
   // guard vacuous. Ensure it actually found presets.
   assert.ok(sourcePresetFiles().length > 0, "expected at least one preset yaml");
 });
+
+test("backend spec collects SQLAlchemy source, binaries, and hidden imports on every platform", () => {
+  const spec = fs.readFileSync(path.join(repoRoot, "backend", "codata.spec"), "utf8");
+  assert.match(
+    spec,
+    /sqlalchemy_datas,\s*sqlalchemy_binaries,\s*sqlalchemy_hiddenimports\s*=\s*collect_all\('sqlalchemy',\s*include_py_files=True\)/,
+  );
+  for (const [argument, collected] of [
+    ["datas", "sqlalchemy_datas"],
+    ["binaries", "sqlalchemy_binaries"],
+    ["hiddenimports", "sqlalchemy_hiddenimports"],
+  ]) {
+    assert.match(spec, new RegExp(`${argument}=\\([^)]*\\+ ${collected}\\b`));
+  }
+});

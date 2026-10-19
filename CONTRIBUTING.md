@@ -176,6 +176,9 @@ grant. A package being downloadable is not permission to redistribute it.
   downloads, and uninstall behavior without relying on maintainer-local state.
 - Inspect the installer for required licenses and notices. Record the actual
   packaged dependency versions, not only development version ranges.
+- Keep SQLAlchemy explicitly collected in `backend/codata.spec`, including its
+  Python files: platform wheels may omit C extensions, but the bundle verifier
+  requires an extracted package directory on every platform.
 - Publish source, Windows, and macOS installers to `Mlilion/Codata`. macOS apps
   and DMGs must be Developer ID signed, notarized, and stapled. Windows installers
   remain unsigned; state this in release notes. The default

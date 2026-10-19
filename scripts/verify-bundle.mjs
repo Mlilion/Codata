@@ -162,7 +162,7 @@ const required = [
   {
     kind: "nonempty-dir",
     path: join(internal, "sqlalchemy"),
-    why: "ORM — has C extensions",
+    why: "ORM — explicitly extracted by collect_all, including pure-Python wheels",
   },
   {
     kind: "nonempty-dir",
