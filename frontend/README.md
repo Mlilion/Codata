@@ -368,7 +368,7 @@ Routes message parts to their corresponding renderer by `PartData.type`:
 | markdown | Markdown rendering |
 | mermaid | Diagram rendering (flowcharts, sequence, etc.) |
 | svg | SVG graphics preview |
-| react | Live React component preview |
+| react | Live React component preview (runtime CDN dependencies: React 19, Babel standalone, Tailwind Play CDN — no SRI due to dynamic content; use compiled builds for production) |
 | csv | CSV table rendering (PapaParse) |
 | xlsx | Excel spreadsheet preview |
 | pdf | PDF document preview (react-pdf) |

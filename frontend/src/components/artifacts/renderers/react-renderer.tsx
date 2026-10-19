@@ -17,9 +17,9 @@ function buildSrcDoc(code: string): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://unpkg.com/react@19/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/react@19/umd/react.production.min.js" crossorigin integrity="sha384-Tl3t3SCAMaPUKYBzbfVIOQg3ZeUks/HGjHTDPAMXpBa5D2SkDrnoe9hVlDWSOOoz"></script>
+  <script src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js" crossorigin integrity="sha384-hbtwOs6yMFnhuHyseaqkg1kYk6rW6+lW42O8owe5Qn5xQeBK1nyZnS9yFF5H+b0j"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin integrity="sha384-oO1UkcqdSTjrtWIjKpx1K6eE5I0WAXPWoezFn46CIHNoN6+CGVMK+GNSaDdkJ+u5"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }

@@ -24,8 +24,9 @@ function getDomain(url: string): string {
 
 function getFavicon(url: string): string {
   try {
-    const domain = new URL(url).hostname;
-    return `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
+    const urlObj = new URL(url);
+    // Use the site's own favicon to avoid sending domains to third parties
+    return `${urlObj.protocol}//${urlObj.hostname}/favicon.ico`;
   } catch {
     return "";
   }
