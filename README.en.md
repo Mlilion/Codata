@@ -39,52 +39,49 @@ Ask a data question
 
 ## Screenshots
 
-Screenshots will be added by feature area below. Store images in
-`docs/screenshots/` using the suggested filenames, then replace each placeholder
-with an image:
+### Workspace
 
-```markdown
-![Data analysis workspace](docs/screenshots/workspace.png)
-```
+Local-first desktop workspace: dashboards, expert teams, skills, knowledge base, and recent analyses on the left; ask a data question in the center.
 
-Hide API keys, access tokens, personal information, and real business data before
-capturing screenshots. Use demo data.
+![Workspace](docs/screenshots/workspace.png)
 
-### Data analysis workspace
+### Natural-language analysis: results, charts, and SQL
 
-Ask questions in natural language and inspect the analysis and answers in one workspace.
+One question returns a result card, chart, and inspectable SQL. Results carry a caliber badge and can be pinned to a dashboard.
 
-> Screenshot coming soon: `docs/screenshots/workspace.png`
-
-### SQL, results, and charts
-
-Show query result cards, SQL inspection, tables, and charts to demonstrate inspectable analysis.
-
-> Screenshot coming soon: `docs/screenshots/sql-results.png`
+![Query results and charts](docs/screenshots/sql-results.png)
 
 ### Dashboards
 
-Pin useful charts, organize layouts, and refresh results in a shared dashboard view.
+Pin useful charts into named dashboards, arrange the layout, and refresh them from the original SQL.
 
-> Screenshot coming soon: `docs/screenshots/dashboards.png`
+![Dashboards](docs/screenshots/dashboards.png)
 
-### Expert team analysis
+### Expert teams
 
-Show team configuration, task delegation, and execution progress for complex analysis.
+Reuse multi-expert workflows per analysis scenario and inspect members, tasks, dependencies, and execution order.
 
-> Screenshot coming soon: `docs/screenshots/expert-teams.png`
+![Expert teams](docs/screenshots/expert-teams.png)
 
-### Files and artifacts
+### Skills
 
-Show file handling, generated reports, and artifact previews alongside the conversation.
+Built-in skills cover attribution analysis, charting, data reports, Excel handling, and more. Enable them individually, or capture your team's own analysis method as a new skill.
 
-> Screenshot coming soon: `docs/screenshots/artifacts.png`
+![Skills](docs/screenshots/skills.png)
 
-### Models, data sources, and channels
+### Knowledge base
 
-Show user-configured models, MCP data sources, and channel settings such as Feishu and DingTalk.
+Add documents and local files to the knowledge base so analyses can cite them as authoritative background.
 
-> Screenshot coming soon: `docs/screenshots/integrations.png`
+![Knowledge base](docs/screenshots/knowledge-base.png)
+
+### Message channels
+
+Connect Codata to Feishu, DingTalk, WeCom, and WeChat to use analysis directly from chat.
+
+![Message channels](docs/screenshots/channels.png)
+
+> Business data and names in the screenshots have been blurred. The current release may differ slightly.
 
 <details>
 <summary><kbd>Table of Contents</kbd></summary>

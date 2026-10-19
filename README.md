@@ -39,49 +39,49 @@ Codata 的产品主线是一条清晰的数据分析链路：
 
 ## 功能截图
 
-以下按功能分区展示，截图待补充。建议将图片放在 `docs/screenshots/`，使用下方约定的文件名，再将对应占位说明替换为图片：
+### 产品主界面
 
-```markdown
-![数据分析工作区](docs/screenshots/workspace.png)
-```
+本地优先的桌面工作区：左侧集中看板、专家团、技能、知识库和最近分析，中间直接提出数据问题。
 
-截图前请隐藏 API Key、访问令牌、个人信息和真实业务数据，使用演示数据展示。
+![产品主界面](docs/screenshots/workspace.png)
 
-### 数据分析工作区
+### 自然语言问数：结果、图表与 SQL
 
-自然语言提出问题，在同一工作区查看分析过程和回答。
+一次提问即可得到查询结果卡片、图表和可展开的 SQL；结果带口径标记，可继续追问或钉到看板。
 
-> 截图待补充：`docs/screenshots/workspace.png`
-
-### SQL、结果与图表
-
-展示查询结果卡片、SQL 查看、表格和图表，突出分析结果可检查。
-
-> 截图待补充：`docs/screenshots/sql-results.png`
+![自然语言问数与分析结果](docs/screenshots/sql-results.png)
 
 ### 数据看板
 
-将有价值的图表钉到看板，集中查看、调整布局和刷新结果。
+把有价值的图表钉到命名看板，按布局排列，并随时沿原 SQL 刷新。
 
-> 截图待补充：`docs/screenshots/dashboards.png`
+![数据看板](docs/screenshots/dashboards.png)
 
 ### 专家团分析
 
-展示专家团配置、任务分工和执行过程，说明复杂分析如何协作完成。
+按分析场景复用多专家协作流程，查看成员、任务、依赖关系和协作顺序。
 
-> 截图待补充：`docs/screenshots/expert-teams.png`
+![专家团](docs/screenshots/expert-teams.png)
 
-### 文件与分析产物
+### 技能
 
-展示文件处理、生成报告，以及与对话并排的产物预览。
+内置技能覆盖归因分析、图表、数据报告、Excel 处理等场景，可逐项启用，也可以把团队的分析方法沉淀成新技能。
 
-> 截图待补充：`docs/screenshots/artifacts.png`
+![技能](docs/screenshots/skills.png)
 
-### 模型、数据源与消息渠道
+### 知识库
 
-展示用户自定义模型、MCP 数据源，以及飞书、钉钉等消息渠道配置入口。
+把文档和本地资料加入知识库，分析时作为权威背景引用。
 
-> 截图待补充：`docs/screenshots/integrations.png`
+![知识库](docs/screenshots/knowledge-base.png)
+
+### 消息渠道
+
+将 Codata 连接到飞书、钉钉、企业微信和微信，在聊天中直接使用分析能力。
+
+![消息渠道](docs/screenshots/channels.png)
+
+> 截图中的业务数据与名称已做模糊处理，实际界面以当前版本为准。
 
 <details>
 <summary><kbd>目录</kbd></summary>

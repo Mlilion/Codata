@@ -90,10 +90,10 @@
 **评估：** 已在 `THIRD_PARTY_NOTICES.md:16-18` 中标注"icons, and visual assets also need provenance checks"和商标需单独确认。  
 **决策：** 属于维护者的商标使用决策，notice 已诚实披露
 
-### 10. **文档占位符：README 截图**
-**位置：** `README.md:42-84`, `README.en.md`  
-**评估：** 6 个 `docs/screenshots/*.png` 引用已明确标记"截图待补充"和脱敏指引。这是诚实的占位符，不是遗漏。  
-**状态：** 可按原样发布，截图后续补充
+### 10. **文档：README 产品截图**
+**位置：** `docs/screenshots/*.png`, `README.md`, `README.en.md`  
+**评估：** 已补充 7 张产品截图（工作区、问数结果、看板、专家团、技能、知识库、消息渠道），截图中的业务数据与名称已做模糊处理，README 中已标注脱敏说明。  
+**状态：** 已完成
 
 ---
 
@@ -135,7 +135,7 @@ npm run audit:open-source-boundary:strict  # 严格审计
 
 1. **必须：** 确认 `data-client` 是可接受的公开适配器名称（#8）
 2. **可选：** 确认维护者对 LLM 品牌图标的立场（#9，notice 已标记）
-3. **可选：** 补充 README 截图（#10，已标记"待补充"）
+3. **已完成：** README 产品截图（#10）
 4. **验证：** 运行 `npm run audit:open-source-boundary:strict` 最终检查
 
 ---
