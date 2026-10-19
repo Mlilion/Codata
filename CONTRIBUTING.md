@@ -179,6 +179,10 @@ grant. A package being downloadable is not permission to redistribute it.
 - Keep SQLAlchemy explicitly collected in `backend/codata.spec`, including its
   Python files: platform wheels may omit C extensions, but the bundle verifier
   requires an extracted package directory on every platform.
+- The dependency manifests pin Intel macOS to `cryptography==48.0.1`: newer
+  releases lack x86_64 wheels, causing source-built OpenSSL to conflict with
+  PyInstaller's collected `libssl`. Keep the release-time version assertion and
+  backend smoke test when changing this workaround.
 - Publish source, Windows, and macOS installers to `Mlilion/Codata`. macOS apps
   and DMGs must be Developer ID signed, notarized, and stapled. Windows installers
   remain unsigned; state this in release notes. The default

@@ -42,6 +42,9 @@ pyyaml==6.0.3
 # (app/mcp/client.py), so cap below the breaking major.
 mcp>=1.25.0,<2
 cryptography>=42.0.0
+# cryptography 49+ has no x86_64 macOS wheel; a source build links Homebrew
+# OpenSSL, which conflicts with the older libssl collected by PyInstaller.
+cryptography==48.0.1; sys_platform == "darwin" and platform_machine == "x86_64"
 truststore>=0.10.0
 croniter>=2.0.0
 wcmatch>=10.0

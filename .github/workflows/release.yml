@@ -129,6 +129,10 @@ jobs:
         run: |
           cd backend
           python -m pip install -r requirements.txt pyinstaller
+          if [[ "${{ matrix.platform }}" == "macos-x86_64" ]]; then
+            python -m pip install --force-reinstall --no-deps --only-binary=:all: "cryptography==48.0.1"
+            python -c "import cryptography; assert cryptography.__version__ == '48.0.1', f'Intel macOS build requires cryptography 48.0.1, got {cryptography.__version__}'"
+          fi
           python -m PyInstaller codata.spec --noconfirm
       - name: Verify backend bundle
         shell: bash

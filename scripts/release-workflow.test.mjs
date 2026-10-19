@@ -7,6 +7,8 @@ const workflow = fs.readFileSync(".github/workflows/release.yml", "utf8").replac
 const ciWorkflow = fs.readFileSync(".github/workflows/ci.yml", "utf8").replace(/\r\n/g, "\n");
 const tauriConfig = JSON.parse(fs.readFileSync("desktop-tauri/src-tauri/tauri.conf.json", "utf8"));
 const pyinstallerSpec = fs.readFileSync("backend/codata.spec", "utf8");
+const backendRequirements = fs.readFileSync("backend/requirements.txt", "utf8");
+const backendPyproject = fs.readFileSync("backend/pyproject.toml", "utf8");
 const verifyBundleScript = fs.readFileSync("scripts/verify-bundle.mjs", "utf8");
 const nodeDownloadScript = fs.readFileSync("backend/scripts/download_node.py", "utf8");
 const updateHook = fs.readFileSync("frontend/src/hooks/use-update-check.ts", "utf8");
@@ -79,6 +81,22 @@ test("macOS release requires Developer ID signing and notarizes both app and DMG
   assert.match(signingScript, /find "\$bundle_dir" -depth -type d/);
   assert.match(workflow, /VERIFY_BUNDLE_SKIP_SMOKE: "1"/);
   assert.match(ciWorkflow, /scripts\/notarize-macos\.test\.mjs/);
+});
+
+test("Intel macOS freezes cryptography from a compatible universal2 wheel", () => {
+  assert.match(
+    backendRequirements,
+    /cryptography==48\.0\.1;\s*sys_platform\s*==\s*"darwin"\s+and\s+platform_machine\s*==\s*"x86_64"/,
+  );
+  assert.match(
+    backendPyproject,
+    /cryptography==48\.0\.1;\s*sys_platform\s*==\s*'darwin'\s+and\s+platform_machine\s*==\s*'x86_64'/,
+  );
+  assert.match(
+    workflow,
+    /"\$\{\{ matrix\.platform \}\}" == "macos-x86_64"[\s\S]*?--force-reinstall --no-deps --only-binary=:all: "cryptography==48\.0\.1"[\s\S]*?cryptography\.__version__ == '48\.0\.1'[\s\S]*?PyInstaller codata\.spec/,
+  );
+  assert.match(verifyBundleScript, /smoke: launching/);
 });
 
 test("CI gates releases on strict open-source boundary and release policy tests", () => {
