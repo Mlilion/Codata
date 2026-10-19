@@ -19,7 +19,7 @@ jobs:
         run: |
           npm run verify:open-source-boundary
           npm run audit:open-source-boundary:strict
-          node --test scripts/release-workflow.test.mjs scripts/generate-release-manifests.test.mjs scripts/open-source-licenses.test.mjs scripts/verify-bundle.test.mjs scripts/notarize-macos.test.mjs
+          node --test scripts/release-workflow.test.mjs scripts/generate-release-manifests.test.mjs scripts/open-source-licenses.test.mjs scripts/verify-bundle.test.mjs scripts/notarize-macos.test.mjs scripts/validate-macos-staple.test.mjs
 
   build:
     name: Build ${{ matrix.platform }}
@@ -191,7 +191,7 @@ jobs:
           ditto -c -k --keepParent "$app" "$archive"
           bash scripts/notarize-macos.sh "$archive"
           xcrun stapler staple "$app"
-          xcrun stapler validate "$app"
+          bash scripts/validate-macos-staple.sh "$app"
           spctl --assess --type execute --verbose=4 "$app"
       - name: Verify backend inside signed application
         if: runner.os == 'macOS'
@@ -217,7 +217,7 @@ jobs:
           codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$dmg"
           bash scripts/notarize-macos.sh "$dmg"
           xcrun stapler staple "$dmg"
-          xcrun stapler validate "$dmg"
+          bash scripts/validate-macos-staple.sh "$dmg"
           codesign --verify --strict --verbose=2 "$dmg"
           spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
       - name: Clean up Apple signing material
