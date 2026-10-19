@@ -91,6 +91,7 @@ Connect Codata to Feishu, DingTalk, WeCom, and WeChat to use analysis directly f
 - [Dashboards and Artifacts](#dashboards-and-artifacts)
 - [Expert Teams](#expert-teams)
 - [Architecture](#architecture)
+- [Companion Projects](#companion-projects)
 - [Screenshots](#screenshots)
 - [Quick Start](#quick-start)
 - [Development Commands](#development-commands)
@@ -185,6 +186,11 @@ User
 - **Tauri desktop shell**: native packaging, desktop permissions, updater integration, bundled resources, and platform-specific behavior.
 - **Next.js frontend**: Codata workspace, chat, data result cards, dashboards, expert teams, artifacts, settings, plugins, and activity panels.
 - **FastAPI backend**: agent loop, resumable streaming, MCP tool integration, SQL execution wrapper, dashboard refresh, expert-team orchestration, file parsing, SQLite persistence, provider routing, and scheduled jobs.
+
+## Companion Projects
+
+- **Semantic model admin**: a companion semantic governance and admin platform for maintaining business domains, entities, semantic fields, semantic models, joins, metrics, dimensions, and the knowledge base, with trusted querying exposed through an MCP server. Once Codata connects to its MCP server, analyses can use the published semantic models and metric definitions directly.
+  - Repository: https://github.com/Mlilion/CodataAdmin
 
 ## Download & Docs
 

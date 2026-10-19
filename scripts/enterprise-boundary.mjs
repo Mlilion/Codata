@@ -18,7 +18,9 @@ const forbiddenContent = [
   /TEMP_ZSE_|MDDX-|KaonRouter|kaon\//i,
   /公司默认|公司 Atlassian/,
   /\b10\.155\.100\.91\b/,
-  /\bCodataAdmin\b/,
+  // The public companion repository URL is allowed; any other reference to the
+  // old internal admin name stays blocked.
+  /(?<!github\.com\/Mlilion\/)\bCodataAdmin\b/,
 ];
 
 export function enterpriseFindings(root = process.cwd()) {
