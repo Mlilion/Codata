@@ -8,10 +8,24 @@
   <p>
     <a href="https://github.com/Mlilion/Codata/releases/latest"><b>⬇ Download Codata (Windows / macOS)</b></a>
     &nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="#community"><b>Online demo · Join via WeChat</b></a>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="https://github.com/Mlilion/CodataAdmin"><b>CodataAdmin: Semantic Model Admin</b></a>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="README.md">简体中文</a>
   </p>
 
   <p><sub>Ask data questions. Inspect the SQL. Pin charts. Turn analysis into reusable work.</sub></p>
+
+  <p>
+    <img src="docs/screenshots/codata-film-1280.gif" width="960" alt="Codata product demo: natural-language analytics, SQL, charts, dashboards, and expert teams" />
+  </p>
+
+  <p><b>Try the online demo: scan with WeChat to join the group</b></p>
+  <p>
+    <img src="docs/community/wechat-group.jpg" width="200" alt="Scan with WeChat to join the Codata group and get online demo access details" />
+  </p>
+  <p><sub>QR code expired? Visit the <a href="#community">Community</a> section to add the maintainer and join.</sub></p>
 </div>
 
 Codata is an open-source, local-first desktop Data Agent workspace. It connects a local desktop app, a Next.js interface, and a FastAPI agent backend so analysts and business teams can ask questions in natural language, let the agent discover tables and metric definitions, run SQL, render result cards, create charts, and pin useful outputs into dashboards.
@@ -191,8 +205,7 @@ User
 
 ## Companion Projects
 
-- **Semantic model admin**: a companion semantic governance and admin platform for maintaining business domains, entities, semantic fields, semantic models, joins, metrics, dimensions, and the knowledge base, with trusted querying exposed through an MCP server. Once Codata connects to its MCP server, analyses can use the published semantic models and metric definitions directly.
-  - Repository: https://github.com/Mlilion/CodataAdmin
+- **[CodataAdmin: Semantic Model Admin](https://github.com/Mlilion/CodataAdmin)**: a companion semantic governance and admin platform for maintaining business domains, entities, semantic fields, semantic models, joins, metrics, dimensions, and the knowledge base, with trusted querying exposed through an MCP server. Once Codata connects to its MCP server, analyses can use the published semantic models and metric definitions directly.
 
 ## Download & Docs
 
@@ -330,7 +343,7 @@ PPTX files can be downloaded, but visual PPTX preview is not included.
 
 ## Community
 
-Join the Codata user group to ask questions, share analytics workflows, and suggest features. The group is hosted on WeChat and is primarily Chinese-speaking.
+Join the Codata user group for online demo access details, questions, analytics workflows, and feature suggestions. The group is hosted on WeChat and is primarily Chinese-speaking.
 
 <table>
   <tr>

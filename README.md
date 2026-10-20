@@ -8,10 +8,24 @@
   <p>
     <a href="https://github.com/Mlilion/Codata/releases/latest"><b>⬇ 下载 Codata（Windows / macOS）</b></a>
     &nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="#社群与交流"><b>在线 Demo 体验 · 扫码进群</b></a>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="https://github.com/Mlilion/CodataAdmin"><b>语义模型后台 CodataAdmin</b></a>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="README.en.md">English</a>
   </p>
 
   <p><sub>用自然语言问数据，看 SQL、看结果、出图表，并把有价值的分析沉淀到看板。</sub></p>
+
+  <p>
+    <img src="docs/screenshots/codata-film-1280.gif" width="960" alt="Codata 产品介绍：自然语言问数、SQL、图表、看板和专家团分析演示" />
+  </p>
+
+  <p><b>在线 Demo 体验，微信扫码进群</b></p>
+  <p>
+    <img src="docs/community/wechat-group.jpg" width="200" alt="微信扫码加入 Codata 交流群，获取在线 Demo 体验方式" />
+  </p>
+  <p><sub>二维码失效？前往<a href="#社群与交流">社群与交流</a>添加维护者微信进群。</sub></p>
 </div>
 
 Codata 是一个开源、本地优先的桌面 Data Agent 工作区。它把本地桌面应用、Next.js 前端和 FastAPI Agent 后端组合在一起，让分析师和业务团队可以用自然语言提出数据问题，由 Agent 发现表和指标口径、生成或复用 SQL、执行查询、展示结果卡片、生成图表，并把有价值的结果钉到看板。
@@ -191,8 +205,7 @@ User
 
 ## 配套项目
 
-- **语义模型管理端**：配套的语义治理与管理平台，用于维护业务域、业务实体、语义字段、语义模型、JOIN、指标、维度和知识库，并通过 MCP Server 提供可信取数能力。Codata 连接其 MCP Server 后，可直接使用已发布的语义模型和指标口径进行分析。
-  - 仓库：https://github.com/Mlilion/CodataAdmin
+- **[CodataAdmin 语义模型后台](https://github.com/Mlilion/CodataAdmin)**：配套的语义治理与管理平台，用于维护业务域、业务实体、语义字段、语义模型、JOIN、指标、维度和知识库，并通过 MCP Server 提供可信取数能力。Codata 连接其 MCP Server 后，可直接使用已发布的语义模型和指标口径进行分析。
 
 ## 下载与文档
 
@@ -309,7 +322,7 @@ Codata 默认在本地存储对话、看板状态、生成产物、设置、记�
 
 ## 社群与交流
 
-欢迎加入 Codata 用户交流群，反馈使用问题、交流数据分析场景和建议新功能。
+在线 Demo 体验请扫码加入 Codata 用户交流群，获取体验方式，也欢迎反馈使用问题、交流数据分析场景和建议新功能。
 
 <table>
   <tr>
