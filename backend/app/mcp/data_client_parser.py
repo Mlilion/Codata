@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -446,3 +447,121 @@ def _int_or_default(value: Any, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+# ---------------------------------------------------------------------------
+# Generic tabular result normalisation
+# ---------------------------------------------------------------------------
+# Codata's own parser above only understands the data-client MCP's specific
+# tools and JSON shapes. A directly-connected database MCP (Postgres, MySQL,
+# Snowflake, ...) exposes different query tools and returns different shapes,
+# so we add a best-effort normaliser that turns those into the same
+# ``sql_result`` metadata the frontend already renders as a table/SQL/chart
+# card. It is deliberately conservative: it only fires for query-like tools,
+# so a list of Slack channels or GitHub issues is never turned into a card.
+
+# Tool IDs are ``{sanitised_server}_{sanitised_tool}``. These are the tool-name
+# suffixes we treat as "read query" tools. Kept explicit rather than fuzzy so
+# unrelated tools (list_channels, create_issue, ...) are never carded.
+_QUERY_TOOL_SUFFIXES = (
+    "query",
+    "read_query",
+    "run_query",
+    "execute_query",
+    "run_sql",
+    "execute_sql",
+    "query_data",
+    "sql",
+    "select",
+    "fetch",
+)
+
+_MARKDOWN_SEPARATOR_RE = re.compile(r"^:?-{1,}:?$")
+
+
+def _looks_like_query_tool(tool_id: str) -> bool:
+    """True when ``tool_id``'s tool-name suffix suggests a read query tool."""
+    for suffix in _QUERY_TOOL_SUFFIXES:
+        if tool_id == suffix or tool_id.endswith("_" + suffix):
+            return True
+    return False
+
+
+def normalize_tabular_result(
+    tool_id: str,
+    args: dict[str, Any],
+    raw_text: str,
+) -> dict[str, Any] | None:
+    """Normalise a foreign (non-Codata) query result into ``sql_result`` metadata.
+
+    Returns a dict to merge into ``ToolResult.metadata``, or ``None`` when the
+    tool isn't a query tool or the output isn't recognisably tabular. Handles:
+
+      * ``{"columns": [...], "data"/"rows": [...]}`` (generic column+rows JSON)
+      * ``[{"a": 1}, {"a": 2}]`` (list of dicts)
+      * a Markdown / pipe-delimited table in the raw text
+
+    ``sql`` is recovered from the call args so the card's SQL tab still shows
+    the query the user's source ran.
+    """
+    if not _looks_like_query_tool(tool_id):
+        return None
+
+    sql = _sql_from_args(args)
+
+    payload = _safe_json(raw_text)
+    if isinstance(payload, dict):
+        result = _sql_result_from_payload(payload, sql, sql)
+        if result is not None:
+            return result
+    if isinstance(payload, list) and payload and all(isinstance(r, dict) for r in payload):
+        result = _sql_result_from_dict_rows({}, sql, payload, sql)
+        if result is not None:
+            return result
+
+    table = _parse_markdown_table(raw_text)
+    if table is not None:
+        columns, rows = table
+        return _sql_result_metadata(
+            {},
+            sql,
+            [{"name": c} for c in columns],
+            rows[:MAX_ROWS],
+            len(rows),
+            sql,
+        )
+
+    return None
+
+
+def _parse_markdown_table(text: str) -> tuple[list[str], list[list[str]]] | None:
+    """Parse a Markdown / pipe-delimited table into (columns, rows) or None."""
+    lines = (text or "").splitlines()
+    table_rows: list[list[str]] = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        table_rows.append([c.strip() for c in stripped.strip("|").split("|")])
+
+    if len(table_rows) < 2:
+        return None
+
+    header = table_rows[0]
+    if not header or not any(header):
+        return None
+
+    data = table_rows[1:]
+    # Drop the markdown separator row (| --- | --- |) right after the header.
+    if data and any(data[0]) and all(
+        cell == "" or _MARKDOWN_SEPARATOR_RE.match(cell) for cell in data[0]
+    ):
+        data = data[1:]
+    if not data:
+        return None
+
+    width = len(header)
+    rows = [(row + [""] * width)[:width] for row in data if any(row)]
+    if not rows:
+        return None
+    return header, rows

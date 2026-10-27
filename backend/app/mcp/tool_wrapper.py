@@ -176,12 +176,19 @@ class McpToolWrapper(ToolDefinition):
             return ToolResult(error=error, metadata=metadata)
 
         # Structure known data client results into metadata so the frontend can
-        # render SQL / tables / charts instead of a raw text blob.
+        # render SQL / tables / charts instead of a raw text blob. Codata's
+        # semantic-model parser runs first; a generic tabular normaliser catches
+        # foreign query tools (e.g. a directly-connected database MCP).
         metadata: dict[str, Any] = {}
         try:
-            from app.mcp.data_client_parser import parse_data_client_result
+            from app.mcp.data_client_parser import (
+                normalize_tabular_result,
+                parse_data_client_result,
+            )
 
             parsed = parse_data_client_result(self._tool_id, args, output)
+            if parsed is None:
+                parsed = normalize_tabular_result(self._tool_id, args, output)
             if parsed:
                 metadata.update(parsed)
         except Exception:
