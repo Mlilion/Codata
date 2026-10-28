@@ -10,7 +10,7 @@
     &nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="#社群与交流"><b>在线 Demo 体验 · 扫码进群</b></a>
     &nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="https://github.com/Mlilion/CodataAdmin"><b>语义模型后台 CodataAdmin</b></a>
+    <a href="https://github.com/Mlilion/CodataAdmin"><b>语义模型后台</b></a>
     &nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="README.en.md">English</a>
   </p>
@@ -205,7 +205,7 @@ User
 
 ## 配套项目
 
-- **[CodataAdmin 语义模型后台](https://github.com/Mlilion/CodataAdmin)**：配套的语义治理与管理平台，用于维护业务域、业务实体、语义字段、语义模型、JOIN、指标、维度和知识库，并通过 MCP Server 提供可信取数能力。Codata 连接其 MCP Server 后，可直接使用已发布的语义模型和指标口径进行分析。
+- **[语义模型后台](https://github.com/Mlilion/CodataAdmin)**：配套的语义治理与管理平台，用于维护业务域、业务实体、语义字段、语义模型、JOIN、指标、维度和知识库，并通过 MCP Server 提供可信取数能力。Codata 连接其 MCP Server 后，可直接使用已发布的语义模型和指标口径进行分析。
 
 ## 下载与文档
 

@@ -10,7 +10,7 @@
     &nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="#community"><b>Online demo · Join via WeChat</b></a>
     &nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="https://github.com/Mlilion/CodataAdmin"><b>CodataAdmin: Semantic Model Admin</b></a>
+    <a href="https://github.com/Mlilion/CodataAdmin"><b>Semantic Model Admin</b></a>
     &nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="README.md">简体中文</a>
   </p>
@@ -205,7 +205,7 @@ User
 
 ## Companion Projects
 
-- **[CodataAdmin: Semantic Model Admin](https://github.com/Mlilion/CodataAdmin)**: a companion semantic governance and admin platform for maintaining business domains, entities, semantic fields, semantic models, joins, metrics, dimensions, and the knowledge base, with trusted querying exposed through an MCP server. Once Codata connects to its MCP server, analyses can use the published semantic models and metric definitions directly.
+- **[Semantic Model Admin](https://github.com/Mlilion/CodataAdmin)**: a companion semantic governance and admin platform for maintaining business domains, entities, semantic fields, semantic models, joins, metrics, dimensions, and the knowledge base, with trusted querying exposed through an MCP server. Once Codata connects to its MCP server, analyses can use the published semantic models and metric definitions directly.
 
 ## Download & Docs
 
