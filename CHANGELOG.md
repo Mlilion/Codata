@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), and this pro
 
 ## [Unreleased]
 
+## [1.1.29] - 2026-10-28
+
+### Added
+
+- Render foreign database MCP query results as chart cards. Query results from directly-connected database MCP servers (Postgres, MySQL, Snowflake, and similar) are normalized into the same SQL, table, and chart card Codata's own semantic-model data client produces, so any query tool can drive charts rather than only Codata's semantic-model MCP.
+
 ### Fixed
 
 - Preserve loaded history and recent replies when long conversations refresh after scrolling to older messages. Polling, window focus, stream completion, and sidebar prefetch now share a tail-refresh query that also fills gaps when more than one page of new messages arrives.
