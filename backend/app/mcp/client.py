@@ -206,7 +206,75 @@ class McpClient:
         """Call a tool on the MCP server."""
         if self._session is None:
             raise RuntimeError(f"MCP server '{self.name}' is not connected")
-        return await self._session.call_tool(tool_name, arguments)
+        from app.streaming.trace import current_trace, safe_value
+        import json
+        active = current_trace()
+        if active is None:
+            return await self._session.call_tool(tool_name, arguments)
+        trace, parent = active
+        sent = trace.now()
+        anchor = None
+        uncertainty = None
+
+        def import_span(raw):
+            nonlocal anchor, uncertainty
+            if trace.completed:
+                return
+            if not isinstance(raw, dict) or not isinstance(raw.get('id'), str):
+                return
+            if anchor is None:
+                received = trace.now()
+                anchor = (sent + received) / 2
+                uncertainty = (received - sent) / 2
+            key = f'mcp-{parent}-{raw["id"][:64]}'
+            if len(trace.spans) >= 2000 and key not in trace.spans:
+                return
+            try:
+                start = max(0.0, float(raw['startMs']))
+                duration = max(0.0, float(raw['durationMs']))
+                import math
+                if not math.isfinite(start + duration):
+                    return
+            except (KeyError, TypeError, ValueError):
+                return
+            span = {'id': key, 'parentId': f'mcp-{parent}-{raw["parentId"][:64]}' if raw.get('parentId') else parent,
+                    'name': str(raw.get('name', 'MCP phase'))[:120], 'service': str(raw.get('service', self.name))[:60],
+                    'kind': 'phase', 'startMs': anchor + start, 'durationMs': duration,
+                    'status': raw.get('status') if raw.get('status') in {'ok', 'running', 'error', 'cancelled'} else 'incomplete',
+                    'attributes': {**safe_value(raw.get('attributes') or {}),
+                                   'clock': 'remote monotonic; start aligned by first progress RTT midpoint',
+                                   'alignment_uncertainty_ms': uncertainty, 'connector': self.name}}
+            trace.spans[key] = span
+            trace._emit(span)
+
+        async def on_progress(progress, total, message):
+            if not message or len(message) > 30000:
+                return
+            try:
+                data = json.loads(message)
+                if data.get('type') == 'codata.trace.v1':
+                    import_span(data.get('span'))
+            except (ValueError, TypeError, AttributeError):
+                return
+
+        result = await self._session.call_tool(tool_name, arguments, progress_callback=on_progress)
+        if trace.completed:
+            return result
+        meta = getattr(result, 'meta', None) or {}
+        remote = meta.get('codata_trace') or {}
+        if anchor is not None and isinstance(remote.get('duration_ms'), (int, float)):
+            corrected = max(sent, min(anchor, trace.now() - remote['duration_ms']))
+            shift = corrected - anchor
+            if shift:
+                for span in trace.spans.values():
+                    if span['id'].startswith(f'mcp-{parent}-'):
+                        span['startMs'] += shift
+                        trace._emit(span)
+            anchor = corrected
+        # Final metadata reconciles missed notifications without duplicating spans.
+        for span in remote.get('spans', [])[:1000]:
+            import_span(span)
+        return result
 
     def tool_id(self, tool_name: str) -> str:
         """Generate a unique tool ID for a tool from this server."""

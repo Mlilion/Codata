@@ -131,6 +131,8 @@ export interface UserMessageInfo {
 }
 
 export interface AssistantMessageInfo {
+  trace_id?: string;
+  execution_trace?: import('./execution-trace').ExecutionTrace;
   role: "assistant";
   parent_id?: string | null;
   agent?: string;

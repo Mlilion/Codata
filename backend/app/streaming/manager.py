@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
+import hashlib
 from typing import Any
 
 from app.streaming.events import AGENT_ERROR, DESYNC, DONE, SSEEvent
+from app.streaming.trace import traced, current_trace, safe_value, MAX_SPANS
 
 # Events that MUST be delivered to the frontend even when the queue overflows.
 # Losing these causes the UI to get permanently stuck in "generating" state.
@@ -52,6 +55,35 @@ class GenerationJob:
         # Artifact content cache: identifier → {content, type, title, language}
         # Populated from message history at generation start, updated by artifact tool
         self.artifact_cache: dict[str, dict[str, Any]] = {}
+        from app.streaming.trace import TraceRecorder
+        parent_context = current_trace()
+        def relay_trace(data):
+            self.publish(SSEEvent('trace-span', data))
+            if not parent_context or parent_context[0].completed:
+                return
+            parent, owner = parent_context
+            raw = data['span']
+            def linked_id(key):
+                return 'child-' + hashlib.sha256(f'{stream_id}:{key}'.encode()).hexdigest()[:24]
+            key = linked_id(raw['id'])
+            if len(parent.spans) >= MAX_SPANS and key not in parent.spans:
+                parent.dropped += 1
+                return
+            attrs = {**raw['attributes'], 'source_trace_id': stream_id,
+                     'source_session_id': session_id, 'subagent_depth': self._depth}
+            for field in ('producer_span_id', 'retry_of', 'parallel_group_id', 'join_span_id'):
+                if isinstance(attrs.get(field), str):
+                    attrs[field] = linked_id(attrs[field])
+            if isinstance(attrs.get('group_members'), list):
+                attrs['group_members'] = [linked_id(value) for value in attrs['group_members']]
+            mapped = {**raw, 'id': key, 'parentId': linked_id(raw['parentId']) if raw.get('parentId') else owner,
+                      'startMs': (self.trace.origin_ns-parent.origin_ns)/1_000_000+raw['startMs'],
+                      'kind': 'phase' if raw['kind']=='request' else raw['kind'],
+                      'name': '子智能体请求' if raw['kind']=='request' else raw['name'],
+                      'attributes': safe_value(attrs)}
+            parent.spans[key] = mapped
+            parent._emit(mapped)
+        self.trace = TraceRecorder(stream_id, relay_trace)
 
     @property
     def completed(self) -> bool:
@@ -61,6 +93,11 @@ class GenerationJob:
         """Publish an event to all subscribers and buffer for replay."""
         self._event_counter += 1
         event.id = self._event_counter
+        event.published_perf_ns = time.perf_counter_ns()
+        trace = getattr(self, 'trace', None)
+        if trace is not None:
+            event.data = {**event.data, '_trace': {'trace_id': self.stream_id,
+                          'origin_epoch_ms': trace.origin_epoch_ms, 'published_ms': trace.now()}}
         self.events.append(event)
 
         # Cap replay buffer to prevent unbounded memory growth
@@ -156,7 +193,11 @@ class GenerationJob:
     def abort(self) -> None:
         """Signal abort to the generation loop."""
         self.abort_event.set()
+        if not self.trace.completed:
+            self.trace.spans[self.trace.root_id]['attributes']['cancel_boundary'] = 'server accepted abort; provider/tool cleanup may finish later'
+            self.trace.close('cancelled')
 
+    @traced('等待用户确认', '用户交互')
     async def wait_for_response(self, call_id: str, timeout: float = 300.0) -> Any:
         """Wait for user response to a specific call_id.
 
@@ -236,7 +277,7 @@ class StreamManager:
                 "needs_input": bool(j._response_futures),
             }
             for j in self._jobs.values()
-            if not j.completed
+            if not j.completed and not j.abort_event.is_set()
         ]
 
     def abort_session(self, session_id: str) -> int:

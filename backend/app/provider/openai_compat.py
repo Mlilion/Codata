@@ -188,6 +188,9 @@ class OpenAICompatProvider(BaseProvider):
         tool_call_accumulators: dict[int, dict[str, Any]] = {}
         had_any_content = False  # Track whether the stream produced any content
 
+        from app.streaming.trace import ProviderTiming
+        timing = ProviderTiming()
+        timing_status = 'ok'
         try:
             stream = await self._client.chat.completions.create(**kwargs)
             async for chunk in stream:
@@ -201,6 +204,8 @@ class OpenAICompatProvider(BaseProvider):
                         getattr(delta, "reasoning_content", None)
                         or getattr(delta, "reasoning", None)
                     )
+                    if reasoning_text or delta.content or delta.tool_calls:
+                        timing.first_token()
                     if reasoning_text:
                         had_any_content = True
                         yield StreamChunk(type="reasoning-delta", data={"text": reasoning_text})
@@ -289,8 +294,11 @@ class OpenAICompatProvider(BaseProvider):
                 )
 
         except Exception as e:
+            timing_status = 'error'
             logger.error("Stream error for model %s: %s", model, e, exc_info=True)
             yield StreamChunk(type="error", data={"message": str(e)})
+        finally:
+            timing.finish(timing_status)
 
     def _build_messages(
         self,

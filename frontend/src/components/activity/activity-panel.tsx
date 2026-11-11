@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { CodataLogo } from "@/components/ui/codata-logo";
 import { ToolCallRow } from "@/components/activity/tool-call-row";
+import { ExecutionActivityPanel } from './execution-activity-panel';
 import { IS_DESKTOP, TITLE_BAR_HEIGHT } from "@/lib/constants";
 import { useIsMacOS } from "@/hooks/use-platform";
 import {
@@ -24,10 +25,10 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
-import { useActivityStore, computeDuration, type ActivityData, type ChainItem } from "@/stores/activity-store";
+import { useActivityStore, type ActivityData, type ChainItem } from "@/stores/activity-store";
 import { ACTIVITY_PANEL_WIDTH } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import type { PartData, ToolPart, StepFinishPart, StepStartPart } from "@/types/message";
+import type { PartData, ToolPart, StepStartPart } from "@/types/message";
 
 // -- Helpers --
 
@@ -563,156 +564,20 @@ function useIsDesktop() {
 }
 
 export function ActivityPanelContent({ showClose = true }: { showClose?: boolean } = {}) {
-  const { t } = useTranslation("chat");
   const activeData = useActivityStore((s) => s.activeData);
   const close = useActivityStore((s) => s.close);
-
   const timelineItems = useMemo(
     () => (activeData?.chain ? buildTimelineItems(activeData.chain) : []),
     [activeData],
   );
-
   if (!activeData) return null;
-  if (activeData.mode === "expert-team") {
-    return <ExpertProgressPanel data={activeData} onClose={close} />;
-  }
-
-  // Aggregate metrics from step-finish parts
-  const stepFinishes = activeData.stepParts.filter(
-    (p): p is StepFinishPart => p.type === "step-finish",
-  );
-  const totalTokens = stepFinishes.reduce((acc, sf) => {
-    const t = sf.tokens;
-    return {
-      input: acc.input + (t.input || 0),
-      output: acc.output + (t.output || 0),
-    };
-  }, { input: 0, output: 0 });
-  const totalCost = stepFinishes.reduce((acc, sf) => acc + (sf.cost || 0), 0);
-  const hasMetrics = totalTokens.input > 0 || totalTokens.output > 0 || totalCost > 0;
-
-  // Compute total duration
-  const duration = computeDuration(activeData);
-  const durationLabel = duration != null && duration > 0 ? `${duration}s` : "";
-  const hasRunningTools = activeData.toolParts.some(
-    (tool) => tool.state.status === "running" || tool.state.status === "pending",
-  );
-  const hasTerminalStepFinish = stepFinishes.some((part) => part.reason !== "tool_use");
-  const isComplete = (hasTerminalStepFinish || !!activeData.hasVisibleOutput) && !hasRunningTools;
-
-  return (
-    <div className="flex h-full flex-col bg-[var(--surface-primary)]">
-      <div className="shrink-0 px-5 pb-4 pt-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold leading-6 text-[var(--text-primary)]">{t("activity")}</h2>
-            <p className="mt-0.5 text-sm text-[var(--text-tertiary)]">工具调用与推理过程</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {durationLabel && (
-              <span className="rounded-md bg-[var(--surface-secondary)] px-2 py-1 text-[11px] text-[var(--text-tertiary)]">
-                {durationLabel}
-              </span>
-            )}
-            {showClose && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={close}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-5 pb-5 scrollbar-auto">
-        {activeData.toolParts.length > 0 && (
-          <section className="border-t border-[var(--border-subtle)] pt-5">
-            <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">工具调用</h3>
-            <div className="space-y-3">
-              {activeData.toolParts.map((tool) => (
-                <ToolCallRow key={`summary-tool-${tool.call_id}`} tool={tool} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section className="mt-6 border-t border-[var(--border-subtle)] pt-5">
-          <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">推理过程</h3>
-          <div className="relative space-y-4 before:absolute before:left-[9px] before:top-2 before:bottom-2 before:w-px before:bg-[var(--border-subtle)]">
-            {timelineItems
-              .filter((item) => item.kind === "thinking-group")
-              .map((item, i) => (
-                <ThinkingGroup key={`thinking-${i}`} texts={item.texts} />
-              ))}
-
-            {isComplete ? (
-              <div className="relative pl-8">
-                <div className="absolute left-0 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-success)] text-white">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                </div>
-                {durationLabel && (
-                  <p className="text-[11px] text-[var(--text-tertiary)]">
-                    {t("thoughtFor", { duration: durationLabel })}
-                  </p>
-                )}
-                <p className="text-[13px] font-medium text-[var(--text-secondary)]">{t("done")}</p>
-              </div>
-            ) : (
-              <div className="relative pl-8">
-                <div className="absolute left-0 top-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)]">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--text-tertiary)]" />
-                </div>
-                <p className="text-[13px] font-medium text-[var(--text-secondary)]">
-                  {hasRunningTools ? t("stageWorkingWithTools") : t("stageFinalizing")}
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Metrics */}
-        {hasMetrics && (
-          <div className="pt-4 mt-6">
-            <h3 className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider mb-2">
-              {t("metrics")}
-            </h3>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {totalTokens.input > 0 && (
-                <div className="flex justify-between rounded-lg bg-[var(--surface-secondary)] px-3 py-2">
-                  <span className="text-[var(--text-tertiary)]">{t("input")}</span>
-                  <span className="text-[var(--text-secondary)] font-mono">
-                    {totalTokens.input.toLocaleString()}
-                  </span>
-                </div>
-              )}
-              {totalTokens.output > 0 && (
-                <div className="flex justify-between rounded-lg bg-[var(--surface-secondary)] px-3 py-2">
-                  <span className="text-[var(--text-tertiary)]">{t("output")}</span>
-                  <span className="text-[var(--text-secondary)] font-mono">
-                    {totalTokens.output.toLocaleString()}
-                  </span>
-                </div>
-              )}
-              {totalCost > 0 && (
-                <div className="flex justify-between rounded-lg bg-[var(--surface-secondary)] px-3 py-2 col-span-2">
-                  <span className="text-[var(--text-tertiary)]">{t("credits")}</span>
-                  <span className="text-[var(--text-secondary)] font-mono">
-                    {(totalCost * 100).toFixed(2)} cr
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  if (activeData.mode === "expert-team") return <ExpertProgressPanel data={activeData} onClose={close} />;
+  return <ExecutionActivityPanel key={activeData.traceId??activeData.executionTrace?.trace_id??activeData.sourceKey??'pending'} data={activeData} onClose={close} showClose={showClose}
+    reasoning={timelineItems.some(item => item.kind === 'thinking-group') ? <section className="mt-6 border-t border-[var(--border-subtle)] pt-4">
+      <h3 className="mb-3 text-sm font-medium text-[var(--text-secondary)]">过程摘要</h3>
+      <div className="space-y-3">{timelineItems.filter(item => item.kind === 'thinking-group').map((item,i) => <ThinkingGroup key={i} texts={item.texts} />)}</div>
+    </section> : undefined} />;
 }
-
 export function ActivityPanel() {
   const { t } = useTranslation("chat");
   const isOpen = useActivityStore((s) => s.isOpen);

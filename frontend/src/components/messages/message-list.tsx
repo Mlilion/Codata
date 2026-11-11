@@ -60,7 +60,7 @@ export function MessageList({
   fetchPreviousPage,
 }: MessageListProps) {
   const { scrollRef, scrollElementRef, bottomRef, isAtBottom, scrollToBottom } = useScrollAnchor();
-  const openForMessage = useActivityStore((s) => s.openForMessage);
+  const refreshForMessage = useActivityStore((s) => s.refreshForMessage);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const restoredExpertActivityKeyRef = useRef<string | null>(null);
   // IDs whose content was already visible in StreamingMessage. These must not
@@ -203,10 +203,10 @@ export function MessageList({
     if (!key || restoredExpertActivityKeyRef.current === key) return;
     const frame = requestAnimationFrame(() => {
       restoredExpertActivityKeyRef.current = key;
-      openForMessage(key, historicalExpertActivity);
+      refreshForMessage(key, historicalExpertActivity);
     });
     return () => cancelAnimationFrame(frame);
-  }, [historicalExpertActivity, openForMessage]);
+  }, [historicalExpertActivity, refreshForMessage]);
 
   // The shell message only exists after the backend created it (streamId is set).
   // During beginSending (streamId is null), we must NOT hide the previous response.

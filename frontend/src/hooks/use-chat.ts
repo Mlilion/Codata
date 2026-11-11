@@ -1,4 +1,5 @@
 "use client";
+import { beginClientTrace, cancelClientTrace } from '@/lib/execution-trace';
 
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -24,6 +25,7 @@ import type { InfiniteData } from "@tanstack/react-query";
 import type { FileAttachment, PromptResponse, RespondRequest } from "@/types/chat";
 import type { PaginatedMessages } from "@/types/message";
 import type { SessionResponse } from "@/types/session";
+import type { ExecutionTrace } from '@/types/execution-trace';
 
 export interface SendMessageOptions {
   skills?: string[];
@@ -152,6 +154,8 @@ export function useChat(currentSessionId?: string) {
       }
 
       closeResponsePanels();
+      const traceStartedPerf = performance.now();
+      const traceStartedEpoch = performance.timeOrigin + traceStartedPerf;
       chatState.beginSending(targetSessionId, text.trim(), attachments);
 
       try {
@@ -201,6 +205,7 @@ export function useChat(currentSessionId?: string) {
             });
 
         chatState.startGeneration(res.session_id, res.stream_id);
+        beginClientTrace(res.session_id, res.stream_id, traceStartedPerf, traceStartedEpoch);
         if (selectedExpertTeam && !currentSessionId) {
           const expertStore = useExpertSessionStore.getState();
           expertStore.setSelectedExpertTeam(res.session_id, selectedExpertTeam);
@@ -241,9 +246,12 @@ export function useChat(currentSessionId?: string) {
     const streamId = bucket?.streamId;
     if (!streamId) return;
     try {
-      await api.post(API.CHAT.ABORT, { stream_id: streamId });
+      const result=await api.post<{status:string;execution_trace?:ExecutionTrace}>(API.CHAT.ABORT, { stream_id: streamId });
+      if (targetSessionId!==null) cancelClientTrace(targetSessionId,streamId,result.execution_trace,result.status==='not_found');
     } catch (err) {
       console.error("Failed to abort — backend may still be generating:", err);
+      toast.error('终止失败，请重试');
+      return;
     }
     if (targetSessionId !== null) stopStream(targetSessionId);
     chatState.finishGeneration(targetSessionId);

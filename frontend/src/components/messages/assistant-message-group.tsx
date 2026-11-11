@@ -25,13 +25,19 @@ export const AssistantMessageGroup = memo(function AssistantMessageGroup({ messa
       ),
     [messages],
   );
+  const representative = useMemo(() => {
+    const first = messages[0];
+    const traceOwner = messages.findLast(m => m.data.role === 'assistant' && m.data.execution_trace);
+    if (!traceOwner || traceOwner.data.role !== 'assistant') return first;
+    return { ...first, data: { ...first.data, trace_id: traceOwner.data.trace_id, execution_trace: traceOwner.data.execution_trace } };
+  }, [messages]);
 
   // Use the first message as the "representative" for the group
   return (
     <div className="px-5 py-5">
       <div className="mx-auto max-w-5xl">
         <AssistantMessage
-          message={messages[0]}
+          message={representative}
           combinedParts={combinedParts}
           isNew={isNew}
         />

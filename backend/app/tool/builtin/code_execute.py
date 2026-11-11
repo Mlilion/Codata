@@ -92,13 +92,16 @@ class CodeExecuteTool(ToolDefinition):
             return ToolResult(error="No code provided")
 
         timeout = min(args.get("timeout", DEFAULT_TIMEOUT), MAX_TIMEOUT)
-        before_snapshot = _snapshot_workspace(ctx.workspace)
+        from app.streaming.trace import trace_span
+        with trace_span('执行前 · 工作区产物快照', 'Python'):
+            before_snapshot = _snapshot_workspace(ctx.workspace)
 
         try:
-            output, exit_code = await asyncio.wait_for(
-                asyncio.to_thread(_run_code, code),
-                timeout=timeout,
-            )
+            with trace_span('Python 脚本执行', 'Python'):
+                output, exit_code = await asyncio.wait_for(
+                    asyncio.to_thread(_run_code, code),
+                    timeout=timeout,
+                )
         except asyncio.TimeoutError:
             return ToolResult(
                 error=f"Execution timed out after {timeout}s",
@@ -108,7 +111,8 @@ class CodeExecuteTool(ToolDefinition):
             return ToolResult(error=f"Execution failed: {exc}")
 
         title = f"python: {code[:60]}..." if len(code) > 60 else f"python: {code}"
-        after_snapshot = _snapshot_workspace(ctx.workspace)
+        with trace_span('执行后 · 工作区产物快照', 'Python'):
+            after_snapshot = _snapshot_workspace(ctx.workspace)
         written_files = sorted(
             path
             for path, sig in after_snapshot.items()

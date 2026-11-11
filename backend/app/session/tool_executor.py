@@ -15,7 +15,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import Any
+from datetime import datetime, timezone
+from typing import Any, Callable
 
 from app.tool.base import ToolDefinition, ToolResult
 from app.tool.context import ToolContext
@@ -40,6 +41,14 @@ class ToolCallInfo:
     call_id: str
     ctx: ToolContext
     timeout: float = 300.0
+    trace: Any = None
+    trace_span_id: str = ''
+    queue_span_id: str = ''
+    producer_span_id: str = ''
+    retry_of_call_id: str | None = None
+    execution_span_id: str = ''
+    on_started: Callable[['ToolCallInfo'], None] | None = None
+    on_finished: Callable[['ToolCallInfo'], None] | None = None
 
 
 @dataclass
@@ -54,9 +63,11 @@ class ToolExecutionResult:
     error: Exception | None = None
     timed_out: bool = False
     aborted_by_sibling: bool = False
+    time_start: str | None = None
+    time_end: str | None = None
 
 
-async def _execute_single(info: ToolCallInfo) -> ToolExecutionResult:
+async def _execute_single_inner(info: ToolCallInfo) -> ToolExecutionResult:
     """Execute a single tool call with timeout and error handling."""
     if info.ctx.is_aborted:
         return ToolExecutionResult(
@@ -88,6 +99,46 @@ async def _execute_single(info: ToolCallInfo) -> ToolExecutionResult:
         )
 
 
+async def _execute_single(info: ToolCallInfo) -> ToolExecutionResult:
+    """Measure actual scheduling delay, including the exclusive queue."""
+    trace = info.trace
+    time_start = datetime.now(timezone.utc).isoformat()
+    if trace:
+        execution_started = trace.now()
+        trace.finish(info.queue_span_id, end_ms=execution_started)
+        execution = trace.start('工具执行', '工具', parent_id=info.trace_span_id,
+                                start_ms=execution_started,attributes={'call_id': info.call_id})
+        info.execution_span_id = execution
+        if info.on_started:
+            info.on_started(info)
+    try:
+        if trace:
+            with trace.bind(execution):
+                result = await _execute_single_inner(info)
+        else:
+            result = await _execute_single_inner(info)
+        result.time_start = time_start
+        result.time_end = datetime.now(timezone.utc).isoformat()
+        if trace:
+            execution_ended = trace.now()
+            status = 'cancelled' if result.aborted_by_sibling or isinstance(result.error, asyncio.CancelledError) else 'error' if result.error or result.timed_out or (result.result and result.result.error) else 'ok'
+            trace.finish(execution, status, end_ms=execution_ended)
+            trace.finish(info.trace_span_id, status, end_ms=execution_ended,time_start=result.time_start, time_end=result.time_end,
+                         timed_out=result.timed_out,
+                         output_preview=(str(result.result.output)[:2000] if result.result else ''),
+                         error_preview=str(result.result.error or '')[:500] if result.result else type(result.error).__name__ if result.error else '')
+        return result
+    except BaseException:
+        if trace:
+            stopped=trace.now()
+            trace.finish(execution, 'cancelled',end_ms=stopped)
+            trace.finish(info.trace_span_id, 'cancelled',end_ms=stopped)
+        raise
+    finally:
+        if info.on_finished:
+            info.on_finished(info)
+
+
 class StreamingToolExecutor:
     """Manages tool execution during and after LLM streaming.
 
@@ -110,6 +161,78 @@ class StreamingToolExecutor:
         # Sibling abort: set when a bash tool errors, cancels other concurrent tasks
         self._sibling_errored = False
         self._sibling_error_desc = ""
+        self._parallel_batches: dict[str, dict[str, Any]] = {}
+        self._collecting = False
+
+    def _parallel_submitted(self, info: ToolCallInfo) -> None:
+        # A fork means the executor actually created independent safe tasks
+        # for this model response. Tiny synchronous bodies may not overlap;
+        # peak execution concurrency is recorded separately, without pretending.
+        if not info.trace or info.trace.completed or not info.trace_span_id or not info.tool.is_concurrency_safe:
+            return
+        batch = self._parallel_batches.setdefault(info.producer_span_id, {
+            'members': [], 'active': set(), 'peak': 0, 'span': '', 'join': '', 'trace': info.trace,
+        })
+        batch['members'].append(info)
+        if len(batch['members']) < 2:
+            return
+        trace = info.trace
+        members = [item.trace_span_id for item in batch['members']]
+        start = min(trace.spans[key]['startMs'] for key in members)
+        if not batch['span']:
+            batch['span'] = trace.start('并行分支', '调度', parent_id=trace.root_id, start_ms=start,
+                attributes={'group_kind':'parallel', 'dispatch_strategy':'concurrent_tasks',
+                            'timing_basis':'first submission to last member result; actual overlap shown in child spans'})
+            if not batch['span']:
+                return
+            batch['join'] = trace.start('结果汇合', '调度', parent_id=batch['span'], start_ms=start,
+                attributes={'checkpoint':'join', 'timing_basis':'same batch wall time, not additional serial cost'})
+        group = trace.spans[batch['span']]
+        group['startMs'] = min(group['startMs'], start)
+        group['attributes'].update(group_members=members, join_span_id=batch['join'],
+                                  active_count=len(batch['active']), peak_concurrency=batch['peak'])
+        trace._emit(group)
+        if batch['join']:
+            trace.spans[batch['join']]['startMs'] = group['startMs']
+            trace.spans[batch['join']]['attributes']['group_members'] = members
+            trace._emit(trace.spans[batch['join']])
+        for item in batch['members']:
+            span = trace.spans[item.trace_span_id]
+            span['parentId'] = batch['span']
+            span['attributes']['parallel_group_id'] = batch['span']
+            trace._emit(span)
+
+    def _parallel_started(self, info: ToolCallInfo) -> None:
+        batch = self._parallel_batches.get(info.producer_span_id)
+        if not batch or info.trace.completed or not info.tool.is_concurrency_safe:
+            return
+        batch['active'].add(info.call_id)
+        batch['peak'] = max(batch['peak'], len(batch['active']))
+        if batch['span']:
+            group = info.trace.spans[batch['span']]
+            group['attributes'].update(active_count=len(batch['active']), peak_concurrency=batch['peak'])
+            info.trace._emit(group)
+
+    def _finish_parallel_batch(self, batch: dict[str, Any]) -> None:
+        if not batch['span'] or not self._collecting or batch['trace'].completed:
+            return
+        trace = batch['trace']
+        members = [trace.spans[item.trace_span_id] for item in batch['members']]
+        if any(span['status']=='running' for span in members):
+            return
+        ended = max(span['startMs']+span['durationMs'] for span in members)
+        status = 'cancelled' if any(span['status']=='cancelled' for span in members) else 'ok'
+        failed = sum(span['status']=='error' for span in members)
+        trace.spans[batch['span']]['attributes'].update(active_count=0, peak_concurrency=batch['peak'])
+        trace.finish(batch['join'], status, end_ms=ended, failed_count=failed)
+        trace.finish(batch['span'], status, end_ms=ended, failed_count=failed)
+
+    def _parallel_finished(self, info: ToolCallInfo) -> None:
+        batch = self._parallel_batches.get(info.producer_span_id)
+        if not batch or not info.tool.is_concurrency_safe:
+            return
+        batch['active'].discard(info.call_id)
+        self._finish_parallel_batch(batch)
 
     def submit(self, info: ToolCallInfo) -> None:
         """Submit a tool for execution.
@@ -118,6 +241,28 @@ class StreamingToolExecutor:
         Exclusive tools are queued for sequential execution after streaming.
         """
         self._submission_order.append(info.index)
+        info.on_started = self._parallel_started
+        info.on_finished = self._parallel_finished
+        from app.streaming.trace import current_trace
+        active = current_trace()
+        if active:
+            info.trace, producer = active
+            info.trace_span_id = info.trace.start(info.tool_name, '工具', kind='tool', parent_id=info.trace.root_id,
+                attributes={'call_id': info.call_id, 'message_id': info.ctx.message_id,
+                            'producer_span_id': info.producer_span_id or producer, 'input': info.tool_args,
+                            'concurrent': info.tool.is_concurrency_safe,
+                            'timing_basis':'submission to result ready; queue and execution share boundary'})
+            info.queue_span_id = info.trace.start('工具排队', '工具排队', parent_id=info.trace_span_id,
+                start_ms=info.trace.spans[info.trace_span_id]['startMs'] if info.trace_span_id else None)
+            if info.retry_of_call_id and info.trace_span_id:
+                previous = next((s for s in info.trace.spans.values() if s['kind']=='tool'
+                    and s['name']==info.tool_name and s['attributes'].get('call_id')==info.retry_of_call_id
+                    and s['status'] in ('error','cancelled')), None)
+                if previous:
+                    info.trace.spans[info.trace_span_id]['attributes'].update(
+                        retry_of=previous['id'], relation_basis='explicit executor retry_of_call_id')
+                    info.trace._emit(info.trace.spans[info.trace_span_id])
+            self._parallel_submitted(info)
 
         if info.tool.is_concurrency_safe:
             task = asyncio.create_task(
@@ -143,6 +288,7 @@ class StreamingToolExecutor:
         2. Execute exclusive tools sequentially
         3. Return results sorted by submission order
         """
+        self._collecting = True
         # 1. Collect concurrent results
         for info, task in self._concurrent_tasks:
             try:
@@ -171,6 +317,11 @@ class StreamingToolExecutor:
 
             except asyncio.CancelledError:
                 # Task was cancelled by sibling abort or external abort
+                if info.trace:
+                    stopped=info.trace.now()
+                    info.trace.finish(info.queue_span_id,'cancelled',end_ms=stopped)
+                    info.trace.finish(info.execution_span_id,'cancelled',end_ms=stopped)
+                    info.trace.finish(info.trace_span_id,'cancelled',end_ms=stopped)
                 msg = (
                     f"Cancelled: parallel tool call {self._sibling_error_desc} errored"
                     if self._sibling_errored
@@ -189,9 +340,15 @@ class StreamingToolExecutor:
                     error=e,
                 )
 
+        for batch in self._parallel_batches.values():
+            self._finish_parallel_batch(batch)
+
         # 2. Execute exclusive tools sequentially
         for info in self._exclusive_queue:
             if self._abort.is_set() or self._sibling_errored:
+                if info.trace:
+                    info.trace.finish(info.queue_span_id, 'cancelled')
+                    info.trace.finish(info.trace_span_id, 'cancelled')
                 msg = (
                     f"Cancelled: parallel tool call {self._sibling_error_desc} errored"
                     if self._sibling_errored

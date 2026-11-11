@@ -274,7 +274,9 @@ class SessionPrompt:
 
     async def run(self) -> None:
         """Main entry point: setup → loop → post-loop."""
-        await self._setup()
+        from app.streaming.trace import trace_span
+        with trace_span('会话校验与上下文装配', '调度'):
+            await self._setup()
         await self._loop()
         await self._post_loop()
 
@@ -772,10 +774,12 @@ class SessionPrompt:
                             "agent": self.agent.name,
                             "model_id": self.model_id,
                             "provider_id": self.provider.id,
+                            "trace_id": self.job.stream_id,
                         },
                     )
             self.assistant_msg_id = assistant_msg.id
             self.generation_message_ids.append(assistant_msg.id)
+            self.job.trace.message_ids.append(assistant_msg.id)
 
             # Execute one LLM step — processor handles streaming + tool dispatch
             processor: SessionProcessor = SessionProcessor(
@@ -1215,6 +1219,11 @@ class SessionPrompt:
                 logger.warning("Analysis memory queue submission failed", exc_info=True)
 
         # Publish DONE to unlock the frontend UI.
+        self.job.trace.close('cancelled' if self.job.abort_event.is_set() else 'error' if self.finish_reason == 'error' else 'ok')
+        try:
+            await self.job.trace.persist(self.session_factory)
+        except Exception:
+            logger.warning('Failed to persist execution trace', exc_info=True)
         self.job.publish(
             SSEEvent(
                 DONE,
