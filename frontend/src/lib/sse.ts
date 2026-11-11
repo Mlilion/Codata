@@ -19,6 +19,7 @@ import {
 } from "./constants";
 import { getRemoteToken } from "./remote-connection";
 import type { SSEEventData } from "@/types/streaming";
+import type { TraceTiming } from "@/types/execution-trace";
 
 export type SSEEventHandler = (data: SSEEventData, id: number) => void;
 
@@ -44,6 +45,7 @@ export interface SSEClientOptions {
   onStatusChange?: (status: SSEConnectionStatus) => void;
   /** Called on any received event (for idle timeout tracking). */
   onEvent?: () => void;
+  onTiming?: (type: string, data: SSEEventData, id: number, timing: TraceTiming) => void;
 }
 
 export class SSEClient {
@@ -179,8 +181,15 @@ export class SSEClient {
 
   /** Dispatch a parsed SSE event to registered handlers. */
   private dispatchEvent(eventType: string, data: string, id: string): void {
+    if (this.closed || this.paused) return;
+    const receivedPerfMs = performance.now();
+    const receivedEpochMs = performance.timeOrigin + receivedPerfMs;
     if (id) {
-      this.lastEventId = parseInt(id, 10);
+      const next = Number(id);
+      if (Number.isFinite(next)) {
+        if (next <= this.lastEventId) return;
+        this.lastEventId = next;
+      }
     }
 
     this.nativeReconnectCount = 0;
@@ -189,16 +198,22 @@ export class SSEClient {
     this.options.onEvent?.();
 
     let parsed: SSEEventData;
+    const parseStarted = performance.now();
     try {
       parsed = JSON.parse(data) as SSEEventData;
     } catch {
       parsed = {} as SSEEventData;
     }
 
+    const parseMs = performance.now() - parseStarted;
+    const handlerStarted = performance.now();
     const handlers = this.handlers.get(eventType) ?? [];
     for (const handler of handlers) {
       handler(parsed, this.lastEventId);
     }
+    this.options.onTiming?.(eventType, parsed, this.lastEventId, {
+      receivedPerfMs, receivedEpochMs, parseMs, handlerMs: performance.now() - handlerStarted,
+    });
   }
 
   /**

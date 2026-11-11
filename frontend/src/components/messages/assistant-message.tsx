@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo, memo, useEffect, useRef } from "react";
+import { useState, useMemo, memo, useEffect, useLayoutEffect } from "react";
+import { recordTextCommit } from '@/lib/execution-trace';
+import { useExecutionTraceStore } from '@/stores/execution-trace-store';
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { MessageContent } from "./message-content";
@@ -96,7 +98,7 @@ export function AssistantMessage({ message, combinedParts, onRegenerate, isNew =
     );
     const hasExpertSteps = stepParts.some((part) => part.snapshot?.mode === "expert-team");
 
-    if (reasoningTexts.length === 0 && toolParts.length === 0 && !hasExpertSteps) return null;
+    if (reasoningTexts.length === 0 && toolParts.length === 0 && !hasExpertSteps && !(message.data.role==='assistant'&&message.data.trace_id)) return null;
 
     const chain: ChainItem[] = [];
     for (const p of mainParts) {
@@ -107,6 +109,9 @@ export function AssistantMessage({ message, combinedParts, onRegenerate, isNew =
 
     const data: ActivityData = {
       sourceKey: activityKey,
+      sessionId: message.session_id,
+      traceId: message.data.role === 'assistant' ? message.data.trace_id : undefined,
+      executionTrace: message.data.role === 'assistant' ? message.data.execution_trace : undefined,
       mode: hasExpertSteps ? "expert-team" : "default",
       parts: mainParts,
       reasoningTexts: [...reasoningTexts, ...traceTexts],
@@ -127,7 +132,7 @@ export function AssistantMessage({ message, combinedParts, onRegenerate, isNew =
     };
     data.thinkingDuration = computeDuration(data);
     return data;
-  }, [activityKey, mainParts, persistedDurationMs]);
+  }, [activityKey, mainParts, persistedDurationMs, message.session_id, message.data]);
 
   useEffect(() => {
     if (activityData) {
@@ -153,6 +158,7 @@ export function AssistantMessage({ message, combinedParts, onRegenerate, isNew =
         >
           <MessageContent
             parts={mainParts}
+            traceId={activityData?.traceId} sessionId={message.session_id} executionTrace={activityData?.executionTrace}
             activityKey={activityKey}
             totalDuration={activityData?.totalDuration}
           />
@@ -214,6 +220,7 @@ export function AssistantMessage({ message, combinedParts, onRegenerate, isNew =
         >
           <MessageContent
             parts={mainParts}
+            traceId={activityData?.traceId} sessionId={message.session_id} executionTrace={activityData?.executionTrace}
             activityKey={activityKey}
             totalDuration={activityData?.totalDuration}
           />
@@ -255,11 +262,11 @@ interface StreamingMessageProps {
 
 export const StreamingMessage = memo(function StreamingMessage({ sessionId = null, parts, streamingText, streamingReasoning }: StreamingMessageProps) {
   const { t } = useTranslation("chat");
-  const { isModelLoading, generationStartedAt, generationDurationSeconds } = useChatSession(sessionId);
+  const { isGenerating, isModelLoading, generationStartedAt, generationDurationSeconds, streamId } = useChatSession(sessionId);
+  const storedTraceId=useExecutionTraceStore(s=>sessionId?s.activeBySession[sessionId]:undefined);
+  const traceId=streamId??storedTraceId;
   const isCodata = useSidebarStore((s) => s.appMode) === "codata";
   const refreshForMessage = useActivityStore((s) => s.refreshForMessage);
-  const openForMessage = useActivityStore((s) => s.openForMessage);
-  const autoOpenedExpertPanelRef = useRef(false);
 
   // Stabilize liveParts reference — without useMemo, a new array is created
   // on every render, breaking downstream useMemo dependencies in MessageContent.
@@ -276,7 +283,7 @@ export const StreamingMessage = memo(function StreamingMessage({ sessionId = nul
         p.type === "step-start" || p.type === "step-finish",
     );
     const hasExpertSteps = stepParts.some((part) => part.snapshot?.mode === "expert-team");
-    if (!hasExpertSteps || !sessionId) return null;
+    if (!sessionId || (!hasExpertSteps&&!traceId)) return null;
 
     const reasoningTexts = liveParts
       .filter((p): p is PartData & { type: "reasoning" } => p.type === "reasoning")
@@ -288,8 +295,9 @@ export const StreamingMessage = memo(function StreamingMessage({ sessionId = nul
       else if (p.type === "tool") chain.push({ type: "tool", data: p });
     }
     const data: ActivityData = {
-      sourceKey: `expert:${sessionId}`,
-      mode: "expert-team",
+      sourceKey: hasExpertSteps ? `expert:${sessionId}` : `trace:${traceId}`,
+      mode: hasExpertSteps ? 'expert-team' : 'default',
+      sessionId, traceId,
       parts: liveParts,
       reasoningTexts,
       toolParts,
@@ -301,20 +309,20 @@ export const StreamingMessage = memo(function StreamingMessage({ sessionId = nul
     };
     data.thinkingDuration = computeDuration(data);
     return data;
-  }, [liveParts, sessionId]);
+  }, [liveParts, sessionId, traceId]);
+
+  useLayoutEffect(() => {
+    if (sessionId) recordTextCommit(sessionId, !!streamingText);
+  }, [sessionId, streamingText]);
 
   useEffect(() => {
     if (!streamingActivityData?.sourceKey) return;
-    if (!autoOpenedExpertPanelRef.current) {
-      openForMessage(streamingActivityData.sourceKey, streamingActivityData);
-      autoOpenedExpertPanelRef.current = true;
-    } else {
-      refreshForMessage(streamingActivityData.sourceKey, streamingActivityData);
-    }
-  }, [openForMessage, refreshForMessage, streamingActivityData]);
+    refreshForMessage(streamingActivityData.sourceKey, streamingActivityData);
+  }, [refreshForMessage, streamingActivityData]);
 
   // No content yet — show blinking cursor to indicate "about to type"
   if (liveParts.length === 0) {
+    if (!isGenerating) return <MessageContent parts={liveParts} activityKey={`trace:${traceId}`} traceId={traceId} sessionId={sessionId??undefined} isStreaming={false} totalDuration={generationDurationSeconds??undefined}/>;
     if (isCodata) {
       return (
         <div className="flex gap-3">
@@ -355,7 +363,7 @@ export const StreamingMessage = memo(function StreamingMessage({ sessionId = nul
   const isGenerationDone = !!lastStepFinish && lastStepFinish.reason !== "tool_use";
   // The stage line already communicates the waiting state. Only show the
   // trailing dot row when there is actual reasoning/tool activity above it.
-  const showTail = hasAnyActivity && !isActivelyStreaming && !hasRunningTool && !isGenerationDone;
+  const showTail = isGenerating && hasAnyActivity && !isActivelyStreaming && !hasRunningTool && !isGenerationDone;
 
   let stageLabel = t("stageThinking");
   if (hasRunningTool) stageLabel = t("stageWorkingWithTools");
@@ -363,10 +371,11 @@ export const StreamingMessage = memo(function StreamingMessage({ sessionId = nul
 
   const streamingBody = (
     <div>
-      {!hasAnyActivity && <StreamingStage label={isModelLoading ? t("stageThinking") : stageLabel} />}
+      {isGenerating&&!hasAnyActivity && <StreamingStage label={isModelLoading ? t("stageThinking") : stageLabel} />}
       <MessageContent
         parts={liveParts}
-        isStreaming
+        activityKey={`trace:${traceId}`} traceId={traceId} sessionId={sessionId ?? undefined}
+        isStreaming={isGenerating}
         totalDuration={generationDurationSeconds ?? (
           generationStartedAt != null
             ? Math.max(0, Math.round((Date.now() - generationStartedAt) / 100) / 10)
@@ -393,7 +402,7 @@ export const StreamingMessage = memo(function StreamingMessage({ sessionId = nul
       <div className="min-w-0 flex-1">
         <div className="mb-2 flex items-center gap-2 text-[12px] font-medium text-[var(--text-secondary)]">
           <span>Codata</span>
-          <span className="text-[11px] font-normal text-[var(--text-quaternary)]">正在分析</span>
+          {isGenerating&&<span className="text-[11px] font-normal text-[var(--text-quaternary)]">正在分析</span>}
         </div>
         {streamingBody}
       </div>

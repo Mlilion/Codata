@@ -45,7 +45,10 @@ from app.utils.id import generate_ulid
 
 logger = logging.getLogger(__name__)
 
+from app.streaming.trace_api import router as trace_router
+
 router = APIRouter()
+router.include_router(trace_router)
 
 _MANUAL_COMPACTION_MIN_USAGE_RATIO = 0.5
 
@@ -78,13 +81,19 @@ def _on_task_done(task: asyncio.Task[None], *, job: GenerationJob) -> None:
 
 async def _run_with_semaphore(sm: StreamManager, job: GenerationJob, coro) -> None:
     """Run generation under the concurrency semaphore."""
+    job.trace._emit(job.trace.spans[job.trace.root_id])
+    queue_span = job.trace.start('生成任务排队', '调度', parent_id=job.trace.root_id)
     try:
         await asyncio.wait_for(sm._semaphore.acquire(), timeout=30)
     except asyncio.TimeoutError:
+        job.trace.finish(queue_span, 'error')
+        job.trace.close('error')
+        coro.close()
         job.publish(SSEEvent(AGENT_ERROR, {"error_message": "Server is busy. Please try again shortly."}))
         job.complete()
         return
     try:
+        job.trace.finish(queue_span)
         await coro
     finally:
         sm._semaphore.release()
@@ -431,13 +440,17 @@ async def stream_events(
 
 
 @router.post("/chat/abort")
-async def abort_generation(sm: StreamManagerDep, body: AbortRequest) -> dict:
+async def abort_generation(sm: StreamManagerDep, body: AbortRequest, session_factory: SessionFactoryDep) -> dict:
     """Abort an active generation."""
     job = sm.get_job(body.stream_id)
     if job is None:
         return {"status": "not_found"}
     job.abort()
-    return {"status": "aborted"}
+    try:
+        await job.trace.persist(session_factory)
+    except Exception:
+        logger.warning('Failed to persist aborted execution trace', exc_info=True)
+    return {"status": "aborted", "execution_trace": job.trace.snapshot()}
 
 
 @router.get("/chat/active")

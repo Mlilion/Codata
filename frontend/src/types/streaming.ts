@@ -31,6 +31,8 @@ export const SSE_EVENTS = {
 
 /** SSE event payload — mirrors backend app/schemas/streaming.py SSEEventData */
 export interface SSEEventData {
+  _trace?: { trace_id: string; origin_epoch_ms: number; published_ms: number };
+  _delivery?: { sent_epoch_ms: number; server_queue_ms: number; encode_ms?: number };
   // Common
   session_id?: string | null;
   message_id?: string | null;

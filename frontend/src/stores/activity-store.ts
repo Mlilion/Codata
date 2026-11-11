@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import type { PartData, ToolPart, StepStartPart, StepFinishPart } from "@/types/message";
+import type { ExecutionTrace } from '@/types/execution-trace';
 
 /** A single item in the execution chain (preserves interleaving order). */
 export type ChainItem =
@@ -9,6 +10,9 @@ export type ChainItem =
   | { type: "tool"; data: ToolPart };
 
 export interface ActivityData {
+  traceId?: string;
+  sessionId?: string;
+  executionTrace?: ExecutionTrace;
   sourceKey?: string;
   mode?: "default" | "expert-team";
   parts?: PartData[];
@@ -87,9 +91,12 @@ export const useActivityStore = create<ActivityStore>((set, get) => ({
     set({ isOpen: true, activeKey: key, activeData: data });
   },
   refreshForMessage: (key, data) => {
-    const { isOpen, activeKey } = get();
-    if (isOpen && activeKey === key) {
-      set({ activeData: data });
+    const { isOpen, activeKey, activeData } = get();
+    const completedHandoff = data.traceId && data.traceId === activeData?.traceId && data.executionTrace?.completed;
+    // Register the latest execution quietly. Only explicit user actions open
+    // the panel; updates must not reopen a dismissed panel or steal selection.
+    if (!isOpen || activeKey === key || completedHandoff) {
+      set({ activeKey: key, activeData: data });
     }
   },
   close: () => {

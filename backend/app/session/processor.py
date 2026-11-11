@@ -403,6 +403,7 @@ async def run_generation(
     """
     from app.session.prompt import SessionPrompt
 
+    job.trace._emit(job.trace.spans[job.trace.root_id])
     try:
         prompt = SessionPrompt(
             job,
@@ -414,7 +415,8 @@ async def run_generation(
             index_manager=index_manager,
             skip_user_message=skip_user_message,
         )
-        await prompt.run()
+        with job.trace.bind():
+            await prompt.run()
     except IntegrityError:
         # Session was deleted while generation was in-flight — notify frontend
         # so it can exit the generating state, then stop.
@@ -423,14 +425,26 @@ async def run_generation(
             job.session_id,
             job.stream_id,
         )
+        job.trace.close('cancelled')
         job.publish(SSEEvent(DONE, {
             "session_id": job.session_id,
             "finish_reason": "aborted",
         }))
     except Exception:
         logger.exception("Generation error for stream %s", job.stream_id)
+        job.trace.close('error')
+        try:
+            await job.trace.persist(session_factory)
+        except Exception:
+            logger.warning('Failed to persist failed trace', exc_info=True)
         job.publish(SSEEvent(AGENT_ERROR, {"error_message": "An internal error occurred. Please try again."}))
     finally:
+        if not job.trace.completed:
+            job.trace.close('cancelled' if job.abort_event.is_set() else 'error')
+            try:
+                await job.trace.persist(session_factory)
+            except Exception:
+                logger.warning('Failed to persist execution trace', exc_info=True)
         try:
             from app.tool.builtin.todo import clear_in_progress_todos
 
@@ -567,6 +581,7 @@ class SessionProcessor:
                     exclude_tools=_exclude_tools,
                     discovered_tools=sp.discovered_tools,
                     response_format=sp.request.format,
+                    trace_attributes={'step': sp.step, 'attempt': attempt + 1, 'message_id': self._assistant_msg_id},
                 ):
                     if job.abort_event.is_set():
                         break
@@ -698,6 +713,7 @@ class SessionProcessor:
                                     "tool": _tool.id, "call_id": _ci,
                                     "arguments": _ta, "session_id": job.session_id,
                                     "message_id": self._assistant_msg_id,
+                                    "time_start": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                                 }))
 
                                 # Build context
@@ -734,6 +750,8 @@ class SessionProcessor:
                                     tool_name=_tool.id, tool_args=_ta,
                                     call_id=_ci, ctx=_ctx,
                                     timeout=_cfg().tool_timeout,
+                                    producer_span_id=str(_tc.get('_trace_model_span_id', '')),
+                                    retry_of_call_id=_tc.get('retry_of_call_id'),
                                 ))
                                 _exec_metadata[_exec_index] = {
                                     "tool_part_id": _tpid,
@@ -1092,6 +1110,8 @@ class SessionProcessor:
                                     "output": result.output[:500] if result.output else "",
                                     "title": result.title,
                                     "metadata": result.metadata,
+                                    "time_start": exec_result.time_start,
+                                    "time_end": exec_result.time_end,
                                 },
                             )
                         )
@@ -1193,6 +1213,8 @@ class SessionProcessor:
                                         "output": persist_output,
                                         "title": result.title,
                                         "metadata": result.metadata,
+                                        "time_start": exec_result.time_start,
+                                        "time_end": exec_result.time_end,
                                     },
                                 },
                             )

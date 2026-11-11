@@ -3,6 +3,8 @@
 import type { QueryClient, InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { SSEClient, type SSEConnectionStatus } from "@/lib/sse";
+import { calibrateTrace, finalizeClientTrace, ingestTraceSpan, observeSSE } from "@/lib/execution-trace";
+import { useExecutionTraceStore } from "@/stores/execution-trace-store";
 import { API, IS_DESKTOP, getBackendToken, getBackendUrl, queryKeys } from "@/lib/constants";
 import { isRemoteMode } from "@/lib/remote-connection";
 import { desktopAPI } from "@/lib/tauri-api";
@@ -21,6 +23,7 @@ import { useSettingsStore } from "@/stores/settings-store";
 import type { SessionResponse } from "@/types/session";
 import type { ArtifactType } from "@/types/artifact";
 import type { FilePart, PaginatedMessages } from "@/types/message";
+import type { ExecutionTrace } from '@/types/execution-trace';
 
 const PROGRESSIVE_BUFFER_INTERVAL_MS = 60;
 const FILE_RESULT_TOOLS = new Set([
@@ -261,6 +264,8 @@ export async function startStream(sessionId: string, streamId: string): Promise<
   }
 
   ensureGlobalListeners();
+  useExecutionTraceStore.getState().ensure(sessionId, streamId);
+  void calibrateTrace(streamId);
 
   const store = useChatStore;
   const connectionStore = useConnectionStore;
@@ -351,6 +356,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     }
 
     store.getState().finishGeneration(sid);
+    void finalizeClientTrace(sid, streamId);
     if (instances.size === 0) connectionStore.getState().setStatus("idle");
     const workspace = useWorkspaceStore.getState();
     if (
@@ -391,6 +397,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
     url: API.CHAT.STREAM(streamId),
     urlProvider: () => API.CHAT.STREAM(streamId),
     initialLastEventId: 0,
+    onTiming: (type, data, id, timing) => observeSSE(sessionId, streamId, type, data, id, timing),
     onEvent: () => {
       const inst = instances.get(sessionId);
       if (inst) inst.lastEventTimestamp = Date.now();
@@ -440,6 +447,7 @@ export async function startStream(sessionId: string, streamId: string): Promise<
   client.on(SSE_EVENTS.MODEL_LOADING, () => {
     store.getState().setModelLoading(sessionId, true);
   });
+  client.on('trace-span', data => ingestTraceSpan(sessionId, streamId, data));
 
   client.on(SSE_EVENTS.TEXT_DELTA, (data) => {
     cancelPendingStepFinish();
@@ -773,6 +781,8 @@ export async function startStream(sessionId: string, streamId: string): Promise<
   client.on(SSE_EVENTS.DESYNC, () => {
     const qc = queryClientRef;
     if (qc) qc.invalidateQueries({ queryKey: queryKeys.messages.list(sessionId) });
+    void api.get<ExecutionTrace>(`/api/chat/trace/${encodeURIComponent(streamId)}?session_id=${encodeURIComponent(sessionId)}`)
+      .then(snapshot=>useExecutionTraceStore.getState().hydrate(sessionId,snapshot,true)).catch(()=>{});
   });
 
   client.on(SSE_EVENTS.COMPACTION_ERROR, (data) => {

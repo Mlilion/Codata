@@ -20,7 +20,12 @@ import { hasCodataResult, isTraceOnlyCodataResult } from "@/lib/codata-artifact"
 import { cn } from "@/lib/utils";
 import type { ActivityData, ChainItem } from "@/stores/activity-store";
 
+import { TraceRenderProbe } from '@/components/activity/trace-render-probe';
+
 interface MessageContentProps {
+  traceId?: string;
+  sessionId?: string;
+  executionTrace?: import('@/types/execution-trace').ExecutionTrace;
   parts: PartData[];
   /** Whether this is the currently streaming message. */
   isStreaming?: boolean;
@@ -142,6 +147,7 @@ export function MessageContent({
   isStreaming,
   activityKey,
   totalDuration,
+  traceId, sessionId, executionTrace,
 }: MessageContentProps) {
   // Thinking duration reported by ReasoningPart's live timer
   const [thinkingDuration, setThinkingDuration] = useState<number | undefined>();
@@ -190,7 +196,7 @@ export function MessageContent({
   const hasReasoning = reasoningTexts.length > 0;
   const hasTools = toolParts.length > 0;
   const hasExpertSteps = stepParts.some((part) => part.snapshot?.mode === "expert-team");
-  const hasActivity = hasReasoning || hasTools || hasExpertSteps;
+  const hasActivity = hasReasoning || hasTools || hasExpertSteps || !!traceId;
 
   const presentedFilePaths = useMemo(() => {
     const paths = new Set<string>();
@@ -238,6 +244,7 @@ export function MessageContent({
       hasActivity
         ? {
             sourceKey: activityKey,
+            traceId, sessionId, executionTrace,
             mode: hasExpertSteps ? "expert-team" : "default",
             parts,
             reasoningTexts: [...reasoningTexts, ...traceTexts],
@@ -258,7 +265,7 @@ export function MessageContent({
             chain,
           }
         : null,
-    [hasActivity, hasExpertSteps, reasoningTexts, traceTexts, toolParts, thinkingDuration, totalDuration, stepParts, chain, parts, activityKey],
+    [hasActivity, hasExpertSteps, reasoningTexts, traceTexts, toolParts, thinkingDuration, totalDuration, stepParts, chain, parts, activityKey, traceId, sessionId, executionTrace],
   );
 
   // Content parts: text, subtask, and deliverable tool calls (shown as inline cards)
@@ -483,11 +490,13 @@ export function MessageContent({
               return (
                 <Fragment key={originalIndex}>
                   {foldCards && <DataQueryFold key={`fold-${contentIndex}`} cards={foldCards} />}
-                  <DataResultCard
-                    key={originalIndex}
-                    data={answerDataPart ?? tp}
-                    defaultOpen
-                  />
+                  <TraceRenderProbe traceId={traceId} callId={tp.call_id}>
+                    <DataResultCard
+                      key={originalIndex}
+                      data={answerDataPart ?? tp}
+                      defaultOpen
+                    />
+                  </TraceRenderProbe>
                 </Fragment>
               );
             }

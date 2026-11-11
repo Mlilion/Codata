@@ -18,7 +18,10 @@ import {
   Plug,
   Search,
   XCircle,
+  CircleSlash,
 } from "lucide-react";
+import { durationLabel } from '@/lib/trace-layout';
+import type { TraceSpan } from '@/types/execution-trace';
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import type { ToolPart } from "@/types/message";
@@ -87,13 +90,17 @@ function getElapsed(tool: ToolPart): string {
   return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
 }
 
-export function ToolCallRow({ tool }: { tool: ToolPart }) {
+export function ToolCallRow({ tool, timing, onInspect,expanded,onExpandedChange,onExpansionComplete,highlighted=false }: { tool: ToolPart; timing?: {durationMs:number;queueMs?:number;executionMs?:number;queued?:boolean;status:TraceSpan['status']}; onInspect?:()=>void;expanded?:boolean;onExpandedChange?:(open:boolean)=>void;onExpansionComplete?:(open:boolean)=>void;highlighted?:boolean }) {
   const { t } = useTranslation("chat");
-  const [isOpen, setIsOpen] = useState(false);
+  const [localOpen,setLocalOpen] = useState(false);
+  const isOpen=expanded??localOpen;
+  const setIsOpen=(open:boolean)=>{if(onExpandedChange)onExpandedChange(open);else setLocalOpen(open);};
   const ToolIcon = TOOL_ICONS[tool.tool] ?? Plug;
-  const isRunning = tool.state.status === "running" || tool.state.status === "pending";
-  const isError = tool.state.status === "error";
-  const elapsed = getElapsed(tool);
+  const actualStatus = timing?.status ?? tool.state.status;
+  const isRunning = actualStatus === "running" || actualStatus === "pending";
+  const isError = actualStatus === "error";
+  const isCancelled = actualStatus === 'cancelled';
+  const elapsed = timing ? durationLabel(timing.durationMs) : getElapsed(tool);
   const title = getToolTitle(tool);
 
   const sources = useMemo(() => {
@@ -106,11 +113,11 @@ export function ToolCallRow({ tool }: { tool: ToolPart }) {
   const moreCount = sources.length - MAX_VISIBLE_SOURCES;
 
   return (
-    <div className="relative rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-2 pl-9">
+    <div className={cn('relative rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-2 pl-9',highlighted&&'border-[var(--data-accent)]')}>
       <div className="absolute left-3 top-2.5 flex items-center justify-center">
         {isRunning ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--text-tertiary)]" />
-        ) : isError ? (
+        ) : isCancelled ? <CircleSlash className="h-3.5 w-3.5 text-[var(--text-tertiary)]" /> : isError ? (
           <XCircle className="h-3.5 w-3.5 text-[var(--tool-error)]" />
         ) : (
           <CheckCircle2 className="h-3.5 w-3.5 text-[var(--tool-completed)]" />
@@ -119,6 +126,7 @@ export function ToolCallRow({ tool }: { tool: ToolPart }) {
 
       <button
         type="button"
+        aria-expanded={isOpen}
         onClick={() => setIsOpen(!isOpen)}
         className="group flex w-full items-center gap-2 text-left"
       >
@@ -128,7 +136,7 @@ export function ToolCallRow({ tool }: { tool: ToolPart }) {
         </span>
         {elapsed && (
           <span className="shrink-0 text-[10px] text-[var(--text-tertiary)]">
-            {elapsed}
+            {timing?.queued?'排队中 · ':''}{elapsed}
           </span>
         )}
         <ChevronDown
@@ -162,12 +170,15 @@ export function ToolCallRow({ tool }: { tool: ToolPart }) {
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
+            onAnimationComplete={()=>onExpansionComplete?.(isOpen)}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className="overflow-hidden"
           >
+            {timing&&<p className="mt-2 text-[11px] text-[var(--text-tertiary)]">排队 {timing.queueMs===undefined?'未采集':durationLabel(timing.queueMs)} · 执行 {timing.executionMs===undefined?(timing.queued?'未开始':'未采集'):durationLabel(timing.executionMs)}</p>}
+            {tool.state.metadata?.trace_output_preview===true&&<p className="mt-1 text-[11px] text-[var(--text-tertiary)]">子任务调用摘要，完整内容见所属子会话。</p>}
             <div className="mb-1 mt-2 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)]">
               {Object.keys(tool.state.input).length > 0 && (
                 <div className="border-b border-[var(--border-default)]">
@@ -197,6 +208,7 @@ export function ToolCallRow({ tool }: { tool: ToolPart }) {
                 </div>
               )}
             </div>
+            {onInspect&&<button type="button" className="mt-2 mb-1 rounded border border-[var(--border-default)] px-2 py-1 text-[11px] text-[var(--data-accent)]" onClick={onInspect}>查看耗时与证据</button>}
           </motion.div>
         )}
       </AnimatePresence>
