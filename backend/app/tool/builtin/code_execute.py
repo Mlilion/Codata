@@ -27,26 +27,44 @@ DEFAULT_TIMEOUT = 30  # seconds
 MAX_TIMEOUT = 120
 MAX_OUTPUT = 51200  # 50 KB
 
+_TRACKING_EXCLUDED_DIRS = frozenset({
+    ".git", ".hg", ".svn", "venv", ".venv", "node_modules", "__pycache__",
+    ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".nox", ".next",
+    ".nuxt", ".turbo", ".parcel-cache", ".gradle", "target",
+})
+
 
 def _snapshot_workspace(workspace: str | None) -> dict[str, tuple[int, int]]:
-    """Return a cheap file snapshot for detecting created/modified files."""
+    """Track workspace files while pruning dependency/cache trees and links."""
     root = Path(workspace).resolve() if workspace else Path.cwd().resolve()
     if not root.is_dir():
         return {}
 
     snapshot: dict[str, tuple[int, int]] = {}
-    try:
-        for path in root.rglob("*"):
-            if not path.is_file():
-                continue
-            try:
-                stat = path.stat()
-            except OSError:
-                continue
-            # mtime_ns + size is enough for UI/session tracking purposes
-            snapshot[str(path.resolve())] = (stat.st_mtime_ns, stat.st_size)
-    except OSError:
-        return {}
+    pending = [str(root)]
+    while pending:
+        directory = pending.pop()
+        try:
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    try:
+                        if entry.is_symlink():
+                            continue
+                        if entry.is_dir(follow_symlinks=False):
+                            if entry.name.casefold() in _TRACKING_EXCLUDED_DIRS:
+                                continue
+                            if os.path.isjunction(entry.path):
+                                continue
+                            if os.path.isfile(os.path.join(entry.path, "pyvenv.cfg")):
+                                continue
+                            pending.append(entry.path)
+                        elif entry.is_file(follow_symlinks=False):
+                            stat = entry.stat(follow_symlinks=False)
+                            snapshot[entry.path] = (stat.st_mtime_ns, stat.st_size)
+                    except OSError:
+                        continue
+        except OSError:
+            continue
 
     return snapshot
 
@@ -92,11 +110,9 @@ class CodeExecuteTool(ToolDefinition):
             return ToolResult(error="No code provided")
 
         timeout = min(args.get("timeout", DEFAULT_TIMEOUT), MAX_TIMEOUT)
-        before_snapshot = _snapshot_workspace(ctx.workspace)
-
         try:
-            output, exit_code = await asyncio.wait_for(
-                asyncio.to_thread(_run_code, code),
+            output, exit_code, written_files = await asyncio.wait_for(
+                _run_with_tracking(code, ctx.workspace),
                 timeout=timeout,
             )
         except asyncio.TimeoutError:
@@ -108,12 +124,6 @@ class CodeExecuteTool(ToolDefinition):
             return ToolResult(error=f"Execution failed: {exc}")
 
         title = f"python: {code[:60]}..." if len(code) > 60 else f"python: {code}"
-        after_snapshot = _snapshot_workspace(ctx.workspace)
-        written_files = sorted(
-            path
-            for path, sig in after_snapshot.items()
-            if before_snapshot.get(path) != sig
-        )
 
         return ToolResult(
             output=output,
@@ -125,6 +135,17 @@ class CodeExecuteTool(ToolDefinition):
             },
             error=f"Code execution failed with exit code {exit_code}" if exit_code != 0 else None,
         )
+
+
+async def _run_with_tracking(code: str, workspace: str | None) -> tuple[str, int, list[str]]:
+    before_snapshot = await asyncio.to_thread(_snapshot_workspace, workspace)
+    output, exit_code = await asyncio.to_thread(_run_code, code)
+    after_snapshot = await asyncio.to_thread(_snapshot_workspace, workspace)
+    written_files = sorted(
+        path for path, signature in after_snapshot.items()
+        if before_snapshot.get(path) != signature
+    )
+    return output, exit_code, written_files
 
 
 def _run_code(code: str) -> tuple[str, int]:
